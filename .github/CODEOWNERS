@@ -1,0 +1,15 @@
+# Codeowners File
+
+# These owners will be the default owners for everything in the repo
+* @superinstance/admin
+
+# The SuperInstance Core team owns these files
+/packages/ @superinstance/core
+/core-app/ @superinstance/core
+
+# Documentation team
+*.md @superinstance/docs
+/docs/ @superinstance/docs
+
+# GitHub Actions
+.github/workflows/ @superinstance/devops
