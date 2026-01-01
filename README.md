@@ -1,5 +1,10 @@
 # PersonalLog
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
+[![pnpm](https://img.shields.io/badge/pnpm-%3E%3D8.0.0-orange)](https://pnpm.io)
+[![Next](https://img.shields.io/badge/Next.js-15.3-black)](https://nextjs.org)
+
 A SuperInstance application for everyday personal use. Streamlined default that can add any tool.
 
 ## Overview
