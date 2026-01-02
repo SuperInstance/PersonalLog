@@ -24,6 +24,9 @@ import {
   BarChart3,
   Sparkles,
   ChevronRight,
+  Brain,
+  Flask,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -129,6 +132,7 @@ export default function SettingsPage() {
   };
 
   const settingsCards: SettingsCard[] = [
+    // System cards
     {
       title: 'System Information',
       description: 'View detailed hardware info, capabilities, and performance profile',
@@ -148,6 +152,36 @@ export default function SettingsPage() {
       description: 'Manage feature flags and experimental functionality',
       icon: Sparkles,
       href: '/settings/features',
+      color: 'green',
+    },
+
+    // Intelligence cards - Round 3
+    {
+      title: 'Analytics',
+      description: 'View usage statistics and privacy controls',
+      icon: BarChart3,
+      href: '/settings/analytics',
+      color: 'cyan',
+    },
+    {
+      title: 'Experiments',
+      description: 'Manage A/B tests and variant assignments',
+      icon: Sparkles,
+      href: '/settings/experiments',
+      color: 'indigo',
+    },
+    {
+      title: 'Optimization',
+      description: 'Auto-optimization status and applied rules',
+      icon: Cpu,
+      href: '/settings/optimization',
+      color: 'amber',
+    },
+    {
+      title: 'Personalization',
+      description: 'Learned preferences and behavior patterns',
+      icon: Sparkles,
+      href: '/settings/personalization',
       color: 'green',
     },
   ];
@@ -201,7 +235,7 @@ export default function SettingsPage() {
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Quick Settings
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {settingsCards.map(card => {
               const Icon = card.icon;
               return (
