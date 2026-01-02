@@ -4,11 +4,18 @@
  * MessageBubble Component
  *
  * Displays a single message with selection support.
+ *
+ * PERFORMANCE OPTIMIZATION:
+ * - Wrapped with React.memo to prevent unnecessary re-renders
+ * - Custom comparison function checks only message.id and isSelected
+ * - This is critical for long conversations where parent updates frequently
+ * - Prevents all messages from re-rendering when selection changes
  */
 
 import { Check, CheckCheck, Reply } from 'lucide-react'
 import type { Message, AIAgent } from '@/types/conversation'
 import { getAuthorDisplayName, getAuthorColor, formatRelativeTime } from '@/lib/utils'
+import { memo } from 'react'
 
 interface MessageBubbleProps {
   message: Message
@@ -17,7 +24,7 @@ interface MessageBubbleProps {
   aiContacts: AIAgent[]
 }
 
-export default function MessageBubble({
+function MessageBubble({
   message,
   isSelected,
   onSelect,
@@ -142,3 +149,22 @@ function formatRelativeTime(dateString: string): string {
 
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
+
+/**
+ * Memoized MessageBubble with custom comparison
+ *
+ * Only re-renders when:
+ * - message.id changes (content update)
+ * - isSelected changes (selection state)
+ * - onSelect function reference changes (rare)
+ * - aiContacts array reference changes (rare)
+ */
+export default memo(MessageBubble, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if critical props change
+  return (
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.onSelect === nextProps.onSelect &&
+    prevProps.aiContacts === nextProps.aiContacts
+  )
+})

@@ -6,6 +6,14 @@
  */
 
 import { getErrorHandler } from '@/lib/errors/handler';
+import {
+  cosineSimilarity,
+  dotProduct as dotProductUtil,
+  normalizeVector as normalizeVectorUtil,
+  estimateMemorySize,
+  recommendedBatchSize,
+  hashEmbedding,
+} from '@/lib/vector/utils';
 
 // ============================================================================
 // TYPES
@@ -56,7 +64,16 @@ export interface WasmFeatures {
 // ============================================================================
 
 /**
- * Detect WASM and SIMD support in the current browser
+ * Detects WebAssembly and SIMD support in the current browser.
+ *
+ * @returns Object indicating support for various WASM features
+ *
+ * @example
+ * ```typescript
+ * const features = detectWasmFeatures()
+ * console.log(`SIMD supported: ${features.simd}`)
+ * console.log(`Bulk memory: ${features.bulkMemory}`)
+ * ```
  */
 export function detectWasmFeatures(): WasmFeatures {
   const features: WasmFeatures = {
@@ -122,43 +139,27 @@ export function detectWasmFeatures(): WasmFeatures {
 // ============================================================================
 
 /**
- * JavaScript fallback for cosine similarity
+ * JavaScript fallback for cosine similarity.
+ * Uses shared utility function.
  */
 function cosineSimilarityJS(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0
-
-  let dotProduct = 0
-  let normA = 0
-  let normB = 0
-
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i]
-    normA += a[i] * a[i]
-    normB += b[i] * b[i]
-  }
-
-  normA = Math.sqrt(normA)
-  normB = Math.sqrt(normB)
-
-  if (normA === 0 || normB === 0) return 0
-
-  return dotProduct / (normA * normB)
+  return cosineSimilarity(a, b)
 }
 
 /**
- * JavaScript fallback for dot product
+ * JavaScript fallback for dot product.
+ * Uses shared utility function.
  */
 function dotProductJS(a: number[], b: number[]): number {
-  return a.reduce((sum, val, i) => sum + val * b[i], 0)
+  return dotProductUtil(a, b)
 }
 
 /**
- * JavaScript fallback for vector normalization
+ * JavaScript fallback for vector normalization.
+ * Uses shared utility function.
  */
 function normalizeVectorJS(v: number[]): number[] {
-  const norm = Math.sqrt(v.reduce((sum, val) => sum + val * val, 0))
-  if (norm === 0) return v
-  return v.map(val => val / norm)
+  return normalizeVectorUtil(v)
 }
 
 // ============================================================================
@@ -171,7 +172,20 @@ let useWasm = false
 let initPromise: Promise<boolean> | null = null
 
 /**
- * Load and initialize the WASM module
+ * Loads and initializes the WASM module.
+ *
+ * Automatically detects feature support and falls back to JavaScript if WASM is unavailable.
+ * The loading promise is cached so multiple calls return the same promise.
+ *
+ * @returns Promise resolving to true if WASM loaded successfully, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const success = await loadWasmModule()
+ * if (success) {
+ *   console.log('WASM acceleration available')
+ * }
+ * ```
  */
 export async function loadWasmModule(): Promise<boolean> {
   // Return cached promise if already loading
@@ -241,7 +255,17 @@ export async function loadWasmModule(): Promise<boolean> {
 }
 
 /**
- * Get the vector operations interface (WASM or fallback)
+ * Gets the vector operations interface (WASM or JavaScript fallback).
+ *
+ * Ensures WASM is loaded before returning the appropriate implementation.
+ *
+ * @returns Promise resolving to vector operations interface
+ *
+ * @example
+ * ```typescript
+ * const ops = await getVectorOps()
+ * const similarity = ops.cosine_similarity(vec1, vec2)
+ * ```
  */
 export async function getVectorOps(): Promise<WasmVectorOps> {
   // Ensure WASM is loaded
@@ -260,7 +284,12 @@ export async function getVectorOps(): Promise<WasmVectorOps> {
 }
 
 /**
- * Create WASM-backed operations
+ * Creates WASM-backed vector operations.
+ *
+ * @param wasm - The loaded WASM module
+ * @returns Vector operations interface using WASM implementation
+ *
+ * @internal
  */
 function createWasmOps(wasm: WasmModule): WasmVectorOps {
   return {
@@ -438,7 +467,11 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
 }
 
 /**
- * Create JS fallback operations
+ * Creates JavaScript fallback vector operations.
+ *
+ * @returns Vector operations interface using pure JavaScript implementation
+ *
+ * @internal
  */
 function createJsOps(): WasmVectorOps {
   return {
@@ -484,27 +517,13 @@ function createJsOps(): WasmVectorOps {
       return result
     },
     hash_embedding(text: string, dimensions: number): number[] {
-      const vector = new Array(dimensions).fill(0)
-      let hash = 0
-      for (let i = 0; i < text.length; i++) {
-        hash = ((hash << 5) - hash) + text.charCodeAt(i)
-        hash = hash | 0
-      }
-      let seed = Math.abs(hash)
-      for (let i = 0; i < dimensions; i++) {
-        seed = (seed * 1103515245 + 12345) & 0x7fffffff
-        vector[i] = (seed % 1000) / 1000
-      }
-      return normalizeVectorJS(vector)
+      return hashEmbedding(text, dimensions)
     },
     estimate_memory_size(num_vectors: number, dimension: number): number {
-      return num_vectors * dimension * 4
+      return estimateMemorySize(num_vectors, dimension)
     },
     recommended_batch_size(vector_dimension: number): number {
-      if (vector_dimension <= 128) return 256
-      if (vector_dimension <= 384) return 128
-      if (vector_dimension <= 768) return 64
-      return 32
+      return recommendedBatchSize(vector_dimension)
     },
   }
 }
@@ -514,7 +533,15 @@ function createJsOps(): WasmVectorOps {
 // ============================================================================
 
 /**
- * Get WASM features (cached)
+ * Gets detected WASM features (cached).
+ *
+ * @returns Detected WASM features
+ *
+ * @example
+ * ```typescript
+ * const features = getWasmFeatures()
+ * console.log(`WASM supported: ${features.supported}`)
+ * ```
  */
 export function getWasmFeatures(): WasmFeatures {
   if (!wasmFeatures) {
@@ -524,21 +551,44 @@ export function getWasmFeatures(): WasmFeatures {
 }
 
 /**
- * Check if WASM is currently being used
+ * Checks whether WASM is currently being used for vector operations.
+ *
+ * @returns true if WASM is being used, false if using JavaScript fallback
+ *
+ * @example
+ * ```typescript
+ * if (isUsingWasm()) {
+ *   console.log('Running with WASM acceleration')
+ * }
+ * ```
  */
 export function isUsingWasm(): boolean {
   return useWasm
 }
 
 /**
- * Force disable WASM (for testing)
+ * Forces WASM to be disabled (useful for testing).
+ *
+ * @example
+ * ```typescript
+ * disableWasm()
+ * // Now operations will use JS fallback
+ * ```
  */
 export function disableWasm(): void {
   useWasm = false
 }
 
 /**
- * Re-enable WASM after forced disable
+ * Re-enables WASM after it was forcibly disabled.
+ *
+ * Only has an effect if WASM is actually supported.
+ *
+ * @example
+ * ```typescript
+ * enableWasm()
+ * // Now operations will use WASM again (if supported)
+ * ```
  */
 export function enableWasm(): void {
   if (wasmFeatures?.supported) {

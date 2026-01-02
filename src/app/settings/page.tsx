@@ -6,10 +6,14 @@
  * Central hub for managing all PersonalLog settings including API keys,
  * system information, benchmarks, and feature flags.
  *
+ * PERFORMANCE OPTIMIZATIONS:
+ * - Memoized settingsCards array to prevent recreation on every render
+ * - Event handlers wrapped with useCallback
+ *
  * @module app/settings
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Settings,
   Key,
@@ -85,22 +89,22 @@ export default function SettingsPage() {
     if (savedSystem) {
       setSystemConfig(JSON.parse(savedSystem));
     }
-  }, []);
+  }, []); // Empty dependency array is correct here - only run on mount
 
-  const saveApiConfigs = (configs: ApiConfig[]) => {
+  const saveApiConfigs = useCallback((configs: ApiConfig[]) => {
     const toSave = configs.map(({ masked, ...rest }) => rest);
     localStorage.setItem('api-configs', JSON.stringify(toSave));
-  };
+  }, []);
 
-  const toggleMask = (id: string) => {
+  const toggleMask = useCallback((id: string) => {
     setApiConfigs(configs =>
       configs.map(c =>
         c.id === id ? { ...c, masked: !c.masked } : c
       )
     );
-  };
+  }, []);
 
-  const addApiKey = () => {
+  const addApiKey = useCallback(() => {
     if (!newKey.name || !newKey.apiKey) return;
 
     const config: ApiConfig = {
@@ -117,21 +121,22 @@ export default function SettingsPage() {
     saveApiConfigs(updated);
     setNewKey({ name: '', provider: 'openai', apiKey: '', baseUrl: '' });
     setShowNewKeyForm(false);
-  };
+  }, [newKey, apiConfigs, saveApiConfigs]);
 
-  const removeApiKey = (id: string) => {
+  const removeApiKey = useCallback((id: string) => {
     const updated = apiConfigs.filter(c => c.id !== id);
     setApiConfigs(updated);
     saveApiConfigs(updated);
-  };
+  }, [apiConfigs, saveApiConfigs]);
 
-  const saveSystemConfig = () => {
+  const saveSystemConfig = useCallback(() => {
     localStorage.setItem('system-config', JSON.stringify(systemConfig));
     // Show success indication
     alert('Settings saved successfully!');
-  };
+  }, [systemConfig]);
 
-  const settingsCards: SettingsCard[] = [
+  // Memoized settingsCards to prevent recreation on every render
+  const settingsCards: SettingsCard[] = useMemo(() => [
     // System cards
     {
       title: 'System Information',
@@ -184,16 +189,16 @@ export default function SettingsPage() {
       href: '/settings/personalization',
       color: 'green',
     },
-  ];
+  ], []); // Empty deps - cards are static
 
-  const colorClasses = {
+  const colorClasses = useMemo(() => ({
     blue: 'from-blue-500 to-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
     purple: 'from-purple-500 to-purple-600 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
     green: 'from-green-500 to-green-600 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
     amber: 'from-amber-500 to-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
     cyan: 'from-cyan-500 to-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800',
     indigo: 'from-indigo-500 to-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800',
-  };
+  }), []); // Empty deps - colorClasses is static
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">

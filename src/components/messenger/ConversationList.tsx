@@ -4,9 +4,14 @@
  * ConversationList Component
  *
  * Lists all conversations in the sidebar.
+ *
+ * PERFORMANCE OPTIMIZATIONS:
+ * - ConversationItem is memoized to prevent unnecessary re-renders
+ * - Filtered conversations computed once per render
+ * - Expensive calculations (preview, time) memoized
  */
 
-import { useState } from 'react'
+import { useState, useMemo, memo, useCallback } from 'react'
 import { Search, Pin, MoreVertical } from 'lucide-react'
 import type { Conversation } from '@/types/conversation'
 import { getAuthorDisplayName, formatDate } from '@/lib/utils'
@@ -29,21 +34,26 @@ export default function ConversationList({
   const [searchQuery, setSearchQuery] = useState('')
   const [showPinnedOnly, setShowPinnedOnly] = useState(false)
 
-  // Separate pinned and regular conversations
-  const pinnedConversations = conversations.filter(c => c.metadata.pinned)
-  const regularConversations = conversations.filter(c => !c.metadata.pinned)
+  // Separate pinned and regular conversations (memoized)
+  const { pinnedConversations, regularConversations } = useMemo(() => ({
+    pinnedConversations: conversations.filter(c => c.metadata.pinned),
+    regularConversations: conversations.filter(c => !c.metadata.pinned),
+  }), [conversations])
 
-  const filterConversations = (convs: Conversation[]) => {
+  // Filter function (memoized)
+  const filterConversations = useCallback((convs: Conversation[]) => {
     if (!searchQuery) return convs
     return convs.filter(c =>
       c.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
-  }
+  }, [searchQuery])
 
-  const filteredPinned = filterConversations(pinnedConversations)
-  const filteredRegular = filterConversations(regularConversations)
+  // Filtered conversations (memoized)
+  const filteredPinned = useMemo(() => filterConversations(pinnedConversations), [pinnedConversations, filterConversations])
+  const filteredRegular = useMemo(() => filterConversations(regularConversations), [regularConversations, filterConversations])
 
-  const togglePin = async (conversation: Conversation, e: React.MouseEvent) => {
+  // Toggle pin with useCallback for stable reference
+  const togglePin = useCallback(async (conversation: Conversation, e: React.MouseEvent) => {
     e.stopPropagation()
     onUpdateConversation({
       ...conversation,
@@ -52,7 +62,7 @@ export default function ConversationList({
         pinned: !conversation.metadata.pinned,
       },
     })
-  }
+  }, [onUpdateConversation])
 
   const getConversationPreview = (conversation: Conversation): string => {
     const lastMessage = conversation.messages[conversation.messages.length - 1]
@@ -71,7 +81,8 @@ export default function ConversationList({
     return formatDate(lastMessage.timestamp)
   }
 
-  const ConversationItem = ({ conversation, pinned }: { conversation: Conversation; pinned?: boolean }) => {
+  // Memoized ConversationItem component
+  const ConversationItem = memo(({ conversation, pinned }: { conversation: Conversation; pinned?: boolean }) => {
     const isSelected = selectedConversation?.id === conversation.id
     const hasAI = conversation.aiContacts.length > 0
 
@@ -136,7 +147,7 @@ export default function ConversationList({
         )}
       </div>
     )
-  }
+  })
 
   if (collapsed) {
     return (

@@ -14,6 +14,22 @@
 import { listConversations, getMessages } from '@/lib/storage/conversation-store'
 import { listContacts } from '@/lib/wizard/model-store'
 import { getVectorOps } from '@/lib/native/bridge'
+import { StorageError, NotFoundError, ValidationError } from '@/lib/errors'
+import {
+  cosineSimilarity,
+  estimateTokens as estimateTokensUtil,
+  DEFAULT_EMBEDDING_DIM,
+  MAX_EMBEDDING_CACHE_SIZE,
+  MIN_KEYWORD_LENGTH,
+  KEYWORD_MATCH_BOOST,
+  DEFAULT_SIMILARITY_THRESHOLD,
+  DEFAULT_SEARCH_LIMIT,
+  KEY_POINT_EXTRACTION_LIMIT,
+  MESSAGE_IMPORTANCE_LENGTH_LIMIT,
+  MESSAGE_LENGTH_WEIGHT,
+  REPLY_IMPORTANCE_BOOST,
+  SELECTION_IMPORTANCE_BOOST,
+} from '@/lib/vector/utils'
 
 // ============================================================================
 // TYPES
@@ -84,7 +100,6 @@ export interface KnowledgeSearchResult {
 // VECTOR STORE
 // ============================================================================
 
-const EMBEDDING_DIM = 384  // Common embedding dimension (e.g., sentence-transformers)
 const DB_NAME = 'PersonalLogKnowledge'
 const DB_VERSION = 1
 
@@ -92,7 +107,8 @@ class VectorStore {
   private db: IDBDatabase | null = null
   private embeddingCache = new Map<string, number[]>()
   private cacheAccessOrder: string[] = []  // Track access order for LRU eviction
-  private readonly MAX_CACHE_SIZE = 1000  // Maximum number of cached embeddings
+  private readonly embeddingDim = DEFAULT_EMBEDDING_DIM
+  private readonly maxCacheSize = MAX_EMBEDDING_CACHE_SIZE
   private vectorOps: Awaited<ReturnType<typeof getVectorOps>> | null = null
 
   /**
@@ -109,7 +125,10 @@ class VectorStore {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION)
 
-      request.onerror = () => reject(new Error('Failed to open knowledge database'))
+      request.onerror = () => reject(new StorageError('Failed to open knowledge database', {
+        technicalDetails: `DB: ${DB_NAME}, Version: ${DB_VERSION}`,
+        context: { dbName: DB_NAME, version: DB_VERSION }
+      }))
 
       request.onsuccess = () => {
         this.db = request.result
@@ -149,9 +168,32 @@ class VectorStore {
   // ==========================================================================
 
   /**
-   * Add a knowledge entry with embedding
+   * Adds a knowledge entry with automatically generated embedding.
+   *
+   * @param entry - The entry to add (embedding will be generated)
+   * @returns Promise resolving to the complete entry with embedding
+   * @throws {StorageError} If database operation fails
+   * @throws {ValidationError} If entry content is empty
+   *
+   * @example
+   * ```typescript
+   * const entry = await vectorStore.addEntry({
+   *   id: 'ke_123',
+   *   type: 'message',
+   *   sourceId: 'msg_456',
+   *   content: 'Important information',
+   *   metadata: { timestamp: new Date().toISOString() },
+   *   editable: true
+   * })
+   * ```
    */
   async addEntry(entry: Omit<KnowledgeEntry, 'embedding'>): Promise<KnowledgeEntry> {
+    if (!entry.content?.trim()) {
+      throw new ValidationError('Knowledge entry content cannot be empty', {
+        field: 'content',
+        value: entry.content
+      })
+    }
     await this.ensureInitialized()
 
     // Generate embedding
@@ -170,7 +212,21 @@ class VectorStore {
   }
 
   /**
-   * Add multiple entries efficiently
+   * Adds multiple knowledge entries efficiently.
+   *
+   * Processes entries sequentially to avoid blocking.
+   *
+   * @param entries - Array of entries to add
+   * @returns Promise resolving to array of complete entries with embeddings
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * const results = await vectorStore.addEntries([
+   *   { type: 'message', sourceId: 'msg1', content: 'Text 1', ... },
+   *   { type: 'message', sourceId: 'msg2', content: 'Text 2', ... }
+   * ])
+   * ```
    */
   async addEntries(entries: Omit<KnowledgeEntry, 'embedding'>[]): Promise<KnowledgeEntry[]> {
     await this.ensureInitialized()
@@ -187,7 +243,24 @@ class VectorStore {
   }
 
   /**
-   * Update an entry (user edit)
+   * Updates an existing knowledge entry.
+   *
+   * If content changes, generates a new embedding and marks entry as edited.
+   *
+   * @param id - The entry ID to update
+   * @param updates - Partial updates to apply
+   * @returns Promise resolving to the updated entry
+   * @throws {ValidationError} If ID is empty
+   * @throws {NotFoundError} If entry doesn't exist
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * const updated = await vectorStore.updateEntry('ke_123', {
+   *   content: 'Updated content'
+   * })
+   * console.log(updated.editedContent) // 'Updated content'
+   * ```
    */
   async updateEntry(
     id: string,
@@ -195,9 +268,16 @@ class VectorStore {
   ): Promise<KnowledgeEntry> {
     await this.ensureInitialized()
 
+    if (!id?.trim()) {
+      throw new ValidationError('Knowledge entry ID cannot be empty', {
+        field: 'id',
+        value: id
+      })
+    }
+
     const existing = await this.getEntry(id)
     if (!existing) {
-      throw new Error(`Entry ${id} not found`)
+      throw new NotFoundError('knowledge entry', id)
     }
 
     let newContent = existing.content
@@ -227,7 +307,19 @@ class VectorStore {
   }
 
   /**
-   * Get an entry by ID
+   * Retrieves a knowledge entry by its ID.
+   *
+   * @param id - The entry ID to retrieve
+   * @returns Promise resolving to the entry or null if not found
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * const entry = await vectorStore.getEntry('ke_123')
+   * if (entry) {
+   *   console.log(entry.content)
+   * }
+   * ```
    */
   async getEntry(id: string): Promise<KnowledgeEntry | null> {
     await this.ensureInitialized()
@@ -243,7 +335,26 @@ class VectorStore {
   }
 
   /**
-   * Get all entries (with optional filtering)
+   * Retrieves knowledge entries with optional filtering and pagination.
+   *
+   * @param filter - Optional filters to apply
+   * @param filter.type - Filter by entry type
+   * @param filter.sourceId - Filter by source ID
+   * @param filter.starred - Filter by starred status
+   * @param filter.limit - Maximum number of entries to return
+   * @param filter.offset - Number of entries to skip
+   * @returns Promise resolving to array of filtered entries
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * // Get starred message entries
+   * const entries = await vectorStore.getEntries({
+   *   type: 'message',
+   *   starred: true,
+   *   limit: 10
+   * })
+   * ```
    */
   async getEntries(filter?: {
     type?: KnowledgeEntry['type']
@@ -288,14 +399,33 @@ class VectorStore {
 
         resolve(results)
       }
-      request.onerror = () => reject(request.error)
+      request.onerror = () => reject(new StorageError('Failed to get knowledge entries', {
+        technicalDetails: request.error?.message,
+        cause: request.error
+      }))
     })
   }
 
   /**
-   * Delete an entry
+   * Deletes a knowledge entry by its ID.
+   *
+   * @param id - The entry ID to delete
+   * @returns Promise that resolves when deletion is complete
+   * @throws {ValidationError} If ID is empty
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * await vectorStore.deleteEntry('ke_123')
+   * ```
    */
   async deleteEntry(id: string): Promise<void> {
+    if (!id?.trim()) {
+      throw new ValidationError('Knowledge entry ID cannot be empty', {
+        field: 'id',
+        value: id
+      })
+    }
     await this.ensureInitialized()
 
     return new Promise((resolve, reject) => {
@@ -313,17 +443,48 @@ class VectorStore {
   // ==========================================================================
 
   /**
-   * Search for similar entries using vector similarity
+   * Performs semantic search for similar entries using vector similarity.
+   *
+   * @param query - The search query text
+   * @param options - Search configuration options
+   * @param options.limit - Maximum number of results to return (default: 10)
+   * @param options.threshold - Minimum similarity threshold (default: 0.7)
+   * @param options.types - Filter by entry types
+   * @param options.dateRange - Filter by date range
+   * @param options.tags - Filter by tags
+   * @param options.starredOnly - Only return starred entries
+   * @returns Promise resolving to array of search results with similarity scores
+   * @throws {ValidationError} If query is empty
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * const results = await vectorStore.search('project deadline', {
+   *   limit: 5,
+   *   threshold: 0.8,
+   *   types: ['message']
+   * })
+   * results.forEach(r => {
+   *   console.log(`${r.similarity}: ${r.entry.content}`)
+   * })
+   * ```
    */
   async search(
     query: string,
     options: KnowledgeSearchOptions = {}
   ): Promise<KnowledgeSearchResult[]> {
+    if (!query?.trim()) {
+      throw new ValidationError('Search query cannot be empty', {
+        field: 'query',
+        value: query
+      })
+    }
+
     await this.ensureInitialized()
 
     const {
-      limit = 10,
-      threshold = 0.7,
+      limit = DEFAULT_SEARCH_LIMIT,
+      threshold = DEFAULT_SIMILARITY_THRESHOLD,
       types,
       dateRange,
       tags,
@@ -376,7 +537,20 @@ class VectorStore {
   }
 
   /**
-   * Hybrid search: semantic + keyword
+   * Performs hybrid search combining semantic and keyword matching.
+   *
+   * Boosts semantic search results with keyword matching for better relevance.
+   *
+   * @param query - The search query text
+   * @param options - Search configuration options (same as search())
+   * @returns Promise resolving to array of search results with boosted scores
+   *
+   * @example
+   * ```typescript
+   * const results = await vectorStore.hybridSearch('important meeting', {
+   *   limit: 10
+   * })
+   * ```
    */
   async hybridSearch(
     query: string,
@@ -386,14 +560,14 @@ class VectorStore {
 
     // Add keyword matching boost
     const queryLower = query.toLowerCase()
-    const keywords = queryLower.split(/\s+/).filter(w => w.length > 3)
+    const keywords = queryLower.split(/\s+/).filter(w => w.length >= MIN_KEYWORD_LENGTH)
 
     return semanticResults.map(result => {
       const contentLower = result.entry.content.toLowerCase()
       const keywordMatches = keywords.filter(k => contentLower.includes(k)).length
 
       // Boost score based on keyword matches
-      const keywordBoost = keywordMatches * 0.05
+      const keywordBoost = keywordMatches * KEYWORD_MATCH_BOOST
 
       return {
         ...result,
@@ -406,8 +580,31 @@ class VectorStore {
   // CHECKPOINTS
   // ==========================================================================
 
+  // ==========================================================================
+  // CHECKPOINTS
+  // ==========================================================================
+
   /**
-   * Create a checkpoint of current knowledge state
+   * Creates a checkpoint of the current knowledge state.
+   *
+   * Checkpoints allow you to save and restore knowledge states.
+   *
+   * @param name - Descriptive name for the checkpoint
+   * @param options - Additional checkpoint options
+   * @param options.description - Optional detailed description
+   * @param options.tags - Optional tags for categorization
+   * @param options.isStarred - Whether to mark as starred (stable)
+   * @returns Promise resolving to the created checkpoint
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * const checkpoint = await vectorStore.createCheckpoint('Before reindex', {
+   *   description: 'State before rebuilding knowledge base',
+   *   tags: ['stable', 'pre-migration'],
+   *   isStarred: true
+   * })
+   * ```
    */
   async createCheckpoint(name: string, options?: {
     description?: string
@@ -439,7 +636,18 @@ class VectorStore {
   }
 
   /**
-   * Get all checkpoints
+   * Retrieves all checkpoints, sorted by creation time (newest first).
+   *
+   * @returns Promise resolving to array of checkpoints
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * const checkpoints = await vectorStore.getCheckpoints()
+   * checkpoints.forEach(cp => {
+   *   console.log(`${cp.name}: ${cp.entryCount} entries`)
+   * })
+   * ```
    */
   async getCheckpoints(): Promise<Checkpoint[]> {
     await this.ensureInitialized()
@@ -457,17 +665,40 @@ class VectorStore {
         )
         resolve(checkpoints)
       }
-      request.onerror = () => reject(request.error)
+      request.onerror = () => reject(new StorageError('Failed to get checkpoints', {
+        technicalDetails: request.error?.message,
+        cause: request.error
+      }))
     })
   }
 
   /**
-   * Star/unstar a checkpoint
+   * Stars or unstars a checkpoint.
+   *
+   * Starred checkpoints are considered stable/reference points.
+   *
+   * @param checkpointId - The checkpoint ID
+   * @param starred - Whether to star the checkpoint
+   * @returns Promise resolving to the updated checkpoint
+   * @throws {ValidationError} If checkpointId is empty
+   * @throws {NotFoundError} If checkpoint doesn't exist
+   *
+   * @example
+   * ```typescript
+   * await vectorStore.setCheckpointStarred('cp_123', true)
+   * ```
    */
   async setCheckpointStarred(checkpointId: string, starred: boolean): Promise<Checkpoint> {
+    if (!checkpointId?.trim()) {
+      throw new ValidationError('Checkpoint ID cannot be empty', {
+        field: 'checkpointId',
+        value: checkpointId
+      })
+    }
+
     const checkpoint = await this.getCheckpoint(checkpointId)
     if (!checkpoint) {
-      throw new Error(`Checkpoint ${checkpointId} not found`)
+      throw new NotFoundError('checkpoint', checkpointId)
     }
 
     const updated: Checkpoint = {
@@ -481,13 +712,34 @@ class VectorStore {
   }
 
   /**
-   * Rollback to a checkpoint
-   * This restores the knowledge state to what it was at checkpoint time
+   * Rolls back the knowledge base to a previous checkpoint.
+   *
+   * Removes entries created after the checkpoint and restores edited entries
+   * to their original state at checkpoint time.
+   *
+   * @param checkpointId - The checkpoint to roll back to
+   * @returns Promise resolving to counts of restored and removed entries
+   * @throws {ValidationError} If checkpointId is empty
+   * @throws {NotFoundError} If checkpoint doesn't exist
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * const { restored, removed } = await vectorStore.rollbackToCheckpoint('cp_123')
+   * console.log(`Restored ${restored} entries, removed ${removed}`)
+   * ```
    */
   async rollbackToCheckpoint(checkpointId: string): Promise<{ restored: number; removed: number }> {
+    if (!checkpointId?.trim()) {
+      throw new ValidationError('Checkpoint ID cannot be empty', {
+        field: 'checkpointId',
+        value: checkpointId
+      })
+    }
+
     const checkpoint = await this.getCheckpoint(checkpointId)
     if (!checkpoint) {
-      throw new Error(`Checkpoint ${checkpointId} not found`)
+      throw new NotFoundError('checkpoint', checkpointId)
     }
 
     // Get current entries
@@ -524,7 +776,17 @@ class VectorStore {
   }
 
   /**
-   * Get starred (stable) checkpoint - latest one marked as stable
+   * Gets the latest starred (stable) checkpoint.
+   *
+   * @returns Promise resolving to the checkpoint or null if none starred
+   *
+   * @example
+   * ```typescript
+   * const stable = await vectorStore.getLatestStableCheckpoint()
+   * if (stable) {
+   *   console.log(`Latest stable: ${stable.name}`)
+   * }
+   * ```
    */
   async getLatestStableCheckpoint(): Promise<Checkpoint | null> {
     const checkpoints = await this.getCheckpoints()
@@ -536,7 +798,21 @@ class VectorStore {
   // ==========================================================================
 
   /**
-   * Export knowledge for LoRA training
+   * Exports knowledge entries for LoRA training.
+   *
+   * Exports entries from checkpoint time in specified format.
+   *
+   * @param checkpointId - Optional checkpoint to export from (defaults to latest starred)
+   * @param format - Export format ('jsonl', 'json', or 'parquet')
+   * @returns Promise resolving to export data with statistics
+   * @throws {ValidationError} If no checkpoint found
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * const export = await vectorStore.exportForLoRA(undefined, 'jsonl')
+   * console.log(`Exporting ${export.statistics.totalEntries} entries`)
+   * ```
    */
   async exportForLoRA(checkpointId?: string, format: LoRAExport['format'] = 'jsonl'): Promise<LoRAExport> {
     // Use starred checkpoint if none specified
@@ -601,8 +877,19 @@ class VectorStore {
   // ==========================================================================
 
   /**
-   * Sync all conversations to knowledge base
-   * Called periodically to update knowledge from new conversations
+   * Synchronizes conversations and contacts to the knowledge base.
+   *
+   * Adds new messages as knowledge entries and updates existing ones.
+   * Called periodically to keep knowledge base current.
+   *
+   * @returns Promise resolving to counts of added and updated entries
+   * @throws {StorageError} If database operation fails
+   *
+   * @example
+   * ```typescript
+   * const { added, updated } = await vectorStore.syncConversations()
+   * console.log(`Synced: ${added} added, ${updated} updated`)
+   * ```
    */
   async syncConversations(): Promise<{ added: number; updated: number }> {
     const conversations = await listConversations()
@@ -710,7 +997,7 @@ class VectorStore {
    */
   private setCachedEmbedding(key: string, embedding: number[]): void {
     // If cache is full, evict least recently used entry
-    if (this.embeddingCache.size >= this.MAX_CACHE_SIZE) {
+    if (this.embeddingCache.size >= this.maxCacheSize) {
       const lruKey = this.cacheAccessOrder.shift()
       if (lruKey) {
         this.embeddingCache.delete(lruKey)
@@ -726,28 +1013,8 @@ class VectorStore {
    * Simple hash-based embedding (for demo - replace with real embeddings)
    */
   private hashEmbedding(text: string, dimensions: number): number[] {
-    const vector = new Array(dimensions).fill(0)
-
-    let hash = 0
-    for (let i = 0; i < text.length; i++) {
-      hash = ((hash << 5) - hash) + text.charCodeAt(i)
-      hash = hash & hash // Convert to 32-bit integer
-    }
-
-    // Use hash to seed a simple pseudo-random generator
-    let seed = Math.abs(hash)
-    for (let i = 0; i < dimensions; i++) {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff
-      vector[i] = (seed % 1000) / 1000 // Normalize to 0-1
-    }
-
-    // Apply some text characteristics
-    const words = text.split(/\s+/)
-    const wordHash = words.reduce((h, w) => h + w.charCodeAt(0), 0)
-    const slot = wordHash % dimensions
-    vector[slot] = Math.min(1, vector[slot] + 0.3)
-
-    return vector
+    const { hashEmbedding: createHashEmbedding } = require('@/lib/vector/utils')
+    return createHashEmbedding(text, dimensions)
   }
 
   /**
@@ -768,23 +1035,8 @@ class VectorStore {
       }
     }
 
-    // JavaScript fallback
-    let dotProduct = 0
-    let normA = 0
-    let normB = 0
-
-    for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i]
-      normA += a[i] * a[i]
-      normB += b[i] * b[i]
-    }
-
-    normA = Math.sqrt(normA)
-    normB = Math.sqrt(normB)
-
-    if (normA === 0 || normB === 0) return 0
-
-    return dotProduct / (normA * normB)
+    // JavaScript fallback using shared utility
+    return cosineSimilarity(a, b)
   }
 
   // ==========================================================================
@@ -848,7 +1100,7 @@ class VectorStore {
   }
 
   private estimateTokens(text: string): number {
-    return Math.ceil(text.length / 4)
+    return estimateTokensUtil(text)
   }
 
   private calculateImportance(msg: any): number {
@@ -856,17 +1108,17 @@ class VectorStore {
 
     // Longer messages are more important
     if (msg.content.text) {
-      importance += Math.min(0.3, msg.content.text.length / 1000)
+      importance += Math.min(MESSAGE_LENGTH_WEIGHT, msg.content.text.length / MESSAGE_IMPORTANCE_LENGTH_LIMIT)
     }
 
     // Messages with replies are more important
     if (msg.replyTo) {
-      importance += 0.1
+      importance += REPLY_IMPORTANCE_BOOST
     }
 
     // Selected messages are important
     if (msg.selected) {
-      importance += 0.2
+      importance += SELECTION_IMPORTANCE_BOOST
     }
 
     return Math.min(1, importance)
@@ -879,6 +1131,20 @@ class VectorStore {
 
 let vectorStore: VectorStore | null = null
 
+/**
+ * Gets the singleton VectorStore instance.
+ *
+ * Creates the instance on first call and reuses it for subsequent calls.
+ *
+ * @returns The VectorStore singleton instance
+ *
+ * @example
+ * ```typescript
+ * const store = getVectorStore()
+ * await store.init()
+ * await store.addEntry({ ... })
+ * ```
+ */
 export function getVectorStore(): VectorStore {
   if (!vectorStore) {
     vectorStore = new VectorStore()

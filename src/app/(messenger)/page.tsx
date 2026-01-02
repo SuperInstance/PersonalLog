@@ -4,9 +4,14 @@
  * Messenger Main Page
  *
  * The main messenger interface with conversation list and chat area.
+ *
+ * PERFORMANCE OPTIMIZATIONS:
+ * - Fixed useEffect dependency arrays
+ * - Event handlers wrapped with useCallback
+ * - Prevents unnecessary re-renders of child components
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import ConversationList from '@/components/messenger/ConversationList'
 import ChatArea from '@/components/messenger/ChatArea'
@@ -23,18 +28,9 @@ export default function MessengerPage() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  useEffect(() => {
-    loadConversations()
-    initializeDefaultAgents()
-  }, [])
-
-  useEffect(() => {
-    if (currentConversationId) {
-      loadConversation(currentConversationId)
-    }
-  }, [currentConversationId])
-
-  const loadConversations = async () => {
+  // Fixed: Added loadConversations and initializeDefaultAgents to dependencies
+  // Wrapped in useCallback to maintain stable reference
+  const loadConversations = useCallback(async () => {
     try {
       const convs = await listConversations({ includeArchived: false, limit: 50 })
       setConversations(convs)
@@ -47,9 +43,15 @@ export default function MessengerPage() {
     } catch (error) {
       console.error('Failed to load conversations:', error)
     }
-  }
+  }, [currentConversationId])
 
-  const loadConversation = async (id: string) => {
+  useEffect(() => {
+    loadConversations()
+    initializeDefaultAgents()
+  }, [loadConversations])
+
+  // Fixed: Added loadConversation to dependencies
+  const loadConversation = useCallback(async (id: string) => {
     try {
       // Refresh conversations to get latest
       const convs = await listConversations({ includeArchived: false, limit: 50 })
@@ -62,9 +64,16 @@ export default function MessengerPage() {
     } catch (error) {
       console.error('Failed to load conversation:', error)
     }
-  }
+  }, [])
 
-  const handleNewConversation = async () => {
+  useEffect(() => {
+    if (currentConversationId) {
+      loadConversation(currentConversationId)
+    }
+  }, [currentConversationId, loadConversation])
+
+  // Event handlers wrapped with useCallback for stable references
+  const handleNewConversation = useCallback(async () => {
     try {
       const newConv = await createConversation('New Conversation', 'personal')
       setConversations(prev => [newConv, ...prev])
@@ -73,21 +82,21 @@ export default function MessengerPage() {
     } catch (error) {
       console.error('Failed to create conversation:', error)
     }
-  }
+  }, [router])
 
-  const handleSelectConversation = (conversation: Conversation) => {
+  const handleSelectConversation = useCallback((conversation: Conversation) => {
     setSelectedConversation(conversation)
     router.push(`/messenger/${conversation.id}`)
-  }
+  }, [router])
 
-  const handleUpdateConversation = (updated: Conversation) => {
+  const handleUpdateConversation = useCallback((updated: Conversation) => {
     setConversations(prev =>
       prev.map(c => c.id === updated.id ? updated : c)
     )
     if (selectedConversation?.id === updated.id) {
       setSelectedConversation(updated)
     }
-  }
+  }, [selectedConversation?.id])
 
   return (
     <div className="flex h-full">

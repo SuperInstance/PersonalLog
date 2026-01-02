@@ -4,9 +4,15 @@
  * ChatArea Component
  *
  * Main chat interface with message display, selection, and input.
+ *
+ * PERFORMANCE OPTIMIZATIONS:
+ * - Fixed useEffect dependency arrays
+ * - Expensive message filtering memoized
+ * - Event handlers wrapped with useCallback
+ * - Prevents unnecessary re-renders of MessageBubble children
  */
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Send,
@@ -46,21 +52,8 @@ export default function ChatArea({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Load messages when conversation changes
-  useEffect(() => {
-    if (conversation) {
-      loadMessages()
-    } else {
-      setMessages([])
-    }
-  }, [conversation?.id])
-
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  const loadMessages = async () => {
+  // Fixed: Wrapped loadMessages in useCallback and added to dependencies
+  const loadMessages = useCallback(async () => {
     if (!conversation) return
 
     try {
@@ -71,9 +64,23 @@ export default function ChatArea({
     } catch (error) {
       console.error('Failed to load messages:', error)
     }
-  }
+  }, [conversation, onUpdateConversation])
 
-  const handleSendMessage = async () => {
+  // Load messages when conversation changes
+  useEffect(() => {
+    if (conversation) {
+      loadMessages()
+    } else {
+      setMessages([])
+    }
+  }, [conversation?.id, loadMessages])
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const handleSendMessage = useCallback(async () => {
     if (!conversation || !inputText.trim()) return
 
     try {
@@ -102,16 +109,16 @@ export default function ChatArea({
     } catch (error) {
       console.error('Failed to send message:', error)
     }
-  }
+  }, [conversation, inputText, messages, selectedMessageIds.size, onUpdateConversation])
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
     }
-  }
+  }, [handleSendMessage])
 
-  const handleSelectMessage = (messageId: string) => {
+  const handleSelectMessage = useCallback((messageId: string) => {
     setSelectedMessageIds(prev => {
       const newSet = new Set(prev)
       if (newSet.has(messageId)) {
@@ -121,22 +128,28 @@ export default function ChatArea({
       }
       return newSet
     })
-  }
+  }, [])
 
-  const handleClearSelection = async () => {
+  const handleClearSelection = useCallback(async () => {
     if (!conversation) return
     await clearSelection(conversation.id)
     setSelectedMessageIds(new Set())
-  }
+  }, [conversation])
 
-  const handleSendToAI = () => {
+  const handleSendToAI = useCallback(() => {
     setShowNewChatDialog(true)
-  }
+  }, [])
 
-  const handleOpenLongForm = () => {
+  const handleOpenLongForm = useCallback(() => {
     if (!conversation) return
     router.push(`/longform/${conversation.id}`)
-  }
+  }, [conversation, router])
+
+  // Expensive: filtering selected messages (memoized)
+  const selectedMessages = useMemo(() =>
+    messages.filter(m => selectedMessageIds.has(m.id)),
+    [messages, selectedMessageIds]
+  )
 
   if (!conversation) {
     return (
@@ -163,7 +176,6 @@ export default function ChatArea({
   }
 
   const hasAI = conversation.aiContacts.length > 0
-  const selectedMessages = messages.filter(m => selectedMessageIds.has(m.id))
 
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-slate-950">
