@@ -11,11 +11,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { ModuleState } from '@/types/modules';
 import { Search, Package, Filter, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { Skeleton, SkeletonList } from '@/components/ui/Skeleton';
 
 export default function CatalogPage() {
   const [modules, setModules] = useState<ModuleState[]>([]);
   const [filteredModules, setFilteredModules] = useState<ModuleState[]>([]);
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'foundation' | 'feature'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'loaded' | 'idle'>('all');
@@ -52,6 +54,7 @@ export default function CatalogPage() {
   }, [modules, searchQuery, categoryFilter, statusFilter]);
 
   const fetchModules = async () => {
+    setIsLoading(true)
     try {
       const res = await fetch('/api/modules');
       const data = await res.json();
@@ -60,6 +63,8 @@ export default function CatalogPage() {
       }
     } catch (error) {
       console.error('Error fetching modules:', error);
+    } finally {
+      setIsLoading(false)
     }
   };
 
@@ -186,11 +191,14 @@ export default function CatalogPage() {
 
         {/* Module Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredModules.map((module) => (
-            <div
-              key={module.id}
-              className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow"
-            >
+          {isLoading ? (
+            <SkeletonList count={8} variant="rectangular" />
+          ) : (
+            filteredModules.map((module) => (
+              <div
+                key={module.id}
+                className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow"
+              >
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -288,11 +296,12 @@ export default function CatalogPage() {
                 </a>
               </div>
             </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Empty State */}
-        {filteredModules.length === 0 && (
+        {!isLoading && filteredModules.length === 0 && (
           <div className="text-center py-12">
             <Package className="w-16 h-16 text-slate-300 dark:text-slate-700 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">

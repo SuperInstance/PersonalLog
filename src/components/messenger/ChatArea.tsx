@@ -23,6 +23,7 @@ import {
   Expand,
   MessageSquare,
   Sparkles,
+  Loader2,
 } from 'lucide-react'
 import MessageBubble from './MessageBubble'
 import MessageSelectionBar from './MessageSelectionBar'
@@ -48,6 +49,8 @@ export default function ChatArea({
   const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set())
   const [showNewChatDialog, setShowNewChatDialog] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
+  const [sendingMessageIds, setSendingMessageIds] = useState<Set<string>>(new Set())
+  const [failedMessageIds, setFailedMessageIds] = useState<Set<string>>(new Set())
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -83,22 +86,49 @@ export default function ChatArea({
   const handleSendMessage = useCallback(async () => {
     if (!conversation || !inputText.trim()) return
 
+    const messageText = inputText.trim()
+    const tempId = `temp-${Date.now()}`
+
+    // Optimistic: Add message immediately to UI
+    const optimisticMessage: Message = {
+      id: tempId,
+      conversationId: conversation.id,
+      type: 'text',
+      author: 'user',
+      content: { text: messageText },
+      timestamp: new Date().toISOString(),
+      isOptimistic: true,
+    }
+
+    setMessages(prev => [...prev, optimisticMessage])
+    setInputText('')
+    setSendingMessageIds(prev => new Set(prev).add(tempId))
+
     try {
-      const newMessage = await addMessage(
+      // Send to backend in background
+      const realMessage = await addMessage(
         conversation.id,
         'text',
         'user',
-        { text: inputText.trim() }
+        { text: messageText }
       )
 
-      setMessages(prev => [...prev, newMessage])
-      setInputText('')
+      // Replace optimistic message with real one
+      setMessages(prev => prev.map(msg =>
+        msg.id === tempId ? realMessage : msg
+      ))
+
+      setSendingMessageIds(prev => {
+        const next = new Set(prev)
+        next.delete(tempId)
+        return next
+      })
 
       // Update conversation
       onUpdateConversation({
         ...conversation,
-        messages: [...messages, newMessage],
-        updatedAt: newMessage.timestamp,
+        messages: [...messages, realMessage],
+        updatedAt: realMessage.timestamp,
       })
 
       // Clear selection
@@ -108,6 +138,17 @@ export default function ChatArea({
       }
     } catch (error) {
       console.error('Failed to send message:', error)
+
+      // Mark as failed
+      setFailedMessageIds(prev => new Set(prev).add(tempId))
+      setSendingMessageIds(prev => {
+        const next = new Set(prev)
+        next.delete(tempId)
+        return next
+      })
+
+      // Keep failed message in UI with retry option
+      // User can click retry to attempt sending again
     }
   }, [conversation, inputText, messages, selectedMessageIds.size, onUpdateConversation])
 
@@ -251,15 +292,48 @@ export default function ChatArea({
               )}
             </div>
           ) : (
-            messages.map(message => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isSelected={selectedMessageIds.has(message.id)}
-                onSelect={() => handleSelectMessage(message.id)}
-                aiContacts={conversation.aiContacts}
-              />
-            ))
+            messages.map(message => {
+              const isSending = sendingMessageIds.has(message.id)
+              const isFailed = failedMessageIds.has(message.id)
+
+              return (
+                <div key={message.id} className="relative">
+                  <MessageBubble
+                    message={message}
+                    isSelected={selectedMessageIds.has(message.id)}
+                    onSelect={() => handleSelectMessage(message.id)}
+                    aiContacts={conversation.aiContacts}
+                  />
+                  {isSending && (
+                    <div className="absolute top-2 right-2">
+                      <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                    </div>
+                  )}
+                  {isFailed && (
+                    <div className="absolute top-2 right-2 flex items-center gap-2">
+                      <span className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                        Failed to send
+                      </span>
+                      <button
+                        onClick={() => {
+                          // Retry sending this message
+                          setFailedMessageIds(prev => {
+                            const next = new Set(prev)
+                            next.delete(message.id)
+                            return next
+                          })
+                          setInputText(message.content.text || '')
+                          setMessages(prev => prev.filter(m => m.id !== message.id))
+                        }}
+                        className="text-xs text-blue-500 hover:underline"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })
           )}
           <div ref={messagesEndRef} />
         </div>

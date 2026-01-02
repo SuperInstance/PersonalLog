@@ -1,4 +1,4 @@
-# Robots.txt for SuperInstance Core
+# Robots.txt for PersonalLog
 # https://www.robotstxt.org/robotstxt.html
 
 User-agent: *
@@ -6,6 +6,8 @@ Allow: /
 
 # Disallow API routes from being indexed
 Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
 
 # Sitemap location
-Sitemap: https://github.com/SuperInstance/SuperInstanceCore/sitemap.xml
+Sitemap: https://github.com/SuperInstance/PersonalLog/sitemap.xml

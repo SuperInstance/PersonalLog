@@ -11,26 +11,33 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://github.com/SuperInstance/SuperInstanceCore';
+  const baseUrl = 'https://github.com/SuperInstance/PersonalLog';
+  const currentDate = new Date().toISOString();
 
   return [
     {
       url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
+      lastModified: currentDate,
+      changeFrequency: 'daily',
       priority: 1,
     },
     {
-      url: `${baseUrl}/core-app/catalog`,
-      lastModified: new Date(),
+      url: `${baseUrl}/messenger`,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/longform`,
+      lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/core-app/settings`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
+      url: `${baseUrl}/dashboard`,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 0.7,
     },
   ];
 }

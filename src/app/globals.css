@@ -66,4 +66,65 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+
+  /* Accessibility: Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Accessibility: Visible on focus (for skip links) */
+  .focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* Accessibility: Focus visible for keyboard navigation */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: calc(var(--radius) - 2px);
+  }
+
+  /* Remove default focus outline for mouse users */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Ensure text can be scaled up to 200% */
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Improve readability with max line width */
+  p, li, td, th {
+    max-width: 70ch;
+  }
+
+  /* Ensure headings have sufficient contrast */
+  h1, h2, h3, h4, h5, h6 {
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  /* Skip link target positioning */
+  #main-content:focus {
+    outline: none;
+  }
 }
