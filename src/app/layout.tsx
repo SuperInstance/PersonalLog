@@ -14,8 +14,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SuperInstance Core - Modular Toolkit Hub",
-  description: "Discover, load, and manage SuperInstance modular toolkits",
+  title: "PersonalLog - Your AI-Powered Personal Log",
+  description: "Messenger-style journaling with AI contacts, knowledge management, and self-improving filtration",
 };
 
 export default function RootLayout({
