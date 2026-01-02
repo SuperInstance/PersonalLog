@@ -11,13 +11,9 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Accessibility', () => {
   test.beforeEach(async ({ page }) => {
-    // Inject axe-core
+    // Inject axe-core from CDN
     await page.addScriptTag({
-      content: `
-        (function() {
-          window.axe = ${readFileSync('./node_modules/axe-core/axe.min.js', 'utf8')};
-        })();
-      `,
+      url: 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.8.2/axe.min.js',
     });
   });
 

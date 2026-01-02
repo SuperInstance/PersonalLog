@@ -4,7 +4,7 @@
  * Manages parallel and series conversations with multiple AI agents.
  */
 
-import type { AIAgent, ChatRequest, ChatResponse, MultiBotResponse } from '@/types/conversation'
+import type { AIAgent, ChatRequest, ChatResponse, MultiBotResponse, Message } from '@/types/conversation'
 import type { AIProvider } from './provider'
 
 // ============================================================================
@@ -17,7 +17,7 @@ export interface MultiBotChatOptions {
   arrangement: MultiBotArrangement
   agents: AIAgent[]
   userPrompt: string
-  contextMessages: any[]
+  contextMessages: Message[]
   providers: Map<string, AIProvider>
 }
 
@@ -297,7 +297,7 @@ export class MultiBotService {
 export function createChatRequest(
   conversationId: string,
   agentId: string,
-  contextMessages: any[],
+  contextMessages: Message[],
   userPrompt: string
 ): ChatRequest {
   return {

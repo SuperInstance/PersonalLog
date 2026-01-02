@@ -567,7 +567,7 @@ export async function getConversationTokenCount(conversationId: string): Promise
       total += await estimateTokens(msg.content.text)
     }
     if (msg.metadata.tokens) {
-      total = msg.metadata.tokens  // Use actual token count if available
+      total += msg.metadata.tokens  // Add actual token count if available
     }
   }
 

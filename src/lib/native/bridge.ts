@@ -5,6 +5,8 @@
  * Handles loading, initialization, fallback, and feature detection.
  */
 
+import { getErrorHandler } from '@/lib/errors/handler';
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -104,7 +106,12 @@ export function detectWasmFeatures(): WasmFeatures {
     }
 
   } catch (e) {
-    console.warn('[WASM] Feature detection failed:', e)
+    // Report to error handler instead of just console.warn
+    const errorHandler = getErrorHandler();
+    errorHandler.handle(e, {
+      component: 'WASM-FeatureDetection',
+      additional: { operation: 'detectWasmFeatures' }
+    });
   }
 
   return features
@@ -178,7 +185,11 @@ export async function loadWasmModule(): Promise<boolean> {
       wasmFeatures = detectWasmFeatures()
 
       if (!wasmFeatures.supported) {
-        console.warn('[WASM] Not supported in this browser, using JS fallback')
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(new Error('WASM not supported in this browser'), {
+          component: 'WASM-Loader',
+          additional: { fallback: 'JavaScript' }
+        });
         useWasm = false
         return false
       }
@@ -200,15 +211,27 @@ export async function loadWasmModule(): Promise<boolean> {
         useWasm = true
         return true
       } catch (importError) {
-        console.warn('[WASM] Failed to load module:', importError)
-        console.warn('[WASM] This is expected in development if WASM is not built yet')
-        console.warn('[WASM] Run: npm run build:wasm')
+        // Report to error handler with helpful context
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(importError, {
+          component: 'WASM-Loader',
+          additional: {
+            operation: 'importWasmModule',
+            url: wasmUrl,
+            hint: 'Run: npm run build:wasm'
+          }
+        });
         useWasm = false
         return false
       }
 
     } catch (error) {
-      console.error('[WASM] Initialization failed:', error)
+      // Report to error handler
+      const errorHandler = getErrorHandler();
+      errorHandler.handle(error, {
+        component: 'WASM-Loader',
+        additional: { operation: 'initialize' }
+      });
       useWasm = false
       return false
     }

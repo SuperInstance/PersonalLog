@@ -33,6 +33,8 @@ export default function LongFormConversationPage() {
   const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
 
+  const modalRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     loadConversation()
     loadAgents()
@@ -65,6 +67,53 @@ export default function LongFormConversationPage() {
     // Load agents for AI response
     const agents = await listAgents()
     // Could set selected agent here
+  }
+
+  // Focus modal when opened
+  useEffect(() => {
+    if (showAdvanced && modalRef.current) {
+      modalRef.current.focus()
+    }
+  }, [showAdvanced])
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showAdvanced) {
+        setShowAdvanced(false)
+      }
+    }
+
+    if (showAdvanced) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [showAdvanced])
+
+  // Focus trap for modal
+  const handleModalKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Tab') {
+      const focusableElements = modalRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+
+      if (focusableElements && focusableElements.length > 0) {
+        const firstElement = focusableElements[0] as HTMLElement
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault()
+            lastElement.focus()
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault()
+            firstElement.focus()
+          }
+        }
+      }
+    }
   }
 
   const handleSendMessage = async () => {
@@ -321,15 +370,26 @@ Would you like me to dive deeper into any specific aspect?`
 
       {/* Advanced Options Modal */}
       {showAdvanced && selectedAgent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
+          <div
+            ref={modalRef}
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6"
+            tabIndex={-1}
+            onKeyDown={handleModalKeyDown}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              <h3 id="modal-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 {selectedAgent.name} Settings
               </h3>
               <button
                 onClick={() => setShowAdvanced(false)}
                 className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+                aria-label="Close settings modal"
               >
                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -339,10 +399,11 @@ Would you like me to dive deeper into any specific aspect?`
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" htmlFor="response-style">
                   Response Style
                 </label>
                 <select
+                  id="response-style"
                   value={selectedAgent.config.responseStyle}
                   className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-900 dark:text-slate-100"
                 >
@@ -353,16 +414,21 @@ Would you like me to dive deeper into any specific aspect?`
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" htmlFor="temperature">
                   Temperature: {selectedAgent.config.temperature}
                 </label>
                 <input
+                  id="temperature"
                   type="range"
                   min="0"
                   max="1"
                   step="0.1"
                   value={selectedAgent.config.temperature}
                   className="w-full"
+                  aria-valuemin={0}
+                  aria-valuemax={1}
+                  aria-valuenow={selectedAgent.config.temperature}
+                  aria-valuetext={`Temperature set to ${selectedAgent.config.temperature}`}
                 />
               </div>
             </div>
@@ -370,6 +436,7 @@ Would you like me to dive deeper into any specific aspect?`
             <button
               onClick={() => setShowAdvanced(false)}
               className="w-full mt-6 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              aria-label="Save settings and close modal"
             >
               Done
             </button>

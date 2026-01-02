@@ -235,12 +235,18 @@ export class IntegrationManager {
 
   /**
    * Add event listener
+   * @returns Unsubscribe function to remove the listener
    */
-  on(eventType: IntegrationEvent['type'], listener: (event: IntegrationEvent) => void): void {
+  on(eventType: IntegrationEvent['type'], listener: (event: IntegrationEvent) => void): () => void {
     if (!this.listeners.has(eventType)) {
       this.listeners.set(eventType, []);
     }
     this.listeners.get(eventType)!.push(listener);
+
+    // Return unsubscribe function
+    return () => {
+      this.off(eventType, listener);
+    };
   }
 
   /**
@@ -254,6 +260,26 @@ export class IntegrationManager {
         listeners.splice(index, 1);
       }
     }
+  }
+
+  /**
+   * Cleanup all event listeners and reset state
+   * Call this when destroying the IntegrationManager to prevent memory leaks
+   */
+  cleanup(): void {
+    // Clear all event listeners
+    this.listeners.clear();
+
+    // Reset initialization promise
+    this.initializationPromise = null;
+
+    // Reset state
+    this.state = this.createInitialState();
+
+    // Clear feature flag manager
+    this.featureFlagManager = null;
+
+    this.log('[Integration] Cleaned up');
   }
 
   /**

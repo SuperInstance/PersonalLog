@@ -91,6 +91,8 @@ const DB_VERSION = 1
 class VectorStore {
   private db: IDBDatabase | null = null
   private embeddingCache = new Map<string, number[]>()
+  private cacheAccessOrder: string[] = []  // Track access order for LRU eviction
+  private readonly MAX_CACHE_SIZE = 1000  // Maximum number of cached embeddings
   private vectorOps: Awaited<ReturnType<typeof getVectorOps>> | null = null
 
   /**
@@ -685,16 +687,39 @@ class VectorStore {
 
     // Check cache
     if (this.embeddingCache.has(normalized)) {
+      // Update access order for LRU
+      const index = this.cacheAccessOrder.indexOf(normalized)
+      if (index > -1) {
+        this.cacheAccessOrder.splice(index, 1)
+      }
+      this.cacheAccessOrder.push(normalized)
       return this.embeddingCache.get(normalized)!
     }
 
     // Simple hash-based embedding (placeholder for real embedding model)
     const embedding = this.hashEmbedding(normalized, EMBEDDING_DIM)
 
-    // Cache it
-    this.embeddingCache.set(normalized, embedding)
+    // Cache it with LRU eviction
+    this.setCachedEmbedding(normalized, embedding)
 
     return embedding
+  }
+
+  /**
+   * Cache an embedding with LRU eviction
+   */
+  private setCachedEmbedding(key: string, embedding: number[]): void {
+    // If cache is full, evict least recently used entry
+    if (this.embeddingCache.size >= this.MAX_CACHE_SIZE) {
+      const lruKey = this.cacheAccessOrder.shift()
+      if (lruKey) {
+        this.embeddingCache.delete(lruKey)
+      }
+    }
+
+    // Add new entry
+    this.embeddingCache.set(key, embedding)
+    this.cacheAccessOrder.push(key)
   }
 
   /**

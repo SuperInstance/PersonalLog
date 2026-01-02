@@ -18,6 +18,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { AppNav } from "@/components/layout/AppNav";
 import { AppProviders } from "@/components/providers";
+import { ErrorBoundary } from "@/components/errors/ErrorBoundary";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -41,56 +42,58 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AppProviders
-          config={{
-            // Integration: Hardware detection and feature flags
-            integration: {
-              debug: process.env.NODE_ENV === 'development',
-              runBenchmarks: true,
-              timeout: 10000,
-            },
+        <ErrorBoundary>
+          <AppProviders
+            config={{
+              // Integration: Hardware detection and feature flags
+              integration: {
+                debug: process.env.NODE_ENV === 'development',
+                runBenchmarks: true,
+                timeout: 10000,
+              },
 
-            // Analytics: Privacy-first local usage tracking
-            analytics: {
-              enabled: true,
-              requireConsent: false,
-              retentionDays: 90,
-            },
+              // Analytics: Privacy-first local usage tracking
+              analytics: {
+                enabled: true,
+                requireConsent: false,
+                retentionDays: 90,
+              },
 
-            // Experiments: A/B testing framework
-            experiments: {
-              enabled: true,
-              trafficAllocation: 1.0,
-              storageKey: 'personallog-experiments',
-            },
+              // Experiments: A/B testing framework
+              experiments: {
+                enabled: true,
+                trafficAllocation: 1.0,
+                storageKey: 'personallog-experiments',
+              },
 
-            // Optimization: Auto-performance tuning
-            optimization: {
-              enabled: true,
-              autoApply: false,
-              monitorInterval: 30000,
-            },
+              // Optimization: Auto-performance tuning
+              optimization: {
+                enabled: true,
+                autoApply: false,
+                monitorInterval: 30000,
+              },
 
-            // Personalization: User preference learning
-            personalization: {
-              enabled: true,
-              userId: 'default',
-              autoSaveInterval: 60000,
-            },
+              // Personalization: User preference learning
+              personalization: {
+                enabled: true,
+                userId: 'default',
+                autoSaveInterval: 60000,
+              },
 
-            // Initialization: Loading screen behavior
-            initialization: {
-              showLoader: true,
-              timeout: 5000,
-              fallbackOnTimeout: true,
-            },
-          }}
-          showLoader={true}
-          initTimeout={5000}
-        >
-          <AppNav />
-          {children}
-        </AppProviders>
+              // Initialization: Loading screen behavior
+              initialization: {
+                showLoader: true,
+                timeout: 5000,
+                fallbackOnTimeout: true,
+              },
+            }}
+            showLoader={true}
+            initTimeout={5000}
+          >
+            <AppNav />
+            {children}
+          </AppProviders>
+        </ErrorBoundary>
       </body>
     </html>
   );

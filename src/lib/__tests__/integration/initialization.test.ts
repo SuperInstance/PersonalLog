@@ -45,8 +45,22 @@ describe('Integration Manager - Initialization Flow', () => {
     it('should auto-initialize when autoInitialize is true', async () => {
       const manager = getIntegrationManager({ autoInitialize: true });
 
-      // Wait a moment for auto-initialization
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for initialization to complete using event-driven approach
+      await new Promise<void>((resolve) => {
+        const checkInterval = setInterval(() => {
+          const state = manager.getState();
+          if (state.stage === 'ready') {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 10);
+
+        // Timeout after 5 seconds to prevent hanging
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          resolve();
+        }, 5000);
+      });
 
       const state = manager.getState();
       expect(['ready', 'initializing'].includes(state.stage)).toBe(true);

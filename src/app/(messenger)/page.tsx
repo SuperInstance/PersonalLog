@@ -108,6 +108,8 @@ export default function MessengerPage() {
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-pressed={sidebarCollapsed}
               title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <svg

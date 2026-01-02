@@ -198,6 +198,7 @@ export default function ChatArea({
           <button
             onClick={handleOpenLongForm}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            aria-label="Open in Long-Form mode"
             title="Open in Long-Form mode"
           >
             <Expand className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -206,13 +207,17 @@ export default function ChatArea({
           {/* Settings */}
           <button
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            aria-label="Conversation settings"
             title="Conversation settings"
           >
             <Settings className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           </button>
 
           {/* More */}
-          <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            aria-label="More options"
+          >
             <MoreVertical className="w-5 h-5 text-slate-600 dark:text-slate-400" />
           </button>
         </div>
@@ -263,7 +268,10 @@ export default function ChatArea({
         <div className="max-w-3xl mx-auto">
           <div className="flex items-end gap-3 bg-slate-100 dark:bg-slate-900 rounded-2xl p-3">
             {/* Attach Button */}
-            <button className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-colors">
+            <button
+              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              aria-label="Attach file"
+            >
               <Paperclip className="w-5 h-5 text-slate-500" />
             </button>
 
@@ -287,6 +295,8 @@ export default function ChatArea({
                   ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
                   : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500'
               }`}
+              aria-label={isRecording ? 'Stop recording' : 'Start voice recording'}
+              aria-pressed={isRecording}
             >
               <Mic className="w-5 h-5" />
             </button>
@@ -296,6 +306,7 @@ export default function ChatArea({
               onClick={handleSendMessage}
               disabled={!inputText.trim()}
               className="p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white rounded-xl transition-colors disabled:cursor-not-allowed"
+              aria-label="Send message"
             >
               <Send className="w-5 h-5" />
             </button>
