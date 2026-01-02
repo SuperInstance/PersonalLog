@@ -6,6 +6,7 @@
  */
 
 import type { FiltrationConfig } from './models'
+import { DEFAULT_FILTRATION } from './models'
 
 export interface EnhancementContext {
   userMessage: string
@@ -420,6 +421,3 @@ export function quickEnhance(prompt: string, context?: EnhancementContext): stri
 export function quickProcess(response: string): string {
   return processResponse(response, DEFAULT_FILTRATION).processed
 }
-
-// Import default
-import { DEFAULT_FILTRATION } from './models'
