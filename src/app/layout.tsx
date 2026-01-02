@@ -1,5 +1,5 @@
 /**
- * Root Layout for SuperInstance Core App
+ * Root Layout for PersonalLog
  *
  * Provides the base HTML structure and metadata for all pages.
  * Uses Inter font for consistent typography.
@@ -9,6 +9,7 @@
 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { AppNav } from "@/components/layout/AppNav";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -25,7 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <AppNav />
+        {children}
+      </body>
     </html>
   );
 }
