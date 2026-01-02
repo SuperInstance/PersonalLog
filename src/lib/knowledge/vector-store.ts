@@ -6,10 +6,14 @@
  * 2. Standard DB - Editable twin with full content (user browsable)
  *
  * Supports checkpoints, rollback, and LoRA training export.
+ *
+ * Performance: Uses WASM-accelerated vector operations when available,
+ * with automatic JavaScript fallback for unsupported browsers.
  */
 
 import { listConversations, getMessages } from '@/lib/storage/conversation-store'
 import { listContacts } from '@/lib/wizard/model-store'
+import { getVectorOps } from '@/lib/native/bridge'
 
 // ============================================================================
 // TYPES
@@ -87,11 +91,19 @@ const DB_VERSION = 1
 class VectorStore {
   private db: IDBDatabase | null = null
   private embeddingCache = new Map<string, number[]>()
+  private vectorOps: Awaited<ReturnType<typeof getVectorOps>> | null = null
 
   /**
    * Initialize the database
    */
   async init(): Promise<void> {
+    // Initialize WASM vector operations (async, don't block)
+    getVectorOps().then(ops => {
+      this.vectorOps = ops
+      console.log('[VectorStore] Native ops loaded:', ops ? 'success' : 'fallback')
+    }).catch(err => {
+      console.warn('[VectorStore] Failed to load native ops, using JS fallback:', err)
+    })
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION)
 
@@ -715,10 +727,23 @@ class VectorStore {
 
   /**
    * Calculate cosine similarity between two vectors
+   *
+   * Uses WASM-accelerated implementation when available,
+   * falls back to pure JavaScript otherwise.
    */
   private cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) return 0
 
+    // Try to use WASM implementation
+    if (this.vectorOps) {
+      try {
+        return this.vectorOps.cosine_similarity(a, b)
+      } catch (e) {
+        console.warn('[VectorStore] WASM cosine_similarity failed, using JS fallback:', e)
+      }
+    }
+
+    // JavaScript fallback
     let dotProduct = 0
     let normA = 0
     let normB = 0

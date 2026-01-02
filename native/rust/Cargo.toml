@@ -1,0 +1,35 @@
+[package]
+name = "personallog-native"
+version = "0.1.0"
+edition = "2021"
+authors = ["SuperInstance <casey@superinstance.com>"]
+license = "MIT"
+description = "WebAssembly native extensions for PersonalLog"
+repository = "https://github.com/SuperInstance/PersonalLog"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+console_error_panic_hook = { version = "0.1", optional = true }
+wee_alloc = { version = "0.4", optional = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[profile.release]
+# Optimize for size
+opt-level = "s"
+# Enable link-time optimization
+lto = true
+# Reduce debug information
+debug = false
+# Strip debug symbols
+strip = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-mutable-globals", "--enable-sign-ext"]

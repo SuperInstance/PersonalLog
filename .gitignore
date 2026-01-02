@@ -35,3 +35,12 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# WASM build artifacts
+native/rust/pkg/
+native/rust/target/
+*.wasm
+*.wasm.map
+
+# WASM build caches
+Cargo.lock

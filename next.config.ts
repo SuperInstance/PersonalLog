@@ -17,6 +17,39 @@ const nextConfig: NextConfig = {
   // experimental: {
   //   serverComponentsExternalPackages: [],
   // },
+
+  // Webpack configuration for WASM support
+  webpack: (config, { isServer }) => {
+    // Enable WebAssembly
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      layers: true,
+    };
+
+    // Handle WASM files
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'webassembly/async',
+    });
+
+    // Allow importing WASM modules from node_modules
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+
+    // Copy WASM files to public directory for client-side loading
+    if (!isServer) {
+      config.output.publicPath = '/_next/static/chunks/';
+    }
+
+    return config;
+  },
 };
 
 export default nextConfig;
