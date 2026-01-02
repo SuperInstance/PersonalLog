@@ -14,14 +14,24 @@
     "url": "https://github.com/SuperInstance/PersonalLog/issues"
   },
   "scripts": {
-    "dev": "npm run build:wasm && next dev -p 3002",
-    "build": "npm run build:wasm && next build",
-    "build:wasm": "cd native/rust && wasm-pack build --target web --weak-refs --out-dir pkg",
+    "dev": "npm run verify:wasm || true && next dev -p 3002",
+    "build": "npm run verify:wasm || npm run build:wasm:missing-error && next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
+    "test": "npm run test:wasm && npm run type-check",
+    "clean": "npm run clean:wasm && rm -rf .next out",
+    "clean:wasm": "rm -rf native/rust/pkg native/rust/target",
+    "build:wasm": "cd native/rust && wasm-pack build --target web --weak-refs --out-dir pkg",
+    "build:wasm:release": "cd native/rust && wasm-pack build --release --target web --weak-refs --out-dir pkg",
+    "build:wasm:missing-error": "echo \"Error: wasm-pack not found. Install Rust toolchain: https://www.rust-lang.org/tools/install\" && exit 1",
+    "watch:wasm": "cd native/rust && cargo watch -s 'wasm-pack build --target web --weak-refs --out-dir pkg'",
     "test:wasm": "cd native/rust && wasm-pack test --node",
-    "clean:wasm": "rm -rf native/rust/pkg"
+    "test:wasm:browser": "cd native/rust && wasm-pack test --firefox",
+    "verify:wasm": "npm run build:wasm && node scripts/verify-wasm.js",
+    "verify:wasm:existing": "node scripts/verify-wasm.js",
+    "predev": "npm run build:wasm || echo \"Warning: WASM build failed. Run 'npm run build:wasm' after installing Rust toolchain.\"",
+    "prebuild": "npm run build:wasm:release || echo \"Warning: WASM release build failed. Run 'npm run build:wasm:release' after installing Rust toolchain.\""
   },
   "dependencies": {
     "next": "15.3.5",

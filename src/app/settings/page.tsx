@@ -1,16 +1,30 @@
 'use client';
 
 /**
- * Settings Page - Configuration Management
+ * Settings Page - Configuration Management Hub
  *
- * Provides UI for managing API keys and system settings.
- * API keys are stored locally in the browser's localStorage.
+ * Central hub for managing all PersonalLog settings including API keys,
+ * system information, benchmarks, and feature flags.
  *
  * @module app/settings
  */
 
 import { useState, useEffect } from 'react';
-import { Settings, Key, Server, Save, Eye, EyeOff, ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import {
+  Settings,
+  Key,
+  Server,
+  Save,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Cpu,
+  BarChart3,
+  Sparkles,
+  ChevronRight,
+} from 'lucide-react';
 import Link from 'next/link';
 
 interface ApiConfig {
@@ -26,6 +40,14 @@ interface SystemConfig {
   maxModules: number;
   autoLoad: string[];
   logLevel: 'debug' | 'info' | 'warn' | 'error';
+}
+
+interface SettingsCard {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  href: string;
+  color: 'blue' | 'purple' | 'green' | 'amber' | 'cyan' | 'indigo';
 }
 
 export default function SettingsPage() {
@@ -106,6 +128,39 @@ export default function SettingsPage() {
     alert('Settings saved successfully!');
   };
 
+  const settingsCards: SettingsCard[] = [
+    {
+      title: 'System Information',
+      description: 'View detailed hardware info, capabilities, and performance profile',
+      icon: Cpu,
+      href: '/settings/system',
+      color: 'blue',
+    },
+    {
+      title: 'Benchmarks',
+      description: 'Run performance benchmarks and view historical results',
+      icon: BarChart3,
+      href: '/settings/benchmarks',
+      color: 'purple',
+    },
+    {
+      title: 'Feature Flags',
+      description: 'Manage feature flags and experimental functionality',
+      icon: Sparkles,
+      href: '/settings/features',
+      color: 'green',
+    },
+  ];
+
+  const colorClasses = {
+    blue: 'from-blue-500 to-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+    purple: 'from-purple-500 to-purple-600 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+    green: 'from-green-500 to-green-600 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+    amber: 'from-amber-500 to-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
+    cyan: 'from-cyan-500 to-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800',
+    indigo: 'from-indigo-500 to-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800',
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
@@ -124,7 +179,7 @@ export default function SettingsPage() {
                   Settings
                 </h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Configure your SuperInstance environment
+                  Configure your PersonalLog environment
                 </p>
               </div>
             </div>
@@ -140,7 +195,43 @@ export default function SettingsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Quick Links Cards */}
+        <section className="mb-8">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+            Quick Settings
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {settingsCards.map(card => {
+              const Icon = card.icon;
+              return (
+                <Link
+                  key={card.href}
+                  href={card.href}
+                  className={`group bg-white dark:bg-slate-900 rounded-xl border-2 transition-all hover:shadow-lg ${colorClasses[card.color].split(' ').slice(2).join(' ')}`}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClasses[card.color].split(' ').slice(0, 2).join(' ')} text-white`}>
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          {card.title}
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                          {card.description}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
         {/* API Keys Section */}
         <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
           <div className="p-6 border-b border-slate-200 dark:border-slate-800">
@@ -353,7 +444,7 @@ export default function SettingsPage() {
           <p className="text-sm text-blue-700 dark:text-blue-300">
             API keys are stored locally in your browser and are never sent to any server other than the
             respective provider's API. Configure your keys here to enable cloud LLM features across all
-            SuperInstance modules.
+            PersonalLog modules.
           </p>
         </section>
       </main>

@@ -1,0 +1,334 @@
+name: WASM Build & Test
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'native/rust/**'
+      - '.github/workflows/wasm.yml'
+      - 'package.json'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'native/rust/**'
+      - '.github/workflows/wasm.yml'
+      - 'package.json'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # ========================================================================
+  # BUILD JOB
+  # ========================================================================
+  build-wasm:
+    name: Build WASM
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-index-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v4
+        with:
+          path: native/rust/target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-target-
+
+      - name: Install wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Verify installation
+        run: |
+          rustc --version
+          cargo --version
+          wasm-pack --version
+
+      - name: Build WASM (Development)
+        working-directory: native/rust
+        run: |
+          wasm-pack build --dev --target web --weak-refs --out-dir pkg
+
+      - name: Build WASM (Release)
+        working-directory: native/rust
+        run: |
+          wasm-pack build --release --target web --weak-refs --out-dir pkg
+
+      - name: Check WASM file size
+        run: |
+          WASM_SIZE=$(wc -c < native/rust/pkg/personallog_native_bg.wasm)
+          echo "WASM file size: $WASM_SIZE bytes"
+          MAX_SIZE=1048576  # 1 MB threshold
+          if [ $WASM_SIZE -gt $MAX_SIZE ]; then
+            echo "::warning::WASM file is larger than $MAX_SIZE bytes ($WASM_SIZE)"
+          else
+            echo "✓ WASM file size is acceptable"
+          fi
+
+      - name: Verify WASM output
+        run: |
+          if [ ! -f native/rust/pkg/personallog_native.js ]; then
+            echo "::error::JavaScript glue file not found"
+            exit 1
+          fi
+          if [ ! -f native/rust/pkg/personallog_native_bg.wasm ]; then
+            echo "::error::WASM binary file not found"
+            exit 1
+          fi
+          if [ ! -f native/rust/pkg/personallog_native.d.ts ]; then
+            echo "::error::TypeScript definitions not found"
+            exit 1
+          fi
+          echo "✓ All WASM artifacts generated successfully"
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-package
+          path: native/rust/pkg/
+          retention-days: 7
+
+  # ========================================================================
+  # TEST JOB
+  # ========================================================================
+  test-wasm:
+    name: Test WASM
+    runs-on: ubuntu-latest
+    needs: build-wasm
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/rust/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Run WASM tests (Node.js)
+        working-directory: native/rust
+        run: |
+          wasm-pack test --node
+
+      - name: Run Rust unit tests
+        working-directory: native/rust
+        run: |
+          cargo test --verbose
+
+      - name: Run Clippy
+        working-directory: native/rust
+        run: |
+          cargo clippy -- -D warnings
+
+      - name: Check formatting
+        working-directory: native/rust
+        run: |
+          cargo fmt -- --check
+
+  # ========================================================================
+  # INTEGRATION TEST JOB
+  # ========================================================================
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: build-wasm
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Download WASM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-package
+          path: native/rust/pkg
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify WASM in Node.js context
+        run: pnpm run verify:wasm
+
+      - name: Type check
+        run: pnpm run type-check
+
+      - name: Build Next.js app
+        run: pnpm run build
+        env:
+          NODE_ENV: production
+
+  # ========================================================================
+  # BENCHMARK JOB (Optional)
+  # ========================================================================
+  benchmark:
+    name: Benchmark WASM
+    runs-on: ubuntu-latest
+    needs: build-wasm
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+
+      - name: Install wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Download WASM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-package
+          path: native/rust/pkg
+
+      - name: Run benchmark
+        run: |
+          node -e "
+          const pkg = require('./native/rust/pkg/personallog_native.js');
+          const iterations = 10000;
+          const dim = 384;
+
+          console.log('Running WASM benchmark...');
+          console.log('Iterations:', iterations);
+          console.log('Vector dimension:', dim);
+
+          const v1 = new Float32Array(dim);
+          const v2 = new Float32Array(dim);
+          for (let i = 0; i < dim; i++) {
+            v1[i] = Math.random();
+            v2[i] = Math.random();
+          }
+
+          const start = performance.now();
+          for (let i = 0; i < iterations; i++) {
+            pkg.cosine_similarity(v1, v2);
+          }
+          const end = performance.now();
+
+          const duration = end - start;
+          const opsPerSec = (iterations / duration) * 1000;
+
+          console.log('');
+          console.log('Results:');
+          console.log('  Total time:', duration.toFixed(2), 'ms');
+          console.log('  Operations/sec:', opsPerSec.toFixed(0));
+          console.log('  Avg time/operation:', (duration / iterations).toFixed(4), 'ms');
+          "
+
+  # ========================================================================
+  # SUMMARY JOB
+  # ========================================================================
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-wasm, test-wasm, integration-test]
+    if: always()
+
+    steps:
+      - name: Check job statuses
+        run: |
+          echo "## WASM Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build WASM | ${{ needs.build-wasm.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test WASM | ${{ needs.test-wasm.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Test | ${{ needs.integration-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.build-wasm.result }}" != "success" ] || \
+             [ "${{ needs.test-wasm.result }}" != "success" ] || \
+             [ "${{ needs.integration-test.result }}" != "success" ]; then
+            echo "❌ **One or more jobs failed**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ **All jobs passed successfully!**" >> $GITHUB_STEP_SUMMARY
+          fi

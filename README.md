@@ -4,8 +4,10 @@
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 [![pnpm](https://img.shields.io/badge/pnpm-%3E%3D8.0.0-orange)](https://pnpm.io)
 [![Next](https://img.shields.io/badge/Next.js-15.3-black)](https://nextjs.org)
+[![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](https://www.rust-lang.org)
+[![WASM](https://img.shields.io/badge/WebAssembly-2.0-purple.svg)](https://webassembly.org)
 
-A SuperInstance application for everyday personal use. Streamlined default that can add any tool.
+A SuperInstance application for everyday personal use. Streamlined default that can add any tool, featuring high-performance native WebAssembly modules.
 
 ## Overview
 
@@ -40,7 +42,7 @@ Visit http://localhost:3002
 # Install dependencies
 pnpm install
 
-# Run dev server
+# Run dev server (builds WASM automatically)
 pnpm dev
 
 # Build for production
@@ -48,6 +50,28 @@ pnpm build
 
 # Type check
 pnpm type-check
+```
+
+### Native WASM Module
+
+PersonalLog includes a native WebAssembly module for high-performance vector operations. The WASM build is automated:
+
+- **Development:** Builds automatically with `pnpm dev`
+- **Production:** Builds optimized release version with `pnpm build`
+- **Manual:** Run `pnpm build:wasm` or `pnpm build:wasm:release`
+
+For detailed build instructions, troubleshooting, and CI/CD information, see [BUILD.md](./docs/BUILD.md) or [WASM_QUICK_START.md](./docs/WASM_QUICK_START.md).
+
+**Requirements for WASM development:**
+- Rust stable toolchain
+- wasm-pack
+- wasm32-unknown-unknown target
+
+Quick setup:
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup target add wasm32-unknown-unknown
+cargo install wasm-pack
 ```
 
 ## Tech Stack
