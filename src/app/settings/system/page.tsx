@@ -102,7 +102,7 @@ export default function SystemInfoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Hardware Info */}
           <div className="lg:col-span-1">
-            <HardwareInfoCard profile={profile} loading={loading} />
+            {profile && <HardwareInfoCard profile={profile} loading={loading} />}
           </div>
 
           {/* System Status */}

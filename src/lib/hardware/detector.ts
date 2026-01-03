@@ -144,7 +144,7 @@ export class HardwareDetector {
   // ==================== CPU Detection ====================
 
   private async detectCPU(): Promise<CPUInfo> {
-    const cores = navigator.hardwareConcurrency || 4;
+    const cores = typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 4) : 4;
 
     return {
       cores,
@@ -157,6 +157,8 @@ export class HardwareDetector {
 
   private detectArchitecture(): string | undefined {
     // Try to detect from user agent
+    if (typeof navigator === 'undefined') return undefined;
+
     const ua = navigator.userAgent;
     if (ua.includes('x86_64') || ua.includes('x86-64') || ua.includes('Win64') || ua.includes('WOW64')) {
       return 'x86_64';
@@ -178,7 +180,7 @@ export class HardwareDetector {
 
     // Check for native SIMD in performance API
     try {
-      const timeline = await performance.measureUserAgentSpecificMemory?.();
+      const timeline = await (performance as any).measureUserAgentSpecificMemory?.();
       if (timeline) {
         return { supported: true, type: 'native' };
       }
@@ -295,6 +297,10 @@ export class HardwareDetector {
   private detectWebGL(): GPUInfo['webgl'] {
     const result: GPUInfo['webgl'] = { supported: false, version: 0 };
 
+    if (typeof document === 'undefined') {
+      return result;
+    }
+
     try {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -320,6 +326,8 @@ export class HardwareDetector {
   private estimateVRAM(): number {
     // Rough estimation based on heuristics
     // This is not accurate but gives a ballpark figure
+    if (typeof navigator === 'undefined') return 3072;
+
     const ua = navigator.userAgent;
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
     const isMac = ua.includes('Macintosh');
@@ -363,13 +371,13 @@ export class HardwareDetector {
     };
 
     // Check device memory API (Chrome-only)
-    if ('deviceMemory' in navigator) {
+    if (typeof navigator !== 'undefined' && 'deviceMemory' in navigator) {
       info.totalGB = (navigator as any).deviceMemory;
       info.hasMemoryAPI = true;
     }
 
     // Check JS heap if performance.memory available
-    if ('memory' in performance && (performance as any).memory) {
+    if (typeof performance !== 'undefined' && 'memory' in performance && (performance as any).memory) {
       const mem = (performance as any).memory;
       info.jsHeap = {
         limit: mem.jsHeapSizeLimit,
@@ -386,13 +394,13 @@ export class HardwareDetector {
   private async detectStorage(checkQuota = false): Promise<StorageInfo> {
     const info: StorageInfo = {
       indexedDB: {
-        supported: !!window.indexedDB,
+        supported: typeof window !== 'undefined' && !!window.indexedDB,
         available: false
       }
     };
 
     // Test IndexedDB availability
-    if (window.indexedDB) {
+    if (typeof window !== 'undefined' && window.indexedDB) {
       try {
         const test = await new Promise<boolean>((resolve) => {
           const request = window.indexedDB.open('__hardware_test__');
@@ -410,7 +418,7 @@ export class HardwareDetector {
     }
 
     // Check storage quota if requested
-    if (checkQuota && 'storage' in navigator && 'estimate' in (navigator as any).storage) {
+    if (checkQuota && typeof navigator !== 'undefined' && 'storage' in navigator && 'estimate' in (navigator as any).storage) {
       try {
         const estimate = await (navigator as any).storage.estimate();
         if (estimate) {
@@ -424,7 +432,7 @@ export class HardwareDetector {
     }
 
     // Determine storage type
-    if (window.localStorage && window.sessionStorage) {
+    if (typeof window !== 'undefined' && window.localStorage && window.sessionStorage) {
       try {
         localStorage.setItem('__test__', 'test');
         localStorage.removeItem('__test__');
@@ -442,8 +450,12 @@ export class HardwareDetector {
   private async detectNetwork(): Promise<NetworkInfo> {
     const info: NetworkInfo = {
       hasNetworkAPI: false,
-      online: navigator.onLine
+      online: typeof navigator !== 'undefined' ? navigator.onLine : true
     };
+
+    if (typeof navigator === 'undefined') {
+      return info;
+    }
 
     // Check Network Information API
     const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
@@ -467,6 +479,16 @@ export class HardwareDetector {
   // ==================== Display Detection ====================
 
   private async detectDisplay(): Promise<DisplayInfo> {
+    if (typeof window === 'undefined' || typeof screen === 'undefined') {
+      return {
+        width: 1920,
+        height: 1080,
+        pixelRatio: 1,
+        colorDepth: 24,
+        orientation: 'landscape'
+      };
+    }
+
     return {
       width: window.screen.width,
       height: window.screen.height,
@@ -477,6 +499,10 @@ export class HardwareDetector {
   }
 
   private detectOrientation(): 'portrait' | 'landscape' {
+    if (typeof window === 'undefined' || typeof screen === 'undefined') {
+      return 'landscape';
+    }
+
     const orientation = (screen.orientation || {}).type;
     if (orientation) {
       return orientation.includes('portrait') ? 'portrait' : 'landscape';
@@ -487,6 +513,17 @@ export class HardwareDetector {
   // ==================== Browser Detection ====================
 
   private async detectBrowser(): Promise<BrowserInfo> {
+    if (typeof navigator === 'undefined') {
+      return {
+        userAgent: 'Unknown',
+        browser: 'Unknown',
+        version: undefined,
+        os: 'Unknown',
+        platform: 'Unknown',
+        touchSupport: false
+      };
+    }
+
     const ua = navigator.userAgent;
     const browser = this.detectBrowserName(ua);
     const version = this.detectBrowserVersion(ua, browser);
@@ -497,7 +534,7 @@ export class HardwareDetector {
       version,
       os: this.detectOS(ua),
       platform: navigator.platform,
-      touchSupport: 'ontouchstart' in window || navigator.maxTouchPoints > 0
+      touchSupport: (typeof window !== 'undefined' && 'ontouchstart' in window) || navigator.maxTouchPoints > 0
     };
   }
 
@@ -539,17 +576,17 @@ export class HardwareDetector {
   private async detectFeatures(): Promise<FeatureSupport> {
     return {
       webWorkers: typeof Worker !== 'undefined',
-      serviceWorker: 'serviceWorker' in navigator,
+      serviceWorker: typeof navigator !== 'undefined' && 'serviceWorker' in navigator,
       webrtc: typeof RTCPeerConnection !== 'undefined',
       webassembly: typeof WebAssembly !== 'undefined',
       websockets: typeof WebSocket !== 'undefined',
-      geolocation: 'geolocation' in navigator,
-      notifications: 'Notification' in window,
-      fullscreen: 'fullscreenEnabled' in document || 'webkitFullscreenEnabled' in document,
-      pip: 'pictureInPictureEnabled' in document || 'webkitPictureInPictureEnabled' in document,
-      webBluetooth: 'bluetooth' in navigator,
-      webusb: 'usb' in navigator,
-      fileSystemAccess: 'showOpenFilePicker' in window
+      geolocation: typeof navigator !== 'undefined' && 'geolocation' in navigator,
+      notifications: typeof window !== 'undefined' && 'Notification' in window,
+      fullscreen: typeof document !== 'undefined' && ('fullscreenEnabled' in document || 'webkitFullscreenEnabled' in document),
+      pip: typeof document !== 'undefined' && ('pictureInPictureEnabled' in document || 'webkitPictureInPictureEnabled' in document),
+      webBluetooth: typeof navigator !== 'undefined' && 'bluetooth' in navigator,
+      webusb: typeof navigator !== 'undefined' && 'usb' in navigator,
+      fileSystemAccess: typeof window !== 'undefined' && 'showOpenFilePicker' in window
     };
   }
 
@@ -648,3 +685,20 @@ export function clearHardwareCache(): void {
 export function getDetector(): HardwareDetector {
   return detector;
 }
+
+// Re-export types for convenience
+export type {
+  HardwareProfile,
+  CPUInfo,
+  GPUInfo,
+  MemoryInfo,
+  StorageInfo,
+  NetworkInfo,
+  DisplayInfo,
+  BrowserInfo,
+  FeatureSupport,
+  PerformanceScoreBreakdown,
+  PerformanceClass,
+  DetectionOptions,
+  DetectionResult
+} from './types';

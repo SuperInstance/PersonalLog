@@ -80,7 +80,7 @@ export async function benchmarkCosineSimilarity(
 
   return benchmarkFunction(
     `Cosine Similarity (${dimension}D)`,
-    () => ops.cosine_similarity(a, b),
+    () => { ops.cosine_similarity(a, b); },
     iterations
   )
 }
@@ -99,7 +99,7 @@ export async function benchmarkBatchCosineSimilarity(
 
   return benchmarkFunction(
     `Batch Cosine Similarity (${numVectors} vectors, ${dimension}D)`,
-    () => ops.batch_cosine_similarity(query, vectors, dimension),
+    () => { ops.batch_cosine_similarity(query, vectors, dimension); },
     iterations
   )
 }
@@ -119,7 +119,7 @@ export async function benchmarkTopK(
 
   return benchmarkFunction(
     `Top-K Search (${numVectors} vectors, k=${k})`,
-    () => ops.top_k_similar(query, vectors, dimension, k),
+    () => { ops.top_k_similar(query, vectors, dimension, k); },
     iterations
   )
 }

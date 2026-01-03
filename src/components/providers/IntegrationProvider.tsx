@@ -20,6 +20,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { getIntegrationManager } from '@/lib/integration'
+import type { IntegrationEvent } from '@/lib/integration/types'
 import type { IntegrationContextValue, ProvidersConfig } from './types'
 
 const IntegrationContext = createContext<IntegrationContextValue | null>(null)
@@ -55,28 +56,28 @@ export function IntegrationProvider({ config, children }: IntegrationProviderPro
     const timeout = config?.timeout ?? 10000
 
     // Update state when manager emits events
-    const handleProgress = (progress: { stage: string; progress: number }) => {
-      if (mounted) {
+    const handleProgress = (event: IntegrationEvent) => {
+      if (mounted && event.type === 'initialization_progress') {
         setState(manager.getState())
       }
     }
 
-    const handleStatusChange = () => {
-      if (mounted) {
+    const handleStatusChange = (event: IntegrationEvent) => {
+      if (mounted && event.type === 'system_status_changed') {
         setState(manager.getState())
         setCapabilities(manager.getCapabilities())
       }
     }
 
-    const handleCapabilitiesUpdate = () => {
-      if (mounted) {
+    const handleCapabilitiesUpdate = (event: IntegrationEvent) => {
+      if (mounted && event.type === 'capabilities_updated') {
         setCapabilities(manager.getCapabilities())
       }
     }
 
-    const handleError = (err: Error) => {
-      if (mounted) {
-        setError(err)
+    const handleError = (event: IntegrationEvent) => {
+      if (mounted && event.type === 'error') {
+        setError(event.data as Error)
         setIsLoading(false)
       }
     }
@@ -95,10 +96,7 @@ export function IntegrationProvider({ config, children }: IntegrationProviderPro
         )
 
         await Promise.race([
-          manager.initialize({
-            debug: config?.debug ?? false,
-            runBenchmarks: config?.runBenchmarks ?? true,
-          }),
+          manager.initialize(),
           timeoutPromise,
         ])
 
@@ -152,10 +150,7 @@ export function IntegrationProvider({ config, children }: IntegrationProviderPro
 
     try {
       const manager = getIntegrationManager()
-      await manager.initialize({
-        debug: config?.debug ?? false,
-        runBenchmarks: config?.runBenchmarks ?? true,
-      })
+      await manager.initialize()
 
       setState(manager.getState())
       setCapabilities(manager.getCapabilities())

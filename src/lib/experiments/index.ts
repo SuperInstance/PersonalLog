@@ -75,7 +75,17 @@ export {
 } from './hooks';
 
 // Convenience functions
-export { createExperiment, getVariant, trackMetric, getResults } from './api';
+export {
+  createExperiment,
+  getVariant,
+  trackMetric,
+  trackSuccess,
+  trackDuration,
+  getResults,
+  startExperiment,
+  pauseExperiment,
+  completeExperiment,
+} from './api';
 
 /**
  * Create a new experiment
@@ -96,6 +106,19 @@ import { trackMetric } from './api';
  * Get experiment results
  */
 import { getResults } from './api';
+
+// Configuration and templates
+export {
+  calculateSampleSize,
+  SAMPLE_SIZE_CALCULATORS,
+  EXPERIMENT_TEMPLATES,
+  initializeExampleExperiments,
+  getExperimentTemplates,
+  getExperimentTemplate,
+  calculateTemplateSampleSize,
+} from './config';
+
+export type { SampleSizeParams, SampleSizeResult } from './config';
 
 // Default configuration
 export const DEFAULT_CONFIG = {

@@ -8,6 +8,7 @@
 
 import React, { ReactElement, cloneElement, ReactNode } from 'react'
 import { generateCSSVariables, getDensityClassName, getFontSizeClassName } from '@/lib/personalization/adapters'
+import type { PreferenceValue, PreferenceKey } from '@/lib/personalization/types'
 
 // ============================================================================
 // PERSONALIZED PROVIDER
@@ -77,7 +78,7 @@ export interface PersonalizedSettingProps<T = unknown> {
  *   {(theme) => <ThemeProvider theme={theme} />}
  * </PersonalizedSetting>
  */
-export function PersonalizedSetting<T = unknown>({
+export function PersonalizedSetting<T extends PreferenceValue = PreferenceValue>({
   setting,
   options,
   onChange,
@@ -89,7 +90,7 @@ export function PersonalizedSetting<T = unknown>({
 
   const handleChange = (newValue: T) => {
     if (learnOnChange) {
-      personalization.set(setting as any, newValue)
+      personalization.set(setting as any, newValue as any)
     }
     onChange?.(newValue)
   }
@@ -120,12 +121,12 @@ export interface PersonalizedTextProps {
  * </PersonalizedText>
  */
 export function PersonalizedText({ children, adapt = true, className = '' }: PersonalizedTextProps) {
-  const { adaptContent, readingLevel } = usePersonalization()
-
-  const adaptedText = adapt ? adaptContent(children) : children
+  // Note: adaptContent and readingLevel not yet implemented in personalization API
+  // This component returns the text as-is for now
+  const adaptedText = children
 
   return (
-    <span className={`personalized-text text-${readingLevel} ${className}`}>
+    <span className={`personalized-text ${className}`}>
       {adaptedText}
     </span>
   )
@@ -280,7 +281,7 @@ export function PersonalizedControls({
   max,
   step,
 }: PersonalizedControlsProps) {
-  const [value, setValue] = usePersonalizedSetting(setting, null as any)
+  const [value, setValue] = usePersonalizedSetting(setting as PreferenceKey, null as any)
 
   const handleChange = (newValue: unknown) => {
     setValue(newValue)

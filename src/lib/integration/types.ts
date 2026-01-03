@@ -6,7 +6,7 @@
  */
 
 import type { HardwareProfile, PerformanceClass } from '../hardware/types';
-import type { BenchmarkSuite } from '../benchmark/types';
+import type { BenchmarkSuiteResult } from '../benchmark/types';
 import type {
   HardwareCapabilities,
   EvaluationResult,
@@ -112,7 +112,7 @@ export interface Capabilities {
     results: Map<string, EvaluationResult>;
   };
   /** Benchmark results (if run) */
-  benchmarks?: BenchmarkSuite;
+  benchmarks?: BenchmarkSuiteResult;
   /** Feature metrics (if tracking enabled) */
   featureMetrics?: Map<string, FeatureMetrics>;
 }

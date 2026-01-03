@@ -19,7 +19,7 @@
  * @module hooks/useFocusTrap
  */
 
-import { useEffect, useRef, RefObject } from 'react'
+import { useEffect, useRef, useCallback, RefObject } from 'react'
 
 export interface UseFocusTrapOptions {
   /** Whether focus trap is active */
@@ -209,7 +209,7 @@ export function useFocusTrap(options: UseFocusTrapOptions = {}) {
  * return <div ref={trapRef}>...</div>
  * ```
  */
-export function useFocusTrapRef(enabled = true): RefObject<HTMLElement> {
+export function useFocusTrapRef(enabled = true): RefObject<HTMLElement | null> {
   const { ref } = useFocusTrap({ enabled })
   return ref
 }

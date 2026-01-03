@@ -11,12 +11,15 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET, POST, PATCH, DELETE } from '../route'
+import type { ModelConfig, AIContact } from '@/lib/wizard/models'
 import {
   createMockRequest,
   createMockGETRequest,
   createMockDELETERequest,
   createMockAIAgent,
   createMockModelStore,
+  createMockModelConfig,
+  createMockAIContact,
   extractResponseData,
   assertSuccess,
   assertError,
@@ -45,9 +48,9 @@ describe('GET /api/models', () => {
   })
 
   it('should list all models', async () => {
-    const mockModels = [
-      { id: 'model-1', name: 'GPT-4', provider: 'openai' },
-      { id: 'model-2', name: 'Claude', provider: 'anthropic' },
+    const mockModels: ModelConfig[] = [
+      createMockModelConfig({ id: 'model-1', name: 'GPT-4', provider: 'openai' as const }) as ModelConfig,
+      createMockModelConfig({ id: 'model-2', name: 'Claude', provider: 'anthropic' as const }) as ModelConfig,
     ]
     vi.mocked(modelStore.listModels).mockResolvedValue(mockModels)
 
@@ -64,7 +67,7 @@ describe('GET /api/models', () => {
   })
 
   it('should filter models by provider', async () => {
-    const openaiModels = [{ id: 'model-1', name: 'GPT-4', provider: 'openai' }]
+    const openaiModels = [createMockModelConfig({ id: "model-1", name: "GPT-4", provider: "openai" as const })]
     vi.mocked(modelStore.listModels).mockResolvedValue(openaiModels)
 
     const request = createMockGETRequest({
@@ -82,8 +85,8 @@ describe('GET /api/models', () => {
 
   it('should list all contacts', async () => {
     const mockContacts = [
-      { id: 'contact-1', name: 'Claude', model: 'claude-3-opus' },
-      { id: 'contact-2', name: 'GPT-4', model: 'gpt-4' },
+      createMockAIContact({ id: "contact-1", nickname: "Claude", baseModelId: "claude-3-opus" }),
+      createMockAIContact({ id: "contact-2", nickname: "GPT-4", baseModelId: "gpt-4" }),
     ]
     vi.mocked(modelStore.listContacts).mockResolvedValue(mockContacts)
 
@@ -102,7 +105,7 @@ describe('GET /api/models', () => {
 
   it('should filter contacts by base model', async () => {
     const claudeContacts = [
-      { id: 'contact-1', name: 'Claude', model: 'claude-3-opus' },
+      createMockAIContact({ id: "contact-1", nickname: "Claude", baseModelId: "claude-3-opus" }),
     ]
     vi.mocked(modelStore.listContacts).mockResolvedValue(claudeContacts)
 
@@ -182,7 +185,7 @@ describe('POST /api/models', () => {
   })
 
   it('should create a new model', async () => {
-    const newModel = { id: 'model-123', name: 'New Model', provider: 'openai' }
+    const newModel = createMockModelConfig({ id: "model-123", name: "New Model", provider: "openai" as const })
     vi.mocked(modelStore.addModel).mockResolvedValue(newModel)
 
     const request = createMockRequest({
@@ -206,7 +209,7 @@ describe('POST /api/models', () => {
   })
 
   it('should create a new contact', async () => {
-    const newContact = createMockAIAgent({ name: 'Test AI' })
+    const newContact = createMockAIContact({ nickname: 'Test AI', baseModelId: 'model-123' })
     vi.mocked(modelStore.createContact).mockResolvedValue(newContact)
 
     const request = createMockRequest({
@@ -290,7 +293,7 @@ describe('POST /api/models', () => {
   })
 
   it('should default to model creation when type is not specified', async () => {
-    const newModel = { id: '1', name: 'Default Model' }
+    const newModel = createMockModelConfig({ id: "1", name: "Default Model" })
     vi.mocked(modelStore.addModel).mockResolvedValue(newModel)
 
     const request = createMockRequest({
@@ -367,7 +370,7 @@ describe('PATCH /api/models', () => {
   })
 
   it('should update a contact', async () => {
-    const updatedContact = createMockAIAgent({ id: 'contact-123', name: 'Updated AI' })
+    const updatedContact = createMockAIContact({ id: 'contact-123', name: 'Updated AI' })
     vi.mocked(modelStore.updateContact).mockResolvedValue(updatedContact)
 
     const request = createMockRequest({
@@ -391,7 +394,7 @@ describe('PATCH /api/models', () => {
   })
 
   it('should handle partial updates', async () => {
-    const updatedModel = { id: 'model-123', name: 'Model' }
+    const updatedModel = createMockModelConfig({ id: "model-123", name: "Model" })
     vi.mocked(modelStore.updateModel).mockResolvedValue(updatedModel)
 
     const request = createMockRequest({
@@ -444,7 +447,7 @@ describe('PATCH /api/models', () => {
   })
 
   it('should handle empty updates', async () => {
-    const updatedModel = { id: 'model-123', name: 'Model' }
+    const updatedModel = createMockModelConfig({ id: "model-123", name: "Model" })
     vi.mocked(modelStore.updateModel).mockResolvedValue(updatedModel)
 
     const request = createMockRequest({
@@ -575,7 +578,7 @@ describe('Integration scenarios', () => {
   })
 
   it('should handle create then update workflow', async () => {
-    const newContact = createMockAIAgent({ id: 'contact-new', name: 'New AI' })
+    const newContact = createMockAIContact({ id: 'contact-new', name: 'New AI' })
     vi.mocked(modelStore.createContact).mockResolvedValue(newContact)
 
     // Create contact
@@ -611,7 +614,7 @@ describe('Integration scenarios', () => {
   })
 
   it('should handle create then delete workflow', async () => {
-    const newModel = { id: 'model-temp', name: 'Temp Model' }
+    const newModel = createMockModelConfig({ id: "model-temp", name: "Temp Model" })
     vi.mocked(modelStore.addModel).mockResolvedValue(newModel)
 
     // Create model
@@ -637,9 +640,9 @@ describe('Integration scenarios', () => {
 
   it('should handle list filter by provider', async () => {
     const allModels = [
-      { id: '1', name: 'GPT-4', provider: 'openai' },
-      { id: '2', name: 'Claude', provider: 'anthropic' },
-      { id: '3', name: 'GPT-3.5', provider: 'openai' },
+      createMockModelConfig({ id: "1", name: "GPT-4", provider: "openai" as const }),
+      createMockModelConfig({ id: "2", name: "Claude", provider: "anthropic" as const }),
+      createMockModelConfig({ id: "3", name: "GPT-3.5", provider: "openai" as const }),
     ]
 
     vi.mocked(modelStore.listModels).mockImplementation(async (provider?) => {

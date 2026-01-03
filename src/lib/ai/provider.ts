@@ -38,7 +38,7 @@ export class FilteredProvider implements AIProvider {
     return this.provider.type
   }
 
-  async isAvailable(): boolean | Promise<boolean> {
+  async isAvailable(): Promise<boolean> {
     return this.provider.isAvailable()
   }
 

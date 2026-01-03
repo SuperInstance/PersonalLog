@@ -477,8 +477,7 @@ export class ExperimentManager implements IExperimentManager {
       return undefined;
     }
 
-    const allMetrics = this.metricsTracker.getExperimentMetrics(experimentId);
-    return this.statisticalAnalyzer.analyze(experiment, allMetrics);
+    return this.statisticalAnalyzer.analyze(experiment, this.metricsTracker);
   }
 
   determineWinner(experimentId: string) {

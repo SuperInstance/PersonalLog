@@ -182,7 +182,7 @@ class BetaDistribution {
     ];
 
     const x = z;
-    const y = z;
+    let y = z;
     let tmp = x + 5.5;
     tmp -= (x + 0.5) * Math.log(tmp);
     let ser = 1.000000000190015;
@@ -296,12 +296,12 @@ export class StatisticalAnalyzer {
       0
     );
 
-    const hasSignificantResults =
-      winner &&
+    const hasSignificantResults: boolean =
+      winner !== null && winner !== undefined &&
       winner.probability >= experiment.confidenceThreshold &&
       totalSampleSize >= (experiment.targetSampleSize || experiment.variants.length * 100);
 
-    const overallConfidence = hasSignificantResults ? winner.probability : 0;
+    const overallConfidence = hasSignificantResults && winner ? winner.probability : 0;
 
     // Generate recommendation
     let recommendation: ExperimentResults['recommendation'];

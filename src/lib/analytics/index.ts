@@ -82,6 +82,66 @@ export {
 
 export { AnalyticsAggregator, analyticsAggregator } from './aggregator'
 
+// Events catalog
+export {
+  EVENT_CATALOG,
+  createMessageSentEvent,
+  createConversationCreatedEvent,
+  createSettingsChangedEvent,
+  createAIContactCreatedEvent,
+  createSearchPerformedEvent,
+  createAppInitializedEvent,
+  createAPIResponseEvent,
+  createRenderCompleteEvent,
+  createSessionStartEvent,
+  createSessionEndEvent,
+  createFeatureUsedEvent,
+  createErrorOccurredEvent,
+  createFeatureEnabledEvent,
+  createBenchmarkCompletedEvent,
+  validateEventData,
+  isPIISensitive,
+  isHighVolumeEvent,
+  getEventMetadata,
+} from './events'
+
+// Insights engine
+export {
+  InsightsEngine,
+  insightsEngine,
+  generateRecentInsights,
+  getTodaysSummary,
+  getThisWeeksSummary,
+} from './insights'
+
+// Pipeline
+export {
+  AnalyticsPipeline,
+  getAnalyticsPipeline,
+  initializePipeline,
+  quickReport,
+  quickInsights,
+  quickDailySummary,
+  quickWeeklySummary,
+} from './pipeline'
+
+// Export insight types
+export type {
+  Insight,
+  InsightSeverity,
+  InsightCategory,
+  UsagePatternInsight,
+  PerformanceInsight,
+  ErrorInsight,
+  EngagementInsight,
+  OptimizationSuggestion,
+  DailySummary,
+  WeeklySummary,
+} from './insights'
+
+// Export pipeline types
+export type { PipelineConfig } from './pipeline'
+
 // Query API
 export {
   // Usage queries
@@ -350,5 +410,3 @@ export async function trackAPIResponse(data: {
 // ============================================================================
 
 import type { EventType, EventData } from './types'
-
-export type { EventType, EventData }

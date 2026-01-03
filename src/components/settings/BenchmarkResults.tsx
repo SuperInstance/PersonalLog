@@ -8,10 +8,10 @@
  */
 
 import { Play, BarChart3, TrendingUp, Clock } from 'lucide-react';
-import type { BenchmarkResult, BenchmarkSuite as BenchmarkSuiteType, Recommendation } from '@/lib/benchmark/types';
+import type { BenchmarkResult, BenchmarkSuiteResult, Recommendation } from '@/lib/benchmark/types';
 
 interface BenchmarkResultsProps {
-  suite?: BenchmarkSuiteType;
+  suite?: BenchmarkSuiteResult;
   running?: boolean;
   progress?: number;
   currentBenchmark?: string;

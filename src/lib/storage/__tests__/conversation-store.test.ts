@@ -21,7 +21,6 @@ import type {
   Message,
   ConversationType,
 } from '@/types/conversation';
-import type { DBSchema, IDBDatabase } from 'idb';
 
 // Mock IndexedDB - we'll create a simple in-memory implementation
 class MockIndexedDB {
@@ -214,8 +213,8 @@ class MockTransaction {
 class MockRequest<T = any> {
   public readonly result: T;
   public error: Error | null = null;
-  public onsuccess: ((event: any) => void) | null = null;
-  public onerror: ((event: any) => void) | null = null;
+  public onsuccess: ((event: Event) => void) | null = null;
+  public onerror: ((event: Event) => void) | null = null;
 
   constructor(result: T) {
     this.result = result;
@@ -223,7 +222,9 @@ class MockRequest<T = any> {
     // Simulate async behavior
     Promise.resolve().then(() => {
       if (this.onsuccess) {
-        this.onsuccess({ target: this });
+        const event = new Event('success');
+        Object.defineProperty(event, 'target', { value: this, writable: false });
+        this.onsuccess(event);
       }
     });
   }
@@ -232,9 +233,9 @@ class MockRequest<T = any> {
 class MockOpenDBRequest {
   public readonly result: MockDatabase;
   public error: Error | null = null;
-  public onsuccess: ((event: any) => void) | null = null;
-  public onerror: ((event: any) => void) | null = null;
-  public onupgradeneeded: ((event: any) => void) | null = null;
+  public onsuccess: ((event: Event) => void) | null = null;
+  public onerror: ((event: Event) => void) | null = null;
+  public onupgradeneeded: ((event: Event) => void) | null = null;
 
   constructor(db: MockDatabase) {
     this.result = db;
@@ -242,7 +243,9 @@ class MockOpenDBRequest {
     // Simulate async behavior - trigger onsuccess first
     Promise.resolve().then(() => {
       if (this.onsuccess) {
-        this.onsuccess({ target: this });
+        const event = new Event('success');
+        Object.defineProperty(event, 'target', { value: this, writable: false });
+        this.onsuccess(event);
       }
     });
   }
@@ -329,7 +332,7 @@ describe('Conversation Store (Mocked IndexedDB)', () => {
 
         // Trigger the request
         setTimeout(() => {
-          if (request.onsuccess) request.onsuccess({ target: request });
+          if (request.onsuccess) request.onsuccess({ target: request } as any);
         }, 10);
       });
     });
@@ -360,10 +363,10 @@ describe('Conversation Store (Mocked IndexedDB)', () => {
     let db: MockDatabase;
 
     beforeEach(async () => {
-      const request = indexedDB.open('PersonalLogMessenger', 1);
+      const request = indexedDB.open('PersonalLogMessenger', 1) as unknown as MockOpenDBRequest;
       db = await new Promise<MockDatabase>((resolve, reject) => {
-        request.onupgradeneeded = (event: any) => {
-          const database = event.target.result;
+        request.onupgradeneeded = (event: Event) => {
+          const database = (event.target as unknown as MockOpenDBRequest).result as MockDatabase;
           database.createObjectStore('conversations', { keyPath: 'id' });
           database.createObjectStore('messages', { keyPath: 'id' });
         };
@@ -591,10 +594,10 @@ describe('Conversation Store (Mocked IndexedDB)', () => {
     let db: MockDatabase;
 
     beforeEach(async () => {
-      const request = indexedDB.open('PersonalLogMessenger', 1);
+      const request = indexedDB.open('PersonalLogMessenger', 1) as unknown as MockOpenDBRequest;
       db = await new Promise<MockDatabase>((resolve, reject) => {
-        request.onupgradeneeded = (event: any) => {
-          const database = event.target.result;
+        request.onupgradeneeded = (event: Event) => {
+          const database = (event.target as unknown as MockOpenDBRequest).result as MockDatabase;
           database.createObjectStore('conversations', { keyPath: 'id' });
           const msgStore = database.createObjectStore('messages', { keyPath: 'id' });
           msgStore.createIndex('conversationId', 'conversationId', { unique: false });

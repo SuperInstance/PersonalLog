@@ -18,6 +18,8 @@ import {
   CapabilityError,
   NetworkError,
   TimeoutError,
+} from './types';
+import {
   log,
   registerRecoveryActions,
 } from './handler';
@@ -47,6 +49,8 @@ export class WasmRecoveryStrategy {
     // Log the fallback
     log(new WasmError(`WASM module ${moduleName} unavailable, using JS fallback`, {
       severity: 'low',
+      recovery: 'fallback',
+      userMessage: `Using JavaScript fallback for ${moduleName}`,
       context: { moduleName },
     }));
 
@@ -161,6 +165,8 @@ export class StorageRecoveryStrategy {
         if (usagePercentage > 80) {
           log(new QuotaError(usage, quota, {
             severity: usagePercentage > 95 ? 'critical' : 'high',
+            recovery: 'degraded',
+            userMessage: `Storage is ${usagePercentage.toFixed(0)}% full. Consider clearing old data.`,
           }));
         }
 
@@ -206,7 +212,7 @@ export class StorageRecoveryStrategy {
    * Clear old cached data
    */
   private async clearOldCache(): Promise<number> {
-    if ('caches' in window) {
+    if (typeof window !== 'undefined' && 'caches' in window) {
       try {
         const cacheNames = await caches.keys();
         let cleared = 0;
@@ -266,12 +272,12 @@ export class StorageRecoveryStrategy {
   private async clearTemporaryData(): Promise<number> {
     try {
       // Clear session storage
-      if (window.sessionStorage) {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
         sessionStorage.clear();
       }
 
       // Clear temp keys from localStorage
-      if (window.localStorage) {
+      if (typeof window !== 'undefined' && window.localStorage) {
         const tempKeys: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -303,7 +309,7 @@ export class StorageRecoveryStrategy {
    * Request more storage quota
    */
   async requestQuota(requestedBytes: number): Promise<boolean> {
-    if ('storage' in navigator && 'requestPersistent' in navigator.storage) {
+    if (typeof navigator !== 'undefined' && 'storage' in navigator && 'requestPersistent' in navigator.storage) {
       try {
         // @ts-ignore - experimental API
         const granted = await navigator.storage.requestPersistent();
@@ -314,12 +320,12 @@ export class StorageRecoveryStrategy {
     }
 
     // Chrome-specific quota management
-    if ('webkitStorageInfo' in navigator) {
+    if (typeof navigator !== 'undefined' && 'webkitStorageInfo' in navigator) {
       // @ts-ignore - deprecated but may still work
       return new Promise((resolve) => {
         // @ts-ignore
         navigator.webkitStorageInfo.requestQuota(
-          window.PERSISTENT,
+          (window as any).PERSISTENT,
           requestedBytes,
           (grantedBytes: number) => resolve(grantedBytes > 0),
           () => resolve(false)
@@ -367,13 +373,13 @@ export class HardwareRecoveryStrategy {
     },
     storage: {
       indexedDB: {
-        supported: !!window.indexedDB,
-        available: !!window.indexedDB,
+        supported: typeof window !== 'undefined' && !!window.indexedDB,
+        available: typeof window !== 'undefined' && !!window.indexedDB,
       },
     },
     network: {
       hasNetworkAPI: false,
-      online: navigator.onLine,
+      online: typeof navigator !== 'undefined' ? navigator.onLine : true,
     },
   };
 
@@ -406,22 +412,24 @@ export class HardwareRecoveryStrategy {
     let score = 50; // Base score
 
     // CPU cores
-    const cores = navigator.hardwareConcurrency || 4;
+    const cores = typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 4) : 4;
     score += Math.min((cores / 16) * 20, 20);
 
     // Memory (rough estimate)
-    const memory = (navigator as any).deviceMemory || 4;
+    const memory = typeof navigator !== 'undefined' ? ((navigator as any).deviceMemory || 4) : 4;
     score += Math.min((memory / 16) * 20, 20);
 
     // GPU (assume available if WebGL exists)
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl');
-    if (gl) {
-      score += 20;
+    if (typeof document !== 'undefined') {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl');
+      if (gl) {
+        score += 20;
+      }
     }
 
     // Network
-    if (navigator.onLine) {
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
       score += 10;
     }
 
@@ -461,7 +469,7 @@ export class NetworkRecoveryStrategy {
 
       return response;
     } catch (error) {
-      if (retries > 0 && navigator.onLine) {
+      if (retries > 0 && (typeof navigator === 'undefined' || navigator.onLine)) {
         // Wait before retrying
         await this.delay(this.retryDelay * (this.maxRetries - retries + 1));
         return this.fetchWithRetry(url, options, retries - 1);
@@ -478,16 +486,21 @@ export class NetworkRecoveryStrategy {
    * Check if online
    */
   isOnline(): boolean {
-    return navigator.onLine;
+    return typeof navigator === 'undefined' ? true : navigator.onLine;
   }
 
   /**
    * Wait for connection
    */
   async waitForConnection(timeout: number = 30000): Promise<boolean> {
-    if (navigator.onLine) return true;
+    if (typeof navigator === 'undefined' || navigator.onLine) return true;
 
     return new Promise((resolve) => {
+      if (typeof window === 'undefined') {
+        resolve(false);
+        return;
+      }
+
       const handler = () => {
         window.removeEventListener('online', handler);
         resolve(true);
@@ -513,8 +526,8 @@ export class NetworkRecoveryStrategy {
   /**
    * Get cached response (if available)
    */
-  async getCached(url: string): Promise<Response | null> {
-    if ('caches' in window) {
+  async getCached(url: string): Promise<Response | undefined> {
+    if (typeof window !== 'undefined' && 'caches' in window) {
       try {
         const cache = await caches.open('personallog-api');
         return cache.match(url);
@@ -523,14 +536,14 @@ export class NetworkRecoveryStrategy {
       }
     }
 
-    return null;
+    return undefined;
   }
 
   /**
    * Cache response
    */
   async cacheResponse(url: string, response: Response): Promise<void> {
-    if ('caches' in window && response.ok) {
+    if (typeof window !== 'undefined' && 'caches' in window && response.ok) {
       try {
         const cache = await caches.open('personallog-api');
         await cache.put(url, response.clone());
@@ -634,7 +647,9 @@ export function initializeRecoveryStrategies(): void {
     {
       label: 'Learn More About WASM Requirements',
       action: () => {
-        window.open('/docs/wasm-requirements', '_blank');
+        if (typeof window !== 'undefined') {
+          window.open('/docs/wasm-requirements', '_blank');
+        }
       },
     },
   ]);
@@ -651,7 +666,9 @@ export function initializeRecoveryStrategies(): void {
           action: async () => {
             const strategy = new StorageRecoveryStrategy();
             await strategy.recoverSpace(error.totalBytes * 0.1); // Try to recover 10%
-            window.location.reload();
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            }
           },
           primary: true,
           dangerous: true,
@@ -671,7 +688,7 @@ export function initializeRecoveryStrategies(): void {
 
   // Network recovery
   registerRecoveryActions('network', (error) => {
-    const isOffline = !navigator.onLine;
+    const isOffline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
 
     return [
       {
@@ -681,7 +698,9 @@ export function initializeRecoveryStrategies(): void {
             // Enable offline mode
             console.log('Offline mode enabled');
           } else {
-            window.location.reload();
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            }
           }
         },
         primary: true,
@@ -689,7 +708,9 @@ export function initializeRecoveryStrategies(): void {
       {
         label: 'Check Connection Status',
         action: () => {
-          window.open('/docs/network-status', '_blank');
+          if (typeof window !== 'undefined') {
+            window.open('/docs/network-status', '_blank');
+          }
         },
       },
     ];
@@ -710,7 +731,9 @@ export function initializeRecoveryStrategies(): void {
         {
           label: 'See System Requirements',
           action: () => {
-            window.open('/docs/requirements', '_blank');
+            if (typeof window !== 'undefined') {
+              window.open('/docs/requirements', '_blank');
+            }
           },
         },
       ];
@@ -734,7 +757,9 @@ export function initializeRecoveryStrategies(): void {
         {
           label: 'Run Diagnostics',
           action: () => {
-            window.open('/settings/diagnostics', '_blank');
+            if (typeof window !== 'undefined') {
+              window.open('/settings/diagnostics', '_blank');
+            }
           },
         },
       ];

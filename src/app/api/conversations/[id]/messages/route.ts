@@ -11,8 +11,16 @@ import {
   updateMessage,
   deleteMessage,
 } from '@/lib/storage/conversation-store'
+import {
+  applyCacheHeaders,
+  CacheConfigs,
+  CacheTags,
+  generateETag,
+  checkConditionalRequest,
+  createNotModifiedResponse,
+} from '@/lib/cache/cache-utils'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // GET /api/conversations/[id]/messages - Get all messages for a conversation
@@ -23,7 +31,30 @@ export async function GET(
   try {
     const { id } = await params
     const messages = await getMessages(id)
-    return NextResponse.json({ messages })
+
+    // Generate ETag for conditional requests
+    const etag = generateETag(messages)
+
+    // Check if client has cached version
+    const conditional = checkConditionalRequest(request)
+    if (conditional.etag === etag) {
+      return createNotModifiedResponse()
+    }
+
+    // Messages change frequently - short cache
+    const response = NextResponse.json(
+      { messages },
+      {
+        headers: {
+          ETag: etag,
+        },
+      }
+    )
+
+    return applyCacheHeaders(response, {
+      ...CacheConfigs.frequentlyChanging,
+      tag: CacheTags.MESSAGES(id),
+    })
   } catch (error) {
     console.error('Messages GET error:', error)
     return NextResponse.json(
@@ -45,7 +76,8 @@ export async function POST(
 
     const message = await addMessage(id, type, author, content)
 
-    return NextResponse.json({ message }, { status: 201 })
+    const response = NextResponse.json({ message }, { status: 201 })
+    return applyCacheHeaders(response, CacheConfigs.personalized)
   } catch (error) {
     console.error('Messages POST error:', error)
     return NextResponse.json(
@@ -65,7 +97,9 @@ export async function PATCH(
     const { messageId, updates } = body
 
     const message = await updateMessage(messageId, updates)
-    return NextResponse.json({ message })
+
+    const response = NextResponse.json({ message })
+    return applyCacheHeaders(response, CacheConfigs.personalized)
   } catch (error) {
     console.error('Messages PATCH error:', error)
     return NextResponse.json(
@@ -89,7 +123,9 @@ export async function DELETE(
     }
 
     await deleteMessage(messageId)
-    return NextResponse.json({ success: true })
+
+    const response = NextResponse.json({ success: true })
+    return applyCacheHeaders(response, CacheConfigs.dynamic)
   } catch (error) {
     console.error('Messages DELETE error:', error)
     return NextResponse.json(

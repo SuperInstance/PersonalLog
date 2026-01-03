@@ -293,7 +293,7 @@ export function InitializationLoader({
       }
     })
 
-    return unsubscribe
+    return () => { unsubscribe() }
   }, [isComplete])
 
   // Handle timeout

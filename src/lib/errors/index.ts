@@ -9,6 +9,15 @@
 // TYPE DEFINITIONS
 // ============================================================================
 
+import type {
+  ErrorCategory,
+  ErrorSeverity,
+  RecoveryPotential,
+  ErrorRecord,
+  ErrorContext,
+  RecoveryAction,
+} from './types';
+
 export type {
   ErrorCategory,
   ErrorSeverity,
@@ -101,14 +110,14 @@ export async function initializeErrorHandler(config?: {
   logToConsole?: boolean;
   userTechnicalLevel?: 'basic' | 'intermediate' | 'advanced';
 }): Promise<void> {
-  const { getErrorHandler, initializeRecoveryStrategies } = await import('./handler');
-  const { initializeRecoveryStrategies: initRecovery } = await import('./recovery');
+  const { getErrorHandler } = await import('./handler');
+  const { initializeRecoveryStrategies } = await import('./recovery');
 
   // Initialize error handler with config
   getErrorHandler(config);
 
   // Initialize recovery strategies
-  initRecovery();
+  initializeRecoveryStrategies();
 
   // Log initialization
   if (config?.enableLogging !== false) {
@@ -135,8 +144,9 @@ export function handleError(
   error: unknown,
   context?: ErrorContext
 ): ErrorRecord {
+  // Lazy import to avoid circular dependency
   const { log } = require('./handler');
-  return log(error, context);
+  return log(error, context) as ErrorRecord;
 }
 
 /**
@@ -161,7 +171,7 @@ export function createError(
     context?: Record<string, unknown>;
     cause?: Error;
   }
-): PersonalLogError {
+): InstanceType<typeof PersonalLogError> {
   const {
     WasmError,
     StorageError,
@@ -278,3 +288,29 @@ export function withFallback<T>(
  * This is a type-only export - the actual hook is in the React components.
  */
 export type { ErrorRecord as ErrorState } from './types';
+
+// ============================================================================
+// ERROR LOGGER
+// ============================================================================
+
+export {
+  Logger,
+  getLogger,
+  resetLogger,
+  logError,
+  logWarn,
+  logInfo,
+  logDebug,
+  getLogEntries,
+  exportLogsAsJSON,
+  exportLogsAsCSV,
+  clearLogs,
+  getLogCount,
+} from './logger';
+
+export type {
+  LogEntry,
+  LogContext,
+  LogLevel,
+  LoggerConfig,
+} from './logger';

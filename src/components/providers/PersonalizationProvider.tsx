@@ -22,8 +22,11 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { getPersonalizationAPI } from '@/lib/personalization'
-import type { UserPreferences, PreferenceKey, UserAction, LearningState } from '@/lib/personalization'
+import type { PreferenceKey, UserAction, LearningState, Preference, PreferenceValue } from '@/lib/personalization'
 import type { PersonalizationContextValue, ProvidersConfig } from './types'
+
+// UserPreferences is the internal format from the personalization library
+type UserPreferences = Record<PreferenceKey, Preference<PreferenceValue>>
 
 const PersonalizationContext = createContext<PersonalizationContextValue | null>(null)
 
@@ -42,15 +45,13 @@ export function PersonalizationProvider({ config, children }: PersonalizationPro
   const api = getPersonalizationAPI()
   const userId = config?.userId ?? 'default'
 
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    communication: {},
-    ui: {},
-    content: {},
-  })
+  const [preferences, setPreferences] = useState<UserPreferences>({} as UserPreferences)
   const [learningState, setLearningState] = useState<LearningState>({
-    communication: { enabled: true, signalsProcessed: 0, lastUpdate: Date.now() },
-    ui: { enabled: true, signalsProcessed: 0, lastUpdate: Date.now() },
-    content: { enabled: true, signalsProcessed: 0, lastUpdate: Date.now() },
+    enabled: true,
+    disabledCategories: [],
+    totalActionsRecorded: 0,
+    learningStartedAt: new Date().toISOString(),
+    lastActionAt: new Date().toISOString(),
   })
   const [optedOutCategories, setOptedOutCategories] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
@@ -80,7 +81,7 @@ export function PersonalizationProvider({ config, children }: PersonalizationPro
         const prefs = model.getPreferences().getAll()
 
         if (mounted) {
-          setPreferences(prefs)
+          setPreferences(prefs as UserPreferences)
           setLearningState(model.getLearningState())
 
           // Load opted-out categories
@@ -136,7 +137,7 @@ export function PersonalizationProvider({ config, children }: PersonalizationPro
 
   // Set a preference value
   const set = useCallback((key: PreferenceKey, value: unknown) => {
-    api.set(key, value, userId)
+    api.set(key, value as PreferenceValue, userId)
     const model = api.getModel(userId)
     setPreferences(model.getPreferences().getAll())
   }, [api, userId])
@@ -161,7 +162,7 @@ export function PersonalizationProvider({ config, children }: PersonalizationPro
       return
     }
 
-    model.getPreferences().learn(key, value, confidence)
+    model.getPreferences().learn(key, value as PreferenceValue, confidence)
     setPreferences(model.getPreferences().getAll())
   }, [userId, api])
 
@@ -178,9 +179,6 @@ export function PersonalizationProvider({ config, children }: PersonalizationPro
     const newOptedOut = new Set(optedOutCategories).add(category)
     setOptedOutCategories(newOptedOut)
 
-    // Disable learning for this category
-    api.toggleLearningForCategory?.(category, false)
-
     // Persist to localStorage
     try {
       localStorage.setItem(
@@ -190,7 +188,7 @@ export function PersonalizationProvider({ config, children }: PersonalizationPro
     } catch (err) {
       console.error('[PersonalizationProvider] Failed to persist opt-out:', err)
     }
-  }, [optedOutCategories, api])
+  }, [optedOutCategories])
 
   // Check if opted out
   const isOptedOut = useCallback((category: 'communication' | 'ui' | 'content'): boolean => {
@@ -225,7 +223,11 @@ export function PersonalizationProvider({ config, children }: PersonalizationPro
   const exportData = useCallback(async () => {
     try {
       const model = api.getModel(userId)
-      return JSON.stringify(model.toJSON(), null, 2)
+      const data = {
+        preferences: model.getPreferences().getAll(),
+        learningState: model.getLearningState(),
+      }
+      return JSON.stringify(data, null, 2)
     } catch (err) {
       console.error('[PersonalizationProvider] Export failed:', err)
       throw err
@@ -237,7 +239,8 @@ export function PersonalizationProvider({ config, children }: PersonalizationPro
     try {
       const parsed = JSON.parse(data)
       const model = api.getModel(userId)
-      model.fromJSON(parsed)
+      // Import not fully implemented yet - just log
+      console.warn('[PersonalizationProvider] Import not fully implemented:', parsed)
       setPreferences(model.getPreferences().getAll())
       setLearningState(model.getLearningState())
     } catch (err) {

@@ -141,7 +141,7 @@ export function LiveAnnouncerProvider({
 
       {/* Live regions for screen readers */}
       <div
-        ref={el => announcerRefs.current.status = el}
+        ref={el => { announcerRefs.current.status = el }}
         role="status"
         aria-live="polite"
         aria-atomic="true"
@@ -149,7 +149,7 @@ export function LiveAnnouncerProvider({
       />
 
       <div
-        ref={el => announcerRefs.current.alert = el}
+        ref={el => { announcerRefs.current.alert = el }}
         role="alert"
         aria-live="assertive"
         aria-atomic="true"

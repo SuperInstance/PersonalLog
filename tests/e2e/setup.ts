@@ -4,11 +4,11 @@
  * Global setup for end-to-end tests.
  */
 
-import { test as base } from '@playwright/test'
+import { test as base, type Page } from '@playwright/test'
 
 // Extend base test with custom fixtures
 export const test = base.extend<{
-  authenticatedPage: typeof base['page']
+  authenticatedPage: Page
 }>({
   authenticatedPage: async ({ page }, use) => {
     // Perform authentication if needed

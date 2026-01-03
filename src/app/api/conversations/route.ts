@@ -14,8 +14,16 @@ import {
   updateMessage,
   deleteMessage,
 } from '@/lib/storage/conversation-store'
+import {
+  applyCacheHeaders,
+  CacheConfigs,
+  CacheTags,
+  generateETag,
+  checkConditionalRequest,
+  createNotModifiedResponse,
+} from '@/lib/cache/cache-utils'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // GET /api/conversations - List all conversations
@@ -24,8 +32,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') as any
 
-    const conversations = await listConversations(type)
-    return NextResponse.json({ conversations })
+    const conversations = await listConversations({ includeArchived: false })
+
+    // Generate ETag for conditional requests
+    const etag = generateETag(conversations)
+
+    // Check if client has cached version
+    const conditional = checkConditionalRequest(request)
+    if (conditional.etag === etag) {
+      return createNotModifiedResponse()
+    }
+
+    // Apply cache headers: cache for 5 minutes with stale-while-revalidate
+    const response = NextResponse.json(
+      { conversations },
+      {
+        headers: {
+          ETag: etag,
+        },
+      }
+    )
+
+    return applyCacheHeaders(response, {
+      ...CacheConfigs.sometimesChanging,
+      tag: CacheTags.CONVERSATIONS,
+    })
   } catch (error) {
     console.error('Conversations GET error:', error)
     return NextResponse.json(
@@ -42,7 +73,10 @@ export async function POST(request: NextRequest) {
     const { title, type = 'personal' } = body
 
     const conversation = await createConversation(title, type)
-    return NextResponse.json({ conversation }, { status: 201 })
+
+    // Don't cache POST responses
+    const response = NextResponse.json({ conversation }, { status: 201 })
+    return applyCacheHeaders(response, CacheConfigs.personalized)
   } catch (error) {
     console.error('Conversations POST error:', error)
     return NextResponse.json(
@@ -63,7 +97,10 @@ export async function DELETE(request: NextRequest) {
     }
 
     await deleteConversation(id)
-    return NextResponse.json({ success: true })
+
+    // Don't cache DELETE responses
+    const response = NextResponse.json({ success: true })
+    return applyCacheHeaders(response, CacheConfigs.dynamic)
   } catch (error) {
     console.error('Conversations DELETE error:', error)
     return NextResponse.json(

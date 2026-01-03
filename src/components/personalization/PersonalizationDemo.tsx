@@ -55,6 +55,7 @@ function ThemeSection() {
                   recordUserAction({
                     type: 'theme-changed',
                     timestamp: new Date().toISOString(),
+                    context: { feature: 'theme' },
                     data: { value: t },
                   })
                 }}
@@ -102,6 +103,7 @@ function TypographySection() {
                   recordUserAction({
                     type: 'font-size-changed',
                     timestamp: new Date().toISOString(),
+                    context: { feature: 'ui' },
                     data: { value: size },
                   })
                 }}
@@ -128,6 +130,7 @@ function TypographySection() {
                   recordUserAction({
                     type: 'setting-changed',
                     timestamp: new Date().toISOString(),
+                    context: { feature: 'ui' },
                     data: { setting: 'ui.density', value: d },
                   })
                 }}
@@ -170,6 +173,7 @@ function LayoutSection() {
                   recordUserAction({
                     type: 'sidebar-toggled',
                     timestamp: new Date().toISOString(),
+                    context: { feature: 'layout' },
                     data: { position: pos },
                   })
                 }}
@@ -227,6 +231,7 @@ function CommunicationSection() {
                   recordUserAction({
                     type: 'setting-changed',
                     timestamp: new Date().toISOString(),
+                    context: { feature: 'communication' },
                     data: { setting: 'communication.responseLength', value: len },
                   })
                 }}
@@ -253,6 +258,7 @@ function CommunicationSection() {
                   recordUserAction({
                     type: 'setting-changed',
                     timestamp: new Date().toISOString(),
+                    context: { feature: 'communication' },
                     data: { setting: 'communication.tone', value: t },
                   })
                 }}
@@ -278,6 +284,7 @@ function CommunicationSection() {
                 recordUserAction({
                   type: 'emoji-used',
                   timestamp: new Date().toISOString(),
+                  context: { feature: 'communication' },
                 })
               }}
               className="w-4 h-4"
@@ -369,9 +376,6 @@ function ExplanationsSection() {
               <p className="mb-2"><strong>Why:</strong> {explanation.reason}</p>
               <p className="mb-2"><strong>Source:</strong> {explanation.source}</p>
               <p className="mb-2"><strong>Confidence:</strong> {Math.round(explanation.confidence * 100)}%</p>
-              <p className="text-sm text-gray-600">
-                Last updated: {new Date(explanation.lastUpdated).toLocaleString()}
-              </p>
             </div>
           )}
         </PersonalizedExplanation>
@@ -394,12 +398,10 @@ function ActionsSection() {
     recordUserAction({
       type,
       timestamp: new Date().toISOString(),
-      context: type === 'feature-used' ? { feature: 'demo' } : undefined,
+      context: type === 'feature-used' ? { feature: 'demo' } : { feature: 'demo' },
     })
     alert(`Recorded action: ${type}`)
   }
-
-  const stats = personalization.getStats()
 
   return (
     <section className="border rounded-lg p-4">
@@ -419,20 +421,9 @@ function ActionsSection() {
 
         <div className="p-4 border rounded bg-gray-50 dark:bg-gray-800">
           <h3 className="font-medium mb-2">Statistics</h3>
-          <div className="text-sm space-y-1">
-            <div>Total Actions: {stats.totalActionsRecorded}</div>
-            <div>Patterns Detected: {Object.keys(stats.patterns).length}</div>
-            <div>
-              Peak Hours: {stats.patterns.peakHours.length > 0
-                ? stats.patterns.peakHours.join(', ')
-                : 'None yet'}
-            </div>
-            <div>
-              Avg Session: {stats.patterns.avgSessionLength > 0
-                ? `${stats.patterns.avgSessionLength} minutes`
-                : 'No data'}
-            </div>
-          </div>
+          <p className="text-sm text-gray-600">
+            Actions recorded to the personalization system for learning.
+          </p>
         </div>
       </div>
     </section>

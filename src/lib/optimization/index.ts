@@ -95,8 +95,8 @@ export type {
 // MONITORS
 // ============================================================================
 
+export type { Monitor } from './monitors';
 export {
-  Monitor,
   PerformanceMonitor,
   MemoryMonitor,
   FrameRateMonitor,
@@ -109,9 +109,8 @@ export {
 // STRATEGIES
 // ============================================================================
 
+export type { OptimizationStrategy, StrategyContext } from './strategies';
 export {
-  OptimizationStrategy,
-  StrategyContext,
   ConservativeStrategy,
   AggressiveStrategy,
   BalancedStrategy,
@@ -197,6 +196,72 @@ export {
   enableBatterySaver,
   reduceBackgroundActivity,
 } from './rules/resource-rules';
+
+// ============================================================================
+// AUTO-TUNER
+// ============================================================================
+
+export {
+  AutoTuner,
+  autoTuner,
+} from './auto-tuner';
+
+export type {
+  TunableConfig,
+  PerformanceMetrics as AutoTunerMetrics,
+  Optimization as AutoTunerOptimization,
+  OptimizationResult as AutoTunerResult,
+} from './auto-tuner';
+
+// ============================================================================
+// PROFILER
+// ============================================================================
+
+export {
+  PerformanceProfiler,
+  APIProfiler,
+  ComponentProfiler,
+  CacheProfiler,
+  profiler,
+  apiProfiler,
+  componentProfiler,
+  cacheProfiler,
+} from './profiler';
+
+export type {
+  ProfileResult,
+  ProfilerOptions,
+} from './profiler';
+
+// ============================================================================
+// CONFIG TUNER
+// ============================================================================
+
+export {
+  ConfigTuner,
+  configTuner,
+} from './config-tuner';
+
+export type {
+  TunableParameter,
+  TuningObjective,
+  TuningConstraint,
+  TuningResult,
+} from './config-tuner';
+
+// ============================================================================
+// RECOMMENDER
+// ============================================================================
+
+export {
+  Recommender,
+  recommender,
+} from './recommender';
+
+export type {
+  RecommendationContext,
+  Recommendation,
+} from './recommender';
 
 // ============================================================================
 // CONVENIENCE FUNCTIONS

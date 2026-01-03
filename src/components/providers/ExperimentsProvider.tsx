@@ -23,7 +23,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { getGlobalManager } from '@/lib/experiments'
-import type { Experiment } from '@/lib/experiments'
+import type { Experiment, ExperimentManager } from '@/lib/experiments'
 import type { ExperimentsContextValue, ProvidersConfig } from './types'
 
 const ExperimentsContext = createContext<ExperimentsContextValue | null>(null)
@@ -40,7 +40,7 @@ export interface ExperimentsProviderProps {
  * Experiments Provider Component
  */
 export function ExperimentsProvider({ config, children }: ExperimentsProviderProps) {
-  const [manager, setManager] = useState<typeof getGlobalManager.return | null>(null)
+  const [manager, setManager] = useState<ExperimentManager | null>(null)
   const [experiments, setExperiments] = useState<Experiment[]>([])
   const [optedOut, setOptedOut] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
@@ -184,9 +184,9 @@ export function ExperimentsProvider({ config, children }: ExperimentsProviderPro
     }
 
     try {
+      // createExperiment API automatically registers with global manager
       const { createExperiment: create } = require('@/lib/experiments')
-      const experiment = create(experimentConfig)
-      manager.registerExperiment(experiment)
+      create(experimentConfig)
       setExperiments(manager.getAllExperiments())
     } catch (err) {
       console.error('[ExperimentsProvider] Create experiment failed:', err)

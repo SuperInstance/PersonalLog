@@ -7,7 +7,7 @@
  * Shows CPU, GPU, Memory, Storage, and Network details.
  */
 
-import { CPU, Globe, HardDrive, Monitor, Cpu, Wifi, MemoryStick } from 'lucide-react';
+import { Cpu, Globe, HardDrive, Monitor, Wifi, MemoryStick } from 'lucide-react';
 import type { HardwareProfile } from '@/lib/hardware/types';
 
 interface HardwareInfoCardProps {

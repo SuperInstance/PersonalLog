@@ -5,6 +5,7 @@
  * the feature flag system in various scenarios.
  */
 
+import React, { useState, useEffect } from 'react';
 import {
   FeatureFlagsProvider,
   useFeatureFlag,
@@ -72,8 +73,8 @@ function LocalModelFeature() {
   if (!result?.enabled) {
     return (
       <FeatureNotAvailable
-        reason={result.reason}
-        missingDependencies={result.missingDependencies}
+        reason={!result ? 'Feature not available' : (result.reason || 'Unknown reason')}
+        missingDependencies={!result ? [] : (result.missingDependencies || [])}
       />
     );
   }
@@ -289,7 +290,10 @@ function App() {
 
       {/* Debug panel only in development */}
       {process.env.NODE_ENV === 'development' && (
-        <FeatureFlagsDebugPanel />
+        <div className="debug-panel">
+          {/* FeatureFlagsDebugPanel would go here */}
+          <div>Feature Flags Debug Panel (Development Only)</div>
+        </div>
       )}
     </FeatureFlagsProvider>
   );
@@ -359,7 +363,7 @@ function ProgressiveApp() {
 function FeatureWithDependencies() {
   const result = useFeatureFlagResult('ai.multibot');
 
-  if (!result?.enabled && result.missingDependencies.length > 0) {
+  if (!result?.enabled && result?.missingDependencies && result.missingDependencies.length > 0) {
     return (
       <div className="dependency-warning">
         <h3>Multi-Bot Conversations</h3>
@@ -385,7 +389,6 @@ function FeatureWithDependencies() {
 // Example 14: Event Listening (Advanced)
 // ============================================================================
 
-import { useEffect } from 'react';
 import { useFeatureFlagsManager, type FlagEvent } from '../index';
 
 function FeatureChangeLogger() {
@@ -447,13 +450,26 @@ function SSRSafeFeature() {
   return hasFeature ? <AnimatedUI /> : <StaticUI />;
 }
 
+// Helper components for the example above
+function AnimatedUI() {
+  return <div>Animated UI</div>;
+}
+
+function StaticUI() {
+  return <div>Static UI</div>;
+}
+
 // ============================================================================
 // Example 16: Testing with Feature Flags
 // ============================================================================
 
-// In your test file
+// In your test file - this is example code, not executed in this file
+// To properly type this, these would be in a separate .test.tsx file
+
+/*
 import { renderHook, act } from '@testing-library/react';
 import { useFeatureFlag, initializeFeatureFlags } from '../index';
+import { getGlobalManager } from '../manager';
 
 describe('Feature Flags', () => {
   beforeEach(async () => {
@@ -485,6 +501,7 @@ describe('Feature Flags', () => {
     expect(result.current).toBe(false);
   });
 });
+*/
 
 // ============================================================================
 // Example 17: Migrating from Hardcoded Checks
@@ -519,8 +536,8 @@ function NewFeature() {
 
   // Track usage
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.analytics) {
-      window.analytics.track('new_feature_viewed', {
+    if (typeof window !== 'undefined' && (window as any).analytics) {
+      (window as any).analytics.track('new_feature_viewed', {
         variant: result.variant,
       });
     }

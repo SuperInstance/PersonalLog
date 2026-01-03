@@ -30,7 +30,7 @@ vi.mock('@/lib/ai/provider', () => ({
 
 // Mock filter settings
 vi.mock('@/lib/wizard/models', () => ({
-  getFilterSettings: vi.fn(() => => ({})),
+  getFilterSettings: vi.fn().mockReturnValue({}),
   DEFAULT_FILTRATION: {},
 }))
 
@@ -68,7 +68,7 @@ describe('POST /api/chat', () => {
     })
 
     it('should handle chat request with OpenAI provider', async () => {
-      restoreEnv = mockEnvKeys({ OPENAI_API_KEY: 'sk-test-openai' })
+      const restore = mockEnvKeys({ OPENAI_API_KEY: 'sk-test-openai' })
 
       const request = createMockRequest({
         body: {
@@ -88,7 +88,7 @@ describe('POST /api/chat', () => {
     })
 
     it('should handle chat request with Anthropic provider', async () => {
-      restoreEnv = mockEnvKeys({ ANTHROPIC_API_KEY: 'sk-ant-test' })
+      const restore = mockEnvKeys({ ANTHROPIC_API_KEY: 'sk-ant-test' })
 
       const request = createMockRequest({
         body: {
@@ -377,9 +377,9 @@ describe('OPTIONS /api/chat', () => {
 
 describe('Provider-specific behavior', () => {
   afterEach(() => {
-    if (restoreEnv) {
-      restoreEnv()
-      restoreEnv = null
+    if (restore()) {
+      restore()()
+      let restore: (() => void) | null = null
     }
   })
 
@@ -418,7 +418,7 @@ describe('Provider-specific behavior', () => {
   })
 
   it('should handle multiple custom providers', async () => {
-    restoreEnv = mockEnvKeys({
+    const restore = mockEnvKeys({
       XAI_API_KEY: 'xai-test',
       DEEPSEEK_API_KEY: 'deepseek-test',
       KIMI_API_KEY: 'kimi-test',

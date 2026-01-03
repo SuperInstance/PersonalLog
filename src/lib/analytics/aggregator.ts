@@ -127,6 +127,17 @@ function calculateTrend(values: number[]): 'increasing' | 'decreasing' | 'stable
   return 'stable'
 }
 
+/**
+ * Convert trend direction to performance trend (for duration metrics)
+ */
+function trendToPerformanceTrend(
+  trend: 'increasing' | 'decreasing' | 'stable'
+): 'improving' | 'degrading' | 'stable' {
+  if (trend === 'increasing') return 'degrading'  // Higher duration = worse
+  if (trend === 'decreasing') return 'improving'  // Lower duration = better
+  return 'stable'
+}
+
 // ============================================================================
 // AGGREGATOR
 // ============================================================================
@@ -438,7 +449,7 @@ export class AnalyticsAggregator {
         p99Duration: sorted[Math.floor(sorted.length * 0.99)],
         successRate: data.successes / total,
         totalOperations: total,
-        trend: calculateTrend(data.durations),
+        trend: trendToPerformanceTrend(calculateTrend(data.durations)),
       })
     }
 
@@ -510,6 +521,10 @@ export class AnalyticsAggregator {
       mostActiveHour: peakUsageHours[0] || 0,
       peakUsageHours,
       retentionRate: 0, // Would require more complex analysis
+      activeDays: dayCounts.size,
+      avgSessionsPerDay: dayCounts.size ? totalSessions / dayCounts.size : 0,
+      totalTime: totalSessionTime,
+      peakUsageHour: peakUsageHours[0] || 0,
     }
   }
 

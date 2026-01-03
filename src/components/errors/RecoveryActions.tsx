@@ -117,7 +117,7 @@ export function RecoveryActions({
   variant = 'default',
   onActionExecuted,
   className = '',
-}: RecoveryActionsProps): JSX.Element | null {
+}: RecoveryActionsProps): React.ReactElement | null {
   const actions = React.useMemo(() => {
     return getRecoveryActions(error);
   }, [error]);

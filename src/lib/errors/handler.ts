@@ -5,13 +5,6 @@
  * Provides logging, user messaging, and recovery actions.
  */
 
-import type {
-  ErrorRecord,
-  ErrorContext,
-  ErrorCategory,
-  RecoveryAction,
-  PersonalLogError,
-} from './types';
 import {
   isPersonalLogError,
   getErrorCategory,
@@ -27,7 +20,32 @@ import {
   ValidationError,
   NotFoundError,
   PermissionError,
+  type ErrorRecord,
+  type ErrorContext,
+  type ErrorCategory,
+  type RecoveryAction,
+  type PersonalLogError,
 } from './types';
+
+// Re-export error types for convenience
+export {
+  WasmError,
+  StorageError,
+  QuotaError,
+  HardwareDetectionError,
+  BenchmarkError,
+  CapabilityError,
+  NetworkError,
+  TimeoutError,
+  ValidationError,
+  NotFoundError,
+  PermissionError,
+  type ErrorRecord,
+  type ErrorContext,
+  type ErrorCategory,
+  type RecoveryAction,
+  type PersonalLogError,
+};
 
 // ============================================================================
 // ERROR HANDLER CONFIGURATION
@@ -65,7 +83,7 @@ interface ErrorHistoryEntry {
 // ERROR HANDLER CLASS
 // ============================================================================
 
-class ErrorHandler {
+export class ErrorHandler {
   private config: ErrorHandlerConfig;
   private errorHistory: Map<string, ErrorHistoryEntry> = new Map();
   private errorCallbacks: Set<(error: ErrorRecord) => void> = new Set();
@@ -131,7 +149,7 @@ class ErrorHandler {
         recovery: 'recoverable',
         userMessage: this.inferUserMessage(error),
         technicalDetails: error.stack,
-        context,
+        context: context as Record<string, unknown>,
         timestamp: Date.now(),
         recoverable: true,
       };
@@ -146,7 +164,7 @@ class ErrorHandler {
       severity: 'medium',
       recovery: 'recoverable',
       userMessage: 'An unexpected error occurred. Please try again.',
-      context,
+      context: context as Record<string, unknown>,
       timestamp: Date.now(),
       recoverable: true,
     };
@@ -461,7 +479,7 @@ class ErrorHandler {
     }
 
     if (filter?.since) {
-      entries = entries.filter(e => e.firstSeen >= filter.since);
+      entries = entries.filter(e => e.firstSeen >= filter.since!);
     }
 
     return entries.sort((a, b) => b.lastSeen - a.lastSeen);
@@ -551,7 +569,11 @@ class ErrorHandler {
     if (error.recovery === 'recoverable') {
       actions.push({
         label: 'Try Again',
-        action: () => window.location.reload(),
+        action: () => {
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
+        },
         primary: true,
       });
     }
@@ -593,7 +615,9 @@ class ErrorHandler {
           label: 'Learn More',
           action: () => {
             // Open documentation
-            window.open('/docs/capabilities', '_blank');
+            if (typeof window !== 'undefined') {
+              window.open('/docs/capabilities', '_blank');
+            }
           },
         });
         break;
@@ -602,7 +626,11 @@ class ErrorHandler {
       case 'benchmark':
         actions.push({
           label: 'Reload Page',
-          action: () => window.location.reload(),
+          action: () => {
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            }
+          },
           dangerous: true,
         });
         break;
@@ -613,8 +641,10 @@ class ErrorHandler {
       actions.push({
         label: 'Copy Error Details',
         action: () => {
-          const details = JSON.stringify(error, null, 2);
-          navigator.clipboard.writeText(details);
+          if (typeof navigator !== 'undefined') {
+            const details = JSON.stringify(error, null, 2);
+            navigator.clipboard.writeText(details);
+          }
         },
       });
     }

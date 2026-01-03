@@ -416,8 +416,8 @@ function getMemoryUsed(): number {
 
 function getMemoryLimit(): number {
   // Browser memory API
-  if (performance.memory) {
-    return performance.memory.jsHeapSizeLimit
+  if (performance.memory && 'jsHeapSizeLimit' in performance.memory) {
+    return (performance.memory as any).jsHeapSizeLimit
   }
 
   // Node.js memory

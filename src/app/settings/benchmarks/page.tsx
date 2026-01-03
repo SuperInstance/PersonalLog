@@ -11,16 +11,16 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, BarChart3, Clock, TrendingUp } from 'lucide-react';
 import { BenchmarkSuite } from '@/lib/benchmark/suite';
-import type { BenchmarkSuite as BenchmarkSuiteType } from '@/lib/benchmark/types';
+import type { BenchmarkSuiteResult } from '@/lib/benchmark/types';
 import { BenchmarkResults } from '@/components/settings/BenchmarkResults';
 
 export default function BenchmarksPage() {
-  const [suite, setSuite] = useState<BenchmarkSuiteType | undefined>();
+  const [suite, setSuite] = useState<BenchmarkSuiteResult | undefined>();
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentBenchmark, setCurrentBenchmark] = useState<string>();
   const [error, setError] = useState<string | null>(null);
-  const [history, setHistory] = useState<BenchmarkSuiteType[]>([]);
+  const [history, setHistory] = useState<BenchmarkSuiteResult[]>([]);
 
   useEffect(() => {
     // Load history from localStorage
@@ -174,7 +174,7 @@ export default function BenchmarksPage() {
 }
 
 interface HistoryCardProps {
-  suite: BenchmarkSuiteType;
+  suite: BenchmarkSuiteResult;
   onSelect: () => void;
 }
 

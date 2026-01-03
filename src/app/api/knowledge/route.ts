@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getVectorStore, type KnowledgeSearchResult } from '@/lib/knowledge/vector-store'
 import { getSyncWorker } from '@/lib/knowledge/sync-worker'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // GET /api/knowledge - Search or list knowledge entries
@@ -28,27 +28,38 @@ export async function GET(request: NextRequest) {
         limit,
         threshold,
       })
-      return NextResponse.json({
+      // Search results change frequently
+      const response = NextResponse.json({
         results,
         count: results.length,
       })
+      return response
     }
 
     if (action === 'entries') {
       const type = searchParams.get('type') as any
       const entries = await vectorStore.getEntries({ type })
-      return NextResponse.json({ entries })
+      const response = NextResponse.json({ entries })
+      // Cache entries list for a short time
+      response.headers.set('Cache-Control', 'public, max-age=60, must-revalidate')
+      return response
     }
 
     if (action === 'checkpoints') {
       const checkpoints = await vectorStore.getCheckpoints()
-      return NextResponse.json({ checkpoints })
+      const response = NextResponse.json({ checkpoints })
+      // Checkpoints rarely change
+      response.headers.set('Cache-Control', 'public, max-age=300, must-revalidate')
+      return response
     }
 
     if (action === 'status') {
       const syncWorker = getSyncWorker()
       const status = syncWorker.getStatus()
-      return NextResponse.json({ status })
+      // Status is dynamic, don't cache
+      const response = NextResponse.json({ status })
+      response.headers.set('Cache-Control', 'no-store, must-revalidate')
+      return response
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

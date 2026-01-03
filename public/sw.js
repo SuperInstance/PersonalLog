@@ -10,7 +10,7 @@
  * @module sw
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2'; // Increment for cache invalidation
 const CACHE_NAME = `personallog-${CACHE_VERSION}`;
 
 // Cache names for different strategies
@@ -19,6 +19,7 @@ const CACHE_NAMES = {
   api: `${CACHE_NAME}-api`,
   assets: `${CACHE_NAME}-assets`,
   images: `${CACHE_NAME}-images`,
+  embeddings: `${CACHE_NAME}-embeddings`,
 };
 
 // URLs to cache for app shell
@@ -31,9 +32,15 @@ const SHELL_URLS = [
 
 // API routes to cache
 const API_PATTERNS = [
-  /\/api\/conversations/,
-  /\/api\/knowledge/,
-  /\/api\/modules/,
+  /\/api\/conversations/, // Cache conversations
+  /\/api\/knowledge/, // Cache knowledge entries
+  /\/api\/modules/, // Cache modules
+];
+
+// API routes to NEVER cache (write operations)
+const NO_CACHE_PATTERNS = [
+  /\/api\/chat/, // Never cache chat responses
+  /\/api\/.*\/(POST|PUT|PATCH|DELETE)/, // Never cache write operations
 ];
 
 // Asset patterns
@@ -96,7 +103,8 @@ self.addEventListener('activate', (event) => {
           name !== CACHE_NAMES.shell &&
           name !== CACHE_NAMES.api &&
           name !== CACHE_NAMES.assets &&
-          name !== CACHE_NAMES.images
+          name !== CACHE_NAMES.images &&
+          name !== CACHE_NAMES.embeddings
       );
 
       await Promise.all(
@@ -125,8 +133,34 @@ self.addEventListener('fetch', (event) => {
   // Skip cross-origin requests
   if (url.origin !== self.location.origin) return;
 
-  // API routes - network first with cache fallback
+  // Check NO_CACHE patterns
+  for (const pattern of NO_CACHE_PATTERNS) {
+    if (pattern.test(url.pathname)) {
+      return; // Don't cache, go to network directly
+    }
+  }
+
+  // API routes - intelligent caching based on endpoint
   if (url.pathname.startsWith('/api/')) {
+    // Models and contacts - cache first (rarely change)
+    if (url.pathname.startsWith('/api/models')) {
+      event.respondWith(staleWhileRevalidate(request, CACHE_NAMES.api));
+      return;
+    }
+
+    // Conversations - network first for freshness
+    if (url.pathname.startsWith('/api/conversations')) {
+      event.respondWith(networkFirst(request, CACHE_NAMES.api));
+      return;
+    }
+
+    // Knowledge - cache first with short TTL
+    if (url.pathname.startsWith('/api/knowledge')) {
+      event.respondWith(staleWhileRevalidate(request, CACHE_NAMES.api));
+      return;
+    }
+
+    // Default API behavior
     event.respondWith(networkFirst(request, CACHE_NAMES.api));
     return;
   }
@@ -329,6 +363,50 @@ self.addEventListener('message', (event) => {
           await Promise.all(
             cacheNames.map((name) => caches.delete(name))
           );
+        })()
+      );
+      break;
+    case 'INVALIDATE_CACHE':
+      event.waitUntil(
+        (async () => {
+          // Invalidate specific cache by pattern
+          const pattern = data.pattern;
+          const cacheNames = await caches.keys();
+
+          for (const name of cacheNames) {
+            const cache = await caches.open(name);
+            const keys = await cache.keys();
+
+            for (const request of keys) {
+              if (pattern.test(request.url)) {
+                await cache.delete(request);
+              }
+            }
+          }
+        })()
+      );
+      break;
+    case 'GET_CACHE_SIZE':
+      event.waitUntil(
+        (async () => {
+          const cacheNames = await caches.keys();
+          let totalSize = 0;
+
+          for (const name of cacheNames) {
+            const cache = await caches.open(name);
+            const keys = await cache.keys();
+
+            for (const request of keys) {
+              const response = await cache.match(request);
+              if (response) {
+                const blob = await response.blob();
+                totalSize += blob.size;
+              }
+            }
+          }
+
+          // Send size back to client
+          event.ports[0].postMessage({ size: totalSize });
         })()
       );
       break;

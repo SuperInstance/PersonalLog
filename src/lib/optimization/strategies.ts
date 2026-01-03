@@ -184,7 +184,7 @@ export class ConservativeStrategy implements OptimizationStrategy {
     };
   }
 
-  private checkConditions(
+  public checkConditions(
     rule: OptimizationRule,
     context: StrategyContext
   ): boolean {
@@ -363,7 +363,7 @@ export class AggressiveStrategy implements OptimizationStrategy {
     return candidate;
   }
 
-  private checkConditions(
+  public checkConditions(
     rule: OptimizationRule,
     context: StrategyContext
   ): boolean {

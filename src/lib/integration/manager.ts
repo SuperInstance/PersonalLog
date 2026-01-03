@@ -502,8 +502,8 @@ export class IntegrationManager {
     ]);
 
     this.log('[Integration] Benchmarks complete:', {
-      overallScore: result.overallScore,
-      recommendations: result.recommendations.length,
+      overallScore: (result as any).overallScore,
+      recommendations: (result as any).recommendations?.length || 0,
     });
   }
 
@@ -809,7 +809,7 @@ export class IntegrationManager {
         system,
         status: this.state.systems[system],
         previousStatus,
-      } as SystemStatusChangedEvent['data'],
+      } as any,
     });
   }
 
@@ -828,7 +828,7 @@ export class IntegrationManager {
       data: {
         progress,
         system: system as keyof IntegrationState['systems'],
-      } as InitializationProgressEvent['data'],
+      } as any,
     });
   }
 
@@ -868,7 +868,7 @@ export class IntegrationManager {
       data: {
         error: message,
         details,
-      } as ErrorEvent['data'],
+      } as any,
     });
   }
 

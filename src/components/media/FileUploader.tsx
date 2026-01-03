@@ -174,5 +174,3 @@ export default function FileUploader({
     </div>
   )
 }
-
-export { type FilePreview }

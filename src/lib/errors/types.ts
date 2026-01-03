@@ -82,7 +82,7 @@ export class PersonalLogError extends Error {
       cause?: Error;
     }
   ) {
-    super(message, { cause: options.cause });
+    super(message);
 
     this.name = this.constructor.name;
     this.category = options.category;
@@ -96,6 +96,16 @@ export class PersonalLogError extends Error {
       options.recovery === 'recoverable' ||
       options.recovery === 'fallback' ||
       options.recovery === 'degraded';
+
+    // Store cause as a non-enumerable property for compatibility
+    if (options.cause) {
+      Object.defineProperty(this, 'cause', {
+        value: options.cause,
+        writable: false,
+        enumerable: false,
+        configurable: true,
+      });
+    }
 
     // Maintain proper stack trace
     if (Error.captureStackTrace) {
@@ -147,16 +157,23 @@ export class PersonalLogError extends Error {
 export class WasmError extends PersonalLogError {
   constructor(
     message: string,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category'> & {
+    options: {
       technicalDetails?: string;
+      severity?: ErrorSeverity;
+      recovery?: RecoveryPotential;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
     } = {}
   ) {
     super(message, {
-      ...options,
       category: 'system',
       severity: options.severity || 'high',
       recovery: options.recovery || 'fallback',
       userMessage: options.userMessage || 'WebAssembly module failed to load. Using optimized JavaScript instead.',
+      technicalDetails: options.technicalDetails,
+      context: options.context,
+      cause: options.cause,
     });
   }
 }
@@ -167,16 +184,23 @@ export class WasmError extends PersonalLogError {
 export class StorageError extends PersonalLogError {
   constructor(
     message: string,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category'> & {
+    options: {
       technicalDetails?: string;
+      severity?: ErrorSeverity;
+      recovery?: RecoveryPotential;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
     } = {}
   ) {
     super(message, {
-      ...options,
       category: 'system',
       severity: options.severity || 'critical',
       recovery: options.recovery || 'fatal',
       userMessage: options.userMessage || 'Database storage is unavailable. Please check your browser settings.',
+      technicalDetails: options.technicalDetails,
+      context: options.context,
+      cause: options.cause,
     });
   }
 }
@@ -191,19 +215,26 @@ export class QuotaError extends PersonalLogError {
   constructor(
     usedBytes: number,
     totalBytes: number,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category'> & {} = {}
+    options: {
+      technicalDetails?: string;
+      severity?: ErrorSeverity;
+      recovery?: RecoveryPotential;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
+    } = {}
   ) {
     const usedMB = Math.round(usedBytes / (1024 * 1024));
     const totalMB = Math.round(totalBytes / (1024 * 1024));
 
     super(`Storage quota exceeded: ${usedMB}MB used of ${totalMB}MB`, {
-      ...options,
       category: 'quota',
       severity: 'high',
       recovery: 'recoverable',
       userMessage: options.userMessage || `Storage almost full (${usedMB}MB used of ${totalMB}MB). Consider clearing old conversations or enabling compaction.`,
       technicalDetails: options.technicalDetails || `Quota: ${totalBytes} bytes, Used: ${usedBytes} bytes`,
       context: { usedBytes, totalBytes, ...options.context },
+      cause: options.cause,
     });
 
     this.usedBytes = usedBytes;
@@ -217,16 +248,22 @@ export class QuotaError extends PersonalLogError {
 export class HardwareDetectionError extends PersonalLogError {
   constructor(
     message: string,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category' | 'recovery'> & {
+    options: {
       technicalDetails?: string;
+      severity?: ErrorSeverity;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
     } = {}
   ) {
     super(message, {
-      ...options,
       category: 'system',
       severity: options.severity || 'medium',
       recovery: 'fallback',
       userMessage: options.userMessage || 'Could not detect all hardware capabilities. Some features may use default settings.',
+      technicalDetails: options.technicalDetails,
+      context: options.context,
+      cause: options.cause,
     });
   }
 }
@@ -239,18 +276,24 @@ export class BenchmarkError extends PersonalLogError {
 
   constructor(
     message: string,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category'> & {
+    options: {
       benchmarkId?: string;
       technicalDetails?: string;
+      severity?: ErrorSeverity;
+      recovery?: RecoveryPotential;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
     } = {}
   ) {
     super(message, {
-      ...options,
       category: 'benchmark',
       severity: options.severity || 'medium',
       recovery: options.recovery || 'degraded',
       userMessage: options.userMessage || 'Performance benchmark failed. Using default performance settings.',
+      technicalDetails: options.technicalDetails,
       context: { benchmarkId: options.benchmarkId, ...options.context },
+      cause: options.cause,
     });
 
     this.benchmarkId = options.benchmarkId;
@@ -267,15 +310,23 @@ export class CapabilityError extends PersonalLogError {
   constructor(
     feature: string,
     requirement: string,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category'> & {} = {}
+    options: {
+      technicalDetails?: string;
+      severity?: ErrorSeverity;
+      recovery?: RecoveryPotential;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
+    } = {}
   ) {
     super(`Feature not available: ${feature}`, {
-      ...options,
       category: 'capability',
       severity: 'medium',
       recovery: 'degraded',
       userMessage: options.userMessage || `"${feature}" requires ${requirement}. This feature is disabled on your device.`,
+      technicalDetails: options.technicalDetails,
       context: { feature, requirement, ...options.context },
+      cause: options.cause,
     });
 
     this.feature = feature;
@@ -292,24 +343,30 @@ export class NetworkError extends PersonalLogError {
 
   constructor(
     message: string,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category'> & {
+    options: {
       url?: string;
       status?: number;
       technicalDetails?: string;
+      severity?: ErrorSeverity;
+      recovery?: RecoveryPotential;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
     } = {}
   ) {
     const isOffline = !navigator.onLine;
     const category: ErrorCategory = isOffline ? 'offline' : 'network';
 
     super(message, {
-      ...options,
       category,
       severity: options.severity || (isOffline ? 'high' : 'medium'),
       recovery: options.recovery || (isOffline ? 'recoverable' : 'degraded'),
       userMessage: options.userMessage || (isOffline
         ? 'You appear to be offline. Some features may be limited.'
         : 'Network request failed. Please check your connection.'),
+      technicalDetails: options.technicalDetails,
       context: { url: options.url, status: options.status, ...options.context },
+      cause: options.cause,
     });
 
     this.url = options.url;
@@ -327,15 +384,22 @@ export class TimeoutError extends PersonalLogError {
   constructor(
     operation: string,
     timeout: number,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category' | 'recovery'> & {} = {}
+    options: {
+      technicalDetails?: string;
+      severity?: ErrorSeverity;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
+    } = {}
   ) {
     super(`Operation timed out: ${operation}`, {
-      ...options,
       category: 'timeout',
       severity: options.severity || 'low',
       recovery: 'degraded',
       userMessage: options.userMessage || `"${operation}" took too long and was skipped. This is normal on slower devices.`,
+      technicalDetails: options.technicalDetails,
       context: { operation, timeout, ...options.context },
+      cause: options.cause,
     });
 
     this.operation = operation;
@@ -352,18 +416,23 @@ export class ValidationError extends PersonalLogError {
 
   constructor(
     message: string,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category' | 'severity' | 'recovery'> & {
+    options: {
       field?: string;
       value?: unknown;
+      technicalDetails?: string;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
     } = {}
   ) {
     super(message, {
-      ...options,
       category: 'validation',
       severity: 'low',
       recovery: 'recoverable',
       userMessage: options.userMessage || 'Invalid input. Please check your entries and try again.',
+      technicalDetails: options.technicalDetails,
       context: { field: options.field, value: options.value, ...options.context },
+      cause: options.cause,
     });
 
     this.field = options.field;
@@ -381,15 +450,21 @@ export class NotFoundError extends PersonalLogError {
   constructor(
     resource: string,
     id?: string,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category' | 'severity' | 'recovery'> & {} = {}
+    options: {
+      technicalDetails?: string;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
+    } = {}
   ) {
     super(`Resource not found: ${resource}${id ? ` (${id})` : ''}`, {
-      ...options,
       category: 'not-found',
       severity: 'medium',
       recovery: 'recoverable',
       userMessage: options.userMessage || `The requested ${resource} could not be found.`,
+      technicalDetails: options.technicalDetails,
       context: { resource, id, ...options.context },
+      cause: options.cause,
     });
 
     this.resource = resource;
@@ -405,15 +480,22 @@ export class PermissionError extends PersonalLogError {
 
   constructor(
     permission: string,
-    options: Omit<ConstructorParameters<typeof PersonalLogError>[1], 'category' | 'recovery'> & {} = {}
+    options: {
+      technicalDetails?: string;
+      severity?: ErrorSeverity;
+      userMessage?: string;
+      context?: Record<string, unknown>;
+      cause?: Error;
+    } = {}
   ) {
     super(`Permission denied: ${permission}`, {
-      ...options,
       category: 'permission',
       severity: options.severity || 'high',
       recovery: 'recoverable',
       userMessage: options.userMessage || `Permission required: ${permission}. Please grant access in your browser settings.`,
+      technicalDetails: options.technicalDetails,
       context: { permission, ...options.context },
+      cause: options.cause,
     });
 
     this.permission = permission;
@@ -448,7 +530,7 @@ export interface ErrorRecord {
 /**
  * Enhanced error context for logging
  */
-export interface ErrorContext {
+export interface ErrorContext extends Record<string, unknown> {
   component?: string;
   operation?: string;
   userId?: string;

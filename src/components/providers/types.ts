@@ -21,15 +21,21 @@ import type {
 } from '@/lib/experiments'
 import type {
   OptimizationStatus,
-  AppliedRule,
   OptimizationEngineState,
 } from '@/lib/optimization'
 import type {
-  UserPreferences,
   PreferenceKey,
   UserAction,
   LearningState,
+  Preference,
+  PreferenceValue,
 } from '@/lib/personalization'
+
+// UserPreferences is the internal format from the personalization library
+type UserPreferences = Record<PreferenceKey, Preference<PreferenceValue>>
+
+// AppliedRule is a rule ID that has been applied
+type AppliedRule = string
 
 // ============================================================================
 // INTEGRATION PROVIDER TYPES

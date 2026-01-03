@@ -7,10 +7,11 @@
  * @module components/ui/VirtualList.example
  */
 
+import { useState, useMemo } from "react";
 import { VirtualList } from "./VirtualList";
 
 // ============================================
-// EXAMPLE 1: Message List (Fixed Height)
+// TYPE DEFINITIONS
 // ============================================
 
 interface Message {
@@ -18,6 +19,24 @@ interface Message {
   content: string;
   timestamp: Date;
 }
+
+interface Article {
+  id: string;
+  title: string;
+  excerpt: string;
+  tags: string[];
+}
+
+interface Item {
+  id: string;
+  name: string;
+  date: Date;
+  category: string;
+}
+
+// ============================================
+// EXAMPLE 1: Message List (Fixed Height)
+// ============================================
 
 function MessageList({ messages }: { messages: Message[] }) {
   return (
@@ -64,11 +83,9 @@ function ConversationList({ conversations }: { conversations: Conversation[] }) 
         </div>
       )}
       height={600}
-      estimatedItemHeight={100}
-      dynamicHeight={true}
-      overscan={3}
+      itemHeight={100}
+      overscan={10}
       getKey={(conv) => conv.id}
-      className="border rounded-lg"
     />
   );
 }
@@ -143,18 +160,22 @@ function SearchableMessageList({ messages }: { messages: Message[] }) {
   return (
     <>
       <input
-        type="search"
+        type="text"
         placeholder="Search messages..."
         onChange={(e) => handleSearch(e.target.value)}
-        className="w-full p-2 border rounded"
+        className="mb-4 p-2 border rounded"
       />
       <VirtualList
         items={messages}
-        renderItem={(message) => <MessageItem message={message} />}
-        height={500}
+        renderItem={(message) => (
+          <div key={message.id} className="p-4 border-b">
+            <p>{message.content}</p>
+          </div>
+        )}
+        height={600}
         itemHeight={100}
         scrollToIndex={scrollToIndex}
-        scrollAlignment="center"
+        getKey={(msg) => msg.id}
       />
     </>
   );
@@ -237,5 +258,33 @@ function FilterableList({ allItems }: { allItems: Item[] }) {
         getKey={(item) => item.id}
       />
     </>
+  );
+}
+
+// ============================================
+// HELPER FUNCTIONS & COMPONENTS
+// ============================================
+
+// Mock fetch function for Example 3
+async function fetchMoreArticles(offset: number): Promise<Article[]> {
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  return Array.from({ length: 10 }, (_, i) => ({
+    id: `article-${offset + i}`,
+    title: `Article ${offset + i + 1}`,
+    excerpt: `This is an excerpt for article ${offset + i + 1}`,
+    tags: ['tag1', 'tag2', 'tag3'],
+  }));
+}
+
+// ItemCard component for Example 6
+function ItemCard({ item }: { item: Item }) {
+  return (
+    <div className="p-4 border rounded shadow-sm">
+      <h3 className="font-semibold">{item.name}</h3>
+      <p className="text-sm text-gray-500">{item.category}</p>
+      <p className="text-xs text-gray-400">{item.date.toLocaleDateString()}</p>
+    </div>
   );
 }

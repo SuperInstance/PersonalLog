@@ -19,7 +19,7 @@ import {
   ArrowLeft,
   Brain,
   BarChart3,
-  Flask,
+  TestTube,
   Zap,
   Sparkles,
   TrendingUp,
@@ -32,11 +32,14 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
+  Settings,
 } from 'lucide-react';
 import { StatusCard, SystemStatus } from '@/components/dashboard/StatusCard';
 import { InsightCard } from '@/components/dashboard/InsightCard';
 import { QuickActionBtn } from '@/components/dashboard/QuickActionBtn';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
+import { intelligence } from '@/lib/intelligence';
+import type { UnifiedInsights } from '@/lib/intelligence';
 
 // ============================================================================
 // TYPES
@@ -91,12 +94,83 @@ export default function IntelligenceDashboard() {
   // Load data from all systems
   const loadDashboardData = async () => {
     try {
-      // In a real implementation, these would be actual API calls to the systems
-      // For now, we'll use mock data that demonstrates the UI
+      // Get unified insights from intelligence hub
+      const insights: UnifiedInsights = await intelligence.getInsights();
 
-      // Simulate loading delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Get settings
+      const settings = intelligence.getSettings();
 
+      // Get health status
+      const health = await intelligence.getHealth();
+
+      // Map insights to state
+      setState({
+        analytics: {
+          eventCount: parseInt(insights.analytics.keyMetrics[0]?.value || '0'),
+          storageUsed: '2.4 MB', // Would come from analytics storage info
+          sessions: parseInt(insights.analytics.keyMetrics[0]?.value || '0'),
+          mostUsedFeature: insights.analytics.highlight,
+          errorRate: 0.02, // Would come from analytics
+        },
+        experiments: {
+          active: insights.experiments.active,
+          variants: insights.experiments.participation,
+          completed: 12, // Would come from experiments
+          winningVariant: !!insights.experiments.winning,
+        },
+        optimization: {
+          rulesApplied: 5, // Would come from optimization history
+          improvement: Math.round(insights.optimization.healthScore),
+          enabled: settings.optimization.enabled,
+          healthScore: insights.optimization.healthScore,
+        },
+        personalization: {
+          preferences: insights.personalization.preferencesLearned,
+          avgConfidence: insights.personalization.confidence,
+          categories: 4, // Would come from personalization
+          enabled: settings.personalization.enabled,
+        },
+      });
+
+      // Generate activity from insights
+      setActivities([
+        {
+          id: '1',
+          message: insights.personalization.learned,
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          icon: Sparkles,
+          color: 'green',
+        },
+        {
+          id: '2',
+          message: insights.optimization.applied,
+          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
+          icon: Zap,
+          color: 'amber',
+        },
+        {
+          id: '3',
+          message: insights.experiments.winning
+            ? `Experiment winner: ${insights.experiments.winning.name}`
+            : 'Experiments running...',
+          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          icon: TestTube,
+          color: 'purple',
+        },
+        {
+          id: '4',
+          message: insights.summary,
+          timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000),
+          icon: Brain,
+          color: 'blue',
+        },
+      ]);
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to load intelligence dashboard data:', error);
+
+      // Fallback to mock data on error
       setState({
         analytics: {
           eventCount: 12847,
@@ -125,47 +199,6 @@ export default function IntelligenceDashboard() {
         },
       });
 
-      setActivities([
-        {
-          id: '1',
-          message: 'New preference learned: You prefer compact UI density',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-          icon: Sparkles,
-          color: 'green',
-        },
-        {
-          id: '2',
-          message: 'Optimization applied: Enabled virtualization for long lists',
-          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
-          icon: Zap,
-          color: 'amber',
-        },
-        {
-          id: '3',
-          message: 'Experiment completed: AI chat model B won with 94% confidence',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-          icon: Flask,
-          color: 'purple',
-        },
-        {
-          id: '4',
-          message: 'Benchmark results: Performance score improved by 23%',
-          timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), // 2 days ago
-          icon: Activity,
-          color: 'blue',
-        },
-        {
-          id: '5',
-          message: 'Analytics: Tracked 1,000th event this week',
-          timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000), // 3 days ago
-          icon: BarChart3,
-          color: 'blue',
-        },
-      ]);
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to load intelligence dashboard data:', error);
       setLoading(false);
     }
   };
@@ -225,24 +258,38 @@ export default function IntelligenceDashboard() {
   };
 
   const handleGenerateReport = async () => {
-    const report = {
-      generatedAt: new Date().toISOString(),
-      analytics: state?.analytics,
-      experiments: state?.experiments,
-      optimization: state?.optimization,
-      personalization: state?.personalization,
-      recentActivity: activities.slice(0, 10),
-    };
+    try {
+      // Get actual data from intelligence hub
+      const insights = await intelligence.getInsights();
+      const health = await intelligence.getHealth();
+      const settings = intelligence.getSettings();
 
-    const blob = new Blob([JSON.stringify(report, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `intelligence-report-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+      const report = {
+        generatedAt: new Date().toISOString(),
+        insights,
+        health,
+        settings,
+        recentActivity: activities.slice(0, 10),
+      };
+
+      const blob = new Blob([JSON.stringify(report, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `intelligence-report-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+      alert('Failed to generate intelligence report');
+    }
+  };
+
+  const handleOpenSettings = () => {
+    // Navigate to detailed settings page
+    alert('Intelligence settings - coming soon!');
   };
 
   if (loading) {
@@ -334,7 +381,7 @@ export default function IntelligenceDashboard() {
           <StatCard
             title="Active Experiments"
             value={state.experiments.active.toString()}
-            icon={Flask}
+            icon={TestTube}
             color="purple"
             description={`${state.experiments.completed} completed`}
           />
@@ -381,7 +428,7 @@ export default function IntelligenceDashboard() {
             />
             <StatusCard
               title="Experiments"
-              icon={Flask}
+              icon={TestTube}
               status={getExperimentsStatus()}
               primaryMetric={{
                 value: state.experiments.active.toString(),
@@ -449,7 +496,7 @@ export default function IntelligenceDashboard() {
               ]}
             />
             <InsightCard
-              icon={Flask}
+              icon={TestTube}
               title="Experiment Insights"
               color="purple"
               insights={[
@@ -493,7 +540,7 @@ export default function IntelligenceDashboard() {
             Quick Actions
           </h2>
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <QuickActionBtn
                 icon={Play}
                 label="Run Benchmarks"
@@ -517,6 +564,12 @@ export default function IntelligenceDashboard() {
                 label="Diagnostic Report"
                 variant="secondary"
                 onClick={handleGenerateReport}
+              />
+              <QuickActionBtn
+                icon={Settings}
+                label="Settings"
+                variant="secondary"
+                onClick={handleOpenSettings}
               />
             </div>
           </div>

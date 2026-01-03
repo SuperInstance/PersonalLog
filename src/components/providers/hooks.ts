@@ -19,6 +19,7 @@ export { usePersonalization } from './PersonalizationProvider'
 // CONVENIENCE COMPOSITE HOOKS
 // ============================================================================
 
+import { useCallback } from 'react'
 import { useIntegration } from './IntegrationProvider'
 import { useAnalytics } from './AnalyticsProvider'
 import { useExperiments } from './ExperimentsProvider'
@@ -156,8 +157,8 @@ export function usePerformanceTracking(componentName: string) {
 
   const trackMetric = useCallback((metric: string, value: number) => {
     // Track in both analytics and experiments
-    track('metric_recorded', {
-      type: 'metric_recorded',
+    track('memory_measurement', {
+      type: 'memory_measurement',
       metric,
       value,
       component: componentName,
@@ -197,10 +198,10 @@ export function useAdaptiveSettings() {
 
   return {
     // UI preferences from personalization
-    fontSize: get('ui.fontSize', 14),
-    theme: get('ui.theme', 'system'),
-    density: get('ui.density', 'medium'),
-    animationsEnabled: get('ui.animationsEnabled', true),
+    fontSize: get('ui.fontSize') as number ?? 1.0,
+    theme: get('ui.theme') as string ?? 'auto',
+    density: get('ui.density') as string ?? 'comfortable',
+    animations: get('ui.animations') as string ?? 'full',
 
     // Feature flags
     hasHighPerformance: isFeatureEnabled('high-performance-mode'),
@@ -233,10 +234,9 @@ export function useInteractionTracking() {
   const trackClick = useCallback((elementId: string, context?: Record<string, unknown>) => {
     recordAction({
       type: 'element-clicked',
-      timestamp: Date.now(),
-      feature: elementId,
+      timestamp: new Date().toISOString(),
       context: {
-        elementType: 'button',
+        feature: elementId,
         ...context,
       },
     })
@@ -252,11 +252,10 @@ export function useInteractionTracking() {
   const trackView = useCallback((viewName: string, context?: Record<string, unknown>) => {
     recordAction({
       type: 'view-changed',
-      timestamp: Date.now(),
-      feature: viewName,
+      timestamp: new Date().toISOString(),
       context: {
         view: viewName,
-        ...context,
+        ...(context || {}),
       },
     })
 
@@ -275,11 +274,11 @@ export function useInteractionTracking() {
   ) => {
     recordAction({
       type: 'feature-used',
-      timestamp: Date.now(),
-      feature: featureId,
+      timestamp: new Date().toISOString(),
       context: {
+        feature: featureId,
         duration,
-        ...context,
+        ...(context || {}),
       },
     })
 
@@ -295,12 +294,10 @@ export function useInteractionTracking() {
   const trackError = useCallback((error: Error, context?: Record<string, unknown>) => {
     recordAction({
       type: 'error-occurred',
-      timestamp: Date.now(),
-      feature: context?.feature as string ?? 'unknown',
+      timestamp: new Date().toISOString(),
       context: {
-        errorMessage: error.message,
-        errorType: error.name,
-        ...context,
+        feature: context?.feature as string ?? 'unknown',
+        ...(context || {}),
       },
     })
 
@@ -317,11 +314,10 @@ export function useInteractionTracking() {
   const trackSession = useCallback((duration: number) => {
     recordAction({
       type: 'session-ended',
-      timestamp: Date.now(),
-      feature: 'session',
+      timestamp: new Date().toISOString(),
       context: {
+        feature: 'session',
         duration,
-        date: new Date().toISOString(),
       },
     })
 

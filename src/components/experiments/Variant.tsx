@@ -63,7 +63,7 @@ export function Variant({
   exposureMetricId = 'exposure',
   onRender,
   onSkip,
-}: VariantProps): JSX.Element | null {
+}: VariantProps): React.ReactElement | null {
   const assignedVariant = useVariant(experiment, userId);
   const trackMetric = useMetricTracker();
   const isActive = assignedVariant?.id === variant;
@@ -91,7 +91,7 @@ export function Variant({
 /**
  * Control variant shorthand
  */
-export function Control(props: Omit<VariantProps, 'variant'>): JSX.Element | null {
+export function Control(props: Omit<VariantProps, 'variant'>): React.ReactElement | null {
   const assigned = useVariant(props.experiment, props.userId);
   const controlVariant = assigned?.isControl ? assigned : null;
 
@@ -106,7 +106,7 @@ export function Control(props: Omit<VariantProps, 'variant'>): JSX.Element | nul
  * Experiment wrapper component
  * Renders the first matching variant
  */
-export function Experiment({ experiment, userId, fallback, children }: ExperimentProps): JSX.Element {
+export function Experiment({ experiment, userId, fallback, children }: ExperimentProps): React.ReactElement {
   const assignedVariant = useVariant(experiment, userId);
 
   // Find the matching variant child
@@ -119,7 +119,7 @@ export function Experiment({ experiment, userId, fallback, children }: Experimen
   // Render the first matching variant
   for (const child of childrenArray) {
     if (React.isValidElement(child)) {
-      const childVariant = child.props.variant;
+      const childVariant = (child.props as any).variant;
       if (childVariant === assignedVariant.id) {
         // Track exposure
         useExposeVariant(experiment, assignedVariant.id, userId);
@@ -142,7 +142,7 @@ interface VariantGroupProps {
   fallback?: ReactNode;
 }
 
-export function VariantGroup({ experiment, userId, variants, fallback }: VariantGroupProps): JSX.Element {
+export function VariantGroup({ experiment, userId, variants, fallback }: VariantGroupProps): React.ReactElement {
   const assignedVariant = useVariant(experiment, userId);
 
   if (!assignedVariant) {
@@ -226,7 +226,7 @@ export function withVariant<P extends object>(
   experimentId: string,
   variantRenderers: Record<string, React.ComponentType<P>>
 ) {
-  return function WrappedComponent(props: P): JSX.Element {
+  return function WrappedComponent(props: P): React.ReactElement {
     const variant = useVariant(experimentId);
 
     if (!variant) {

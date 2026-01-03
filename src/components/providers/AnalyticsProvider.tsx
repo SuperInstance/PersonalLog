@@ -117,9 +117,9 @@ export function AnalyticsProvider({ config, children }: AnalyticsProviderProps) 
     try {
       const storageInfo = await analytics.data.getStorageInfo()
       return {
-        totalEvents: storageInfo.totalEvents,
-        storageSize: storageInfo.storageSize,
-        retentionDays: storageInfo.retentionDays,
+        totalEvents: storageInfo.eventCount,
+        storageSize: storageInfo.estimatedSizeMB,
+        retentionDays: config?.retentionDays ?? 90,
       }
     } catch (err) {
       console.error('[AnalyticsProvider] Get stats failed:', err)
@@ -134,7 +134,8 @@ export function AnalyticsProvider({ config, children }: AnalyticsProviderProps) 
   // Export data
   const exportData = useCallback(async (days?: number) => {
     try {
-      return await analytics.data.export(days ?? 30)
+      const exportResult = await analytics.data.export(days ?? 30)
+      return JSON.stringify(exportResult, null, 2)
     } catch (err) {
       console.error('[AnalyticsProvider] Export failed:', err)
       throw err

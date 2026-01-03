@@ -72,7 +72,6 @@ export function KeyboardShortcutsHelp({ isOpen, onClose }: KeyboardShortcutsHelp
 
   // Focus trap when modal is open
   useFocusTrap({
-    container: modalRef,
     enabled: isOpen,
     autoFocus: true,
     onEscape: onClose,

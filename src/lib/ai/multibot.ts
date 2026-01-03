@@ -64,7 +64,7 @@ export async function parallelChat(options: MultiBotChatOptions): Promise<MultiB
           },
         }
       } catch (error) {
-        return {
+        const errorResponse: MultiBotResponse = {
           agentId: agent.id,
           agentName: agent.name,
           response: {
@@ -74,6 +74,7 @@ export async function parallelChat(options: MultiBotChatOptions): Promise<MultiB
             finishReason: 'stop',
           },
         }
+        return errorResponse
       }
     })
   )

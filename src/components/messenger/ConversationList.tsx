@@ -15,7 +15,7 @@
 import { useState, useMemo, memo, useCallback } from 'react'
 import { Search, Pin, MoreVertical } from 'lucide-react'
 import type { Conversation } from '@/types/conversation'
-import { getAuthorDisplayName, formatDate } from '@/lib/utils'
+import { getAuthorDisplayName } from '@/lib/utils'
 import { VirtualList } from '@/components/ui/VirtualList'
 
 interface ConversationListProps {

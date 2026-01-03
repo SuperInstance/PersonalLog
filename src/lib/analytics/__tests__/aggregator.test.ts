@@ -159,11 +159,11 @@ describe('AnalyticsAggregator', () => {
 
     it('should respect time range', async () => {
       const counts = await aggregator.getEventCountsByType({
-        type: 'minutes',
-        value: 30,
+        type: 'hours',
+        value: 1,
       });
 
-      // Only events from last 30 minutes
+      // Only events from last hour
       expect(counts['feature_used']).toBe(2);
       expect(counts['error_occurred']).toBe(1);
     });
@@ -239,7 +239,7 @@ describe('AnalyticsAggregator', () => {
       );
 
       for (let i = 1; i < series.length; i++) {
-        expect(series[i].timestamp).toBeGreaterThanOrEqual(series[i - 1].timestamp);
+        expect(series[i].timestamp >= series[i - 1].timestamp).toBe(true);
       }
     });
 

@@ -128,6 +128,12 @@ export interface MetricValue {
   /** Optional sample size (for aggregated metrics) */
   sampleSize?: number;
 
+  /** Experiment ID */
+  experimentId?: string;
+
+  /** Variant ID */
+  variantId?: string;
+
   /** User ID (for tracking individual users) */
   userId?: string;
 

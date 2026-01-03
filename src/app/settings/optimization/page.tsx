@@ -5,6 +5,7 @@
  *
  * View and manage auto-optimization status, applied rules, and configuration.
  * Displays optimization history, measured impact, and provides manual controls.
+ * Enhanced with auto-tuner, profiler, and recommender integration.
  */
 
 import { useState, useEffect } from 'react';
@@ -21,15 +22,21 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
+  TrendingUp,
+  Activity,
+  Target,
+  Lightbulb,
 } from 'lucide-react';
-import { createOptimizationEngine, allRules } from '@/lib/optimization';
-import type { OptimizationRecord, OptimizationRule } from '@/lib/optimization';
+import { createOptimizationEngine, allRules, autoTuner, recommender, profiler } from '@/lib/optimization';
+import type { OptimizationRecord, OptimizationRule, OptimizationTarget, Recommendation, ProfileResult } from '@/lib/optimization';
 
 export default function OptimizationSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [engineStatus, setEngineStatus] = useState<any>(null);
-  const [history, setHistory] = useState<OptimizationRecord[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [profiles, setProfiles] = useState<ProfileResult[]>([]);
   const [strategy, setStrategy] = useState<'conservative' | 'balanced' | 'aggressive'>('balanced');
   const [autoApply, setAutoApply] = useState(false);
   const [running, setRunning] = useState(false);
@@ -43,16 +50,45 @@ export default function OptimizationSettingsPage() {
       setLoading(true);
       setError(null);
 
-      // In a real implementation, this would load from the actual engine
-      // For now, we'll simulate the data
+      // Load real data from auto-tuner
+      const metrics = await autoTuner.monitor();
+      const opportunities = await autoTuner.detectOpportunities();
+
       setEngineStatus({
-        active: false,
-        lastRun: new Date(Date.now() - 3600000).toISOString(),
-        rulesApplied: 0,
+        active: true,
+        lastRun: new Date().toISOString(),
+        rulesApplied: autoTuner.getHistory().length,
         healthScore: 85,
+        opportunities: opportunities.length,
+        currentMetrics: metrics,
       });
 
-      setHistory([]);
+      setHistory(autoTuner.getHistory().slice(0, 10));
+
+      // Load recommendations
+      const recs = await recommender.suggest({
+        context: 'optimization_dashboard',
+        constraints: {
+          maxMemoryMB: 100,
+          maxBundleSizeKB: 500,
+          minFrameRate: 50,
+          maxLatencyMs: 2000,
+          minCacheHitRate: 0.7,
+        },
+        currentMetrics: {
+          'response-latency': metrics.responseTime,
+          'memory-usage': metrics.memoryUsage,
+          'frame-rate': metrics.renderPerformance,
+        },
+      });
+      setRecommendations(recs.slice(0, 5));
+
+      // Load profile data
+      const allStats = profiler.getOperations().map(op => ({
+        operation: op,
+        stats: profiler.getStats(op),
+      }));
+      setProfiles(allStats.filter(p => p.stats !== null).slice(0, 10) as any);
 
       // Load settings from localStorage
       const savedStrategy = localStorage.getItem('optimization-strategy');
@@ -70,36 +106,44 @@ export default function OptimizationSettingsPage() {
   const handleRunOptimization = async () => {
     setRunning(true);
     try {
-      // Simulate running optimization
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Detect and apply opportunities
+      const opportunities = await autoTuner.detectOpportunities();
 
-      setEngineStatus({
-        active: true,
-        lastRun: new Date().toISOString(),
-        rulesApplied: 3,
-        healthScore: 88,
-      });
+      if (opportunities.length === 0) {
+        alert('No optimization opportunities detected at this time.');
+        setRunning(false);
+        return;
+      }
 
-      // Add a mock record to history
-      const newRecord: OptimizationRecord = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        ruleId: 'reduce-vector-batch-size',
-        ruleName: 'Reduce Vector Batch Size',
-        category: 'performance',
-        status: 'applied',
-        impact: {
-          memoryImprovement: 15,
-          performanceImprovement: 8,
-        },
-      };
-      setHistory([newRecord, ...history]);
+      // Apply top opportunity
+      const topOpportunity = opportunities[0];
+      const result = await autoTuner.apply(topOpportunity);
 
-      alert('Optimization completed successfully!');
+      if (result.success) {
+        // Refresh data
+        await loadOptimizationData();
+        alert(`Optimization applied successfully! Expected improvement: ${topOpportunity.expectedImprovement}%`);
+      } else {
+        alert('Failed to apply optimization: ' + result.error);
+      }
     } catch (err) {
       alert('Failed to run optimization: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setRunning(false);
+    }
+  };
+
+  const handleApplyRecommendation = async (rec: Recommendation) => {
+    try {
+      const success = await recommender.applyRecommendation(rec);
+      if (success) {
+        alert(`Recommendation applied: ${rec.action}`);
+        await loadOptimizationData();
+      } else {
+        alert('Failed to apply recommendation');
+      }
+    } catch (err) {
+      alert('Error: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   };
 
@@ -138,8 +182,8 @@ export default function OptimizationSettingsPage() {
     localStorage.setItem('optimization-auto-apply', JSON.stringify(enabled));
   };
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
+  const formatTimestamp = (timestamp: number | string) => {
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -363,6 +407,140 @@ export default function OptimizationSettingsPage() {
               </div>
             </section>
 
+            {/* Recommendations */}
+            {recommendations.length > 0 && (
+              <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <Lightbulb className="w-6 h-6 text-amber-500" />
+                    <div>
+                      <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                        Recommended Optimizations ({recommendations.length})
+                      </h2>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        AI-powered suggestions to improve performance
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-3">
+                    {recommendations.map((rec, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+                      >
+                        <div className={`p-2 rounded-lg ${
+                          rec.priority === 'high'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                            : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                        }`}>
+                          <Target className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="font-medium text-slate-900 dark:text-slate-100">
+                                {rec.action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </h4>
+                              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                {rec.reasoning}
+                              </p>
+                            </div>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              rec.priority === 'high'
+                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                : rec.priority === 'medium'
+                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                            }`}>
+                              {rec.priority}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="text-green-600 dark:text-green-400 font-medium">
+                              Expected: {rec.expectedImprovement}
+                            </span>
+                            <span className="text-slate-600 dark:text-slate-400">
+                              Confidence: {(rec.confidence * 100).toFixed(0)}%
+                            </span>
+                            <span className="text-slate-600 dark:text-slate-400">
+                              Risk: {rec.riskLevel}%
+                            </span>
+                            <span className="text-slate-600 dark:text-slate-400">
+                              {rec.estimatedTime}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleApplyRecommendation(rec)}
+                          className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-amber-500 to-amber-600 rounded-lg hover:from-amber-600 hover:to-amber-700 transition-colors"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Performance Profiles */}
+            {profiles.length > 0 && (
+              <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-6 h-6 text-amber-500" />
+                    <div>
+                      <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                        Performance Profiles
+                      </h2>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                        Real-time performance metrics
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {profiles.map((profile: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-slate-900 dark:text-slate-100 text-sm capitalize">
+                            {profile.operation.replace(/:/g, ' / ')}
+                          </h4>
+                          <span className={`text-lg font-bold ${
+                            profile.stats.avg < 100 ? 'text-green-600 dark:text-green-400' :
+                            profile.stats.avg < 500 ? 'text-amber-600 dark:text-amber-400' :
+                            'text-red-600 dark:text-red-400'
+                          }`}>
+                            {profile.stats.avg.toFixed(1)}ms
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <span className="text-slate-600 dark:text-slate-400">Min:</span>{' '}
+                            <span className="font-medium text-slate-900 dark:text-slate-100">{profile.stats.min.toFixed(1)}ms</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-600 dark:text-slate-400">P95:</span>{' '}
+                            <span className="font-medium text-slate-900 dark:text-slate-100">{profile.stats.p95.toFixed(1)}ms</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-600 dark:text-slate-400">Max:</span>{' '}
+                            <span className="font-medium text-slate-900 dark:text-slate-100">{profile.stats.max.toFixed(1)}ms</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* Available Rules */}
             <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
               <div className="p-6 border-b border-slate-200 dark:border-slate-800">
@@ -510,19 +688,34 @@ function OptimizationRecordCard({ record, rule, formatTimestamp }: OptimizationR
             </p>
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            {formatTimestamp(record.timestamp)}
+            {(() => {
+              const date = new Date(record.timestamp);
+              const now = new Date();
+              const diffMs = now.getTime() - date.getTime();
+              const diffMins = Math.floor(diffMs / 60000);
+              if (diffMins < 1) return 'Just now';
+              if (diffMins < 60) return `${diffMins}m ago`;
+              const diffHours = Math.floor(diffMins / 60);
+              if (diffHours < 24) return `${diffHours}h ago`;
+              return date.toLocaleDateString();
+            })()}
           </span>
         </div>
-        {record.impact && (
+        {record.afterMetrics && record.beforeMetrics && (
           <div className="flex items-center gap-3 mt-2 text-xs">
-            {record.impact.memoryImprovement && (
+            {record.afterMetrics['memory-usage'] && record.beforeMetrics['memory-usage'] && (
               <span className="text-green-600 dark:text-green-400">
-                -{record.impact.memoryImprovement}% memory
+                {Math.round((1 - record.afterMetrics['memory-usage'] / record.beforeMetrics['memory-usage']) * 100)}% memory
               </span>
             )}
-            {record.impact.performanceImprovement && (
+            {record.afterMetrics['response-latency'] && record.beforeMetrics['response-latency'] && (
               <span className="text-green-600 dark:text-green-400">
-                +{record.impact.performanceImprovement}% performance
+                {Math.round(((record.afterMetrics['response-latency'] - record.beforeMetrics['response-latency']) / record.beforeMetrics['response-latency']) * 100)}% latency
+              </span>
+            )}
+            {record.improvementPercent && (
+              <span className="text-blue-600 dark:text-blue-400">
+                {record.improvementPercent}% improvement
               </span>
             )}
           </div>

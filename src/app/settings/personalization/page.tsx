@@ -19,8 +19,20 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  TrendingUp,
+  Clock,
+  Target,
+  Lightbulb,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 import { getPersonalizationAPI } from '@/lib/personalization';
+import {
+  PatternAnalyzer,
+  TimePatternAnalyzer,
+  TaskPatternAnalyzer,
+} from '@/lib/personalization/patterns';
+import { PredictiveEngine } from '@/lib/personalization/predictions';
 import type {
   CommunicationPreferences,
   UIPreferences,
@@ -37,6 +49,12 @@ export default function PersonalizationSettingsPage() {
   const [patterns, setPatterns] = useState<InteractionPatterns | null>(null);
   const [learningEnabled, setLearningEnabled] = useState(true);
   const [categoryOptOuts, setCategoryOptOuts] = useState<Set<string>>(new Set());
+  const [recommendations, setRecommendations] = useState<Array<{
+    type: string
+    recommendation: string
+    confidence: number
+    explanation: string
+  }>>([]);
 
   useEffect(() => {
     loadPersonalizationData();
@@ -51,7 +69,7 @@ export default function PersonalizationSettingsPage() {
       const model = api.getModel();
 
       // Get preferences
-      const prefs = model.getPreferences().getAll();
+      const prefs = model.getPreferences().getAll() as any;
       setCommunication(prefs.communication as CommunicationPreferences);
       setUi(prefs.ui as UIPreferences);
       setContent(prefs.content as ContentPreferences);
@@ -66,6 +84,18 @@ export default function PersonalizationSettingsPage() {
       if (savedOptOuts) {
         setCategoryOptOuts(new Set(JSON.parse(savedOptOuts)));
       }
+
+      // Generate recommendations using predictive engine
+      const patternAnalyzer = new PatternAnalyzer();
+      const predictiveEngine = new PredictiveEngine(patternAnalyzer);
+      const context = patternAnalyzer.getTimeAnalyzer().predictContext();
+      const recs = predictiveEngine.getRecommendations(context);
+      setRecommendations(recs.map(r => ({
+        type: r.type,
+        recommendation: r.recommendation,
+        confidence: r.confidence,
+        explanation: r.explanation,
+      })));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load personalization data');
       console.error('Personalization loading error:', err);
@@ -225,6 +255,59 @@ export default function PersonalizationSettingsPage() {
           </div>
         ) : (
           <>
+            {/* Smart Recommendations */}
+            {recommendations.length > 0 && (
+              <section className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800 shadow-sm mb-8">
+                <div className="p-6 border-b border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-3">
+                    <Lightbulb className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    <div>
+                      <h2 className="text-xl font-semibold text-green-900 dark:text-green-100">
+                        Smart Suggestions
+                      </h2>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        Based on your usage patterns
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-3">
+                    {recommendations.slice(0, 5).map((rec, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-3 p-4 bg-white dark:bg-slate-800 rounded-lg"
+                      >
+                        <div className="flex-shrink-0 mt-0.5">
+                          {rec.confidence > 0.7 ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <Target className="w-5 h-5 text-amber-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium text-slate-900 dark:text-slate-100 capitalize">
+                              {rec.type}
+                            </span>
+                            <span className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
+                              {(rec.confidence * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">
+                            {rec.recommendation}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                            {rec.explanation}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* Learning Toggle */}
             <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
               <div className="p-6 border-b border-slate-200 dark:border-slate-800">
@@ -285,23 +368,15 @@ export default function PersonalizationSettingsPage() {
                   <div className="space-y-4">
                     <PreferenceItem
                       label="Response Length"
-                      value={communication.preferredResponseLength || 'medium'}
-                      confidence={communication.confidence?.preferredResponseLength || 0}
+                      value={communication.responseLength || 'balanced'}
                     />
                     <PreferenceItem
                       label="Tone"
-                      value={communication.preferredTone || 'neutral'}
-                      confidence={communication.confidence?.preferredTone || 0}
+                      value={communication.tone || 'neutral'}
                     />
                     <PreferenceItem
                       label="Emoji Usage"
-                      value={communication.emojiUsage ? 'Enabled' : 'Disabled'}
-                      confidence={communication.confidence?.emojiUsage || 0}
-                    />
-                    <PreferenceItem
-                      label="Formality"
-                      value={communication.formalityLevel || 'casual'}
-                      confidence={communication.confidence?.formalityLevel || 0}
+                      value={communication.useEmojis ? 'Enabled' : 'Disabled'}
                     />
                   </div>
                 </div>
@@ -329,22 +404,18 @@ export default function PersonalizationSettingsPage() {
                     <PreferenceItem
                       label="Theme"
                       value={ui.theme || 'system'}
-                      confidence={ui.confidence?.theme || 0}
                     />
                     <PreferenceItem
                       label="Density"
                       value={ui.density || 'comfortable'}
-                      confidence={ui.confidence?.density || 0}
                     />
                     <PreferenceItem
                       label="Font Size"
-                      value={ui.fontSize || 'medium'}
-                      confidence={ui.confidence?.fontSize || 0}
+                      value={ui.fontSize ? `${ui.fontSize}x` : '1.0x'}
                     />
                     <PreferenceItem
-                      label="Layout"
-                      value={ui.layout || 'default'}
-                      confidence={ui.confidence?.layout || 0}
+                      label="Sidebar Position"
+                      value={ui.sidebarPosition || 'left'}
                     />
                   </div>
                 </div>
@@ -374,8 +445,8 @@ export default function PersonalizationSettingsPage() {
                         Preferred Topics
                       </h4>
                       <div className="flex flex-wrap gap-2">
-                        {content.preferredTopics && content.preferredTopics.length > 0 ? (
-                          content.preferredTopics.map((topic) => (
+                        {content.topicsOfInterest && content.topicsOfInterest.length > 0 ? (
+                          content.topicsOfInterest.map((topic) => (
                             <span
                               key={topic}
                               className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm"
@@ -392,13 +463,7 @@ export default function PersonalizationSettingsPage() {
                     </div>
                     <PreferenceItem
                       label="Reading Level"
-                      value={content.readingLevel || 'intermediate'}
-                      confidence={content.confidence?.readingLevel || 0}
-                    />
-                    <PreferenceItem
-                      label="Detail Level"
-                      value={content.detailLevel || 'balanced'}
-                      confidence={content.confidence?.detailLevel || 0}
+                      value={content.readingLevel || 'standard'}
                     />
                   </div>
                 </div>
@@ -425,7 +490,7 @@ export default function PersonalizationSettingsPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <PatternItem
                       label="Peak Hour"
-                      value={patterns.preferredHours?.[0] !== undefined ? `${patterns.preferredHours[0]}:00` : 'Not set'}
+                      value={patterns.peakHours?.[0] !== undefined ? `${patterns.peakHours[0]}:00` : 'Not set'}
                     />
                     <PatternItem
                       label="Session Length"
@@ -433,11 +498,11 @@ export default function PersonalizationSettingsPage() {
                     />
                     <PatternItem
                       label="Errors/Session"
-                      value={patterns.avgErrorsPerSession?.toFixed(1) || '0'}
+                      value={(patterns.errorFrequency * 100).toFixed(1)}
                     />
                     <PatternItem
                       label="Help Requests"
-                      value={patterns.helpRequestRate?.toFixed(1) || '0'}
+                      value={patterns.helpSeekFrequency?.toFixed(1) || '0'}
                     />
                   </div>
                 </div>
@@ -576,11 +641,11 @@ export default function PersonalizationSettingsPage() {
 interface PreferenceItemProps {
   label: string;
   value: string;
-  confidence: number;
+  confidence?: number;
 }
 
-function PreferenceItem({ label, value, confidence }: PreferenceItemProps) {
-  const percentage = Math.min(100, Math.max(0, confidence * 100));
+function PreferenceItem({ label, value, confidence = 0 }: PreferenceItemProps) {
+  const percentage = Math.min(100, Math.max(0, (confidence ?? 0) * 100));
   const color = percentage >= 80 ? 'green' : percentage >= 50 ? 'amber' : 'red';
 
   return (

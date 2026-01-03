@@ -103,7 +103,7 @@ export function AgentEditor({ onComplete }: AgentEditorProps) {
         systemPrompt: personalityPrompt,
         personality: {
           vibeAttributes: vibeAttrArray,
-          learnedFrom: conversationId ? { conversationId } : {},
+          learnedFrom: (conversationId ? { conversationId, messageCount: 0 } : { messageCount: 0 }) as any,
           conversationId: conversationId || undefined,
         },
         temperature,

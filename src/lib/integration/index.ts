@@ -9,7 +9,7 @@
  * import { getIntegrationManager } from '@/lib/integration'
  *
  * // Get the manager instance (auto-initializes by default)
- * const manager = getIntegrationManager()
+ * const manager = _getIntegrationManager()
  *
  * // Wait for initialization
  * await manager.initialize()
@@ -43,6 +43,9 @@
 // ============================================================================
 
 export { IntegrationManager, getIntegrationManager, resetIntegrationManager } from './manager';
+
+// Import getIntegrationManager for use in convenience functions below
+import { getIntegrationManager as _getIntegrationManager } from './manager';
 
 // ============================================================================
 // TYPE EXPORTS
@@ -98,7 +101,7 @@ export type {
 export async function initializeIntegration(
   config?: import('./types').IntegrationConfig
 ): Promise<import('./types').InitializationResult> {
-  const manager = getIntegrationManager({ ...config, autoInitialize: false });
+  const manager = _getIntegrationManager({ ...config, autoInitialize: false });
   return manager.initialize();
 }
 
@@ -114,7 +117,7 @@ export async function initializeIntegration(
  * ```
  */
 export function getIntegrationState(): import('./types').IntegrationState {
-  return getIntegrationManager().getState();
+  return _getIntegrationManager().getState();
 }
 
 /**
@@ -129,7 +132,7 @@ export function getIntegrationState(): import('./types').IntegrationState {
  * ```
  */
 export function getCapabilities(): import('./types').Capabilities {
-  return getIntegrationManager().getCapabilities();
+  return _getIntegrationManager().getCapabilities();
 }
 
 /**
@@ -145,7 +148,7 @@ export function getCapabilities(): import('./types').Capabilities {
  * ```
  */
 export function isFeatureEnabled(featureId: string): boolean {
-  return getIntegrationManager().isFeatureEnabled(featureId);
+  return _getIntegrationManager().isFeatureEnabled(featureId);
 }
 
 /**
@@ -160,7 +163,7 @@ export function isFeatureEnabled(featureId: string): boolean {
  * ```
  */
 export function getEnabledFeatures(): string[] {
-  return getIntegrationManager().getEnabledFeatures();
+  return _getIntegrationManager().getEnabledFeatures();
 }
 
 /**
@@ -178,5 +181,5 @@ export function getEnabledFeatures(): string[] {
  * ```
  */
 export async function runDiagnostics(): Promise<import('./types').DiagnosticResults> {
-  return getIntegrationManager().runDiagnostics();
+  return _getIntegrationManager().runDiagnostics();
 }

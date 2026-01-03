@@ -264,7 +264,7 @@ class VectorStore {
    */
   async updateEntry(
     id: string,
-    updates: Partial<Pick<KnowledgeEntry, 'content' | 'editedContent' | 'metadata'>>
+    updates: Partial<Pick<KnowledgeEntry, 'content' | 'editedContent' | 'editedAt' | 'metadata'>>
   ): Promise<KnowledgeEntry> {
     await this.ensureInitialized()
 
@@ -401,7 +401,7 @@ class VectorStore {
       }
       request.onerror = () => reject(new StorageError('Failed to get knowledge entries', {
         technicalDetails: request.error?.message,
-        cause: request.error
+        cause: request.error || undefined
       }))
     })
   }
@@ -667,7 +667,7 @@ class VectorStore {
       }
       request.onerror = () => reject(new StorageError('Failed to get checkpoints', {
         technicalDetails: request.error?.message,
-        cause: request.error
+        cause: request.error || undefined
       }))
     })
   }
@@ -903,9 +903,9 @@ class VectorStore {
 
       for (const msg of messages) {
         // Skip empty messages
-        if (!msg.content.text && !msg.content.image) continue
+        if (!msg.content.text && !msg.content.media) continue
 
-        const textContent = msg.content.text || '[Image]'
+        const textContent = msg.content.text || (msg.content.media ? '[Media]' : '')
 
         // Check if already exists
         const existing = await this.getEntry(`msg_${msg.id}`)
@@ -925,7 +925,7 @@ class VectorStore {
             content: textContent,
             metadata: {
               timestamp: msg.timestamp,
-              author: msg.author,
+              author: String(msg.author),
               conversationId: conv.id,
               importance: this.calculateImportance(msg),
             },
@@ -984,7 +984,7 @@ class VectorStore {
     }
 
     // Simple hash-based embedding (placeholder for real embedding model)
-    const embedding = this.hashEmbedding(normalized, EMBEDDING_DIM)
+    const embedding = this.hashEmbedding(normalized, DEFAULT_EMBEDDING_DIM)
 
     // Cache it with LRU eviction
     this.setCachedEmbedding(normalized, embedding)
@@ -1151,6 +1151,3 @@ export function getVectorStore(): VectorStore {
   }
   return vectorStore
 }
-
-// Export types
-export type { KnowledgeEntry, Checkpoint, LoRAExport, KnowledgeSearchOptions, KnowledgeSearchResult }

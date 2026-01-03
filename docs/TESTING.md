@@ -38,15 +38,26 @@ PersonalLog uses a comprehensive testing strategy to ensure reliability, perform
 
 ## Testing Philosophy
 
+### Regression Testing Focus
+
+PersonalLog emphasizes **regression testing** to prevent bugs from reoccurring and ensure the codebase remains stable as it evolves.
+
+**Key Principles:**
+1. **Fast Feedback**: Unit tests should complete in < 5 minutes
+2. **Reliable Tests**: No flaky tests - all tests must be deterministic
+3. **Comprehensive Coverage**: Test critical paths thoroughly
+4. **Performance Guards**: Prevent performance regressions
+5. **Type Safety**: TypeScript strict mode + comprehensive type checking
+
 ### Testing Pyramid
 
 ```
          /\
         /  \        E2E Tests (few)
-       /____\       User journeys
+       /____\       User journeys + Performance
       /      \
      /        \     Integration Tests (more)
-    /__________\    System interactions
+    /__________\    System interactions + API routes
    /            \
   /              \  Unit Tests (most)
  /________________\ Individual functions

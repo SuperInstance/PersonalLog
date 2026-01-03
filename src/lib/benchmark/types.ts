@@ -52,7 +52,7 @@ export type BenchmarkCategory =
   | 'network'
   | 'overall'
 
-export interface BenchmarkSuite {
+export interface BenchmarkSuiteResult {
   /** Suite name */
   name: string
   /** Suite version */
@@ -155,7 +155,7 @@ export interface Recommendation {
 
 export interface BenchmarkHistory {
   /** Historical benchmark runs */
-  runs: BenchmarkSuite[]
+  runs: BenchmarkSuiteResult[]
   /** Trend analysis */
   trends: {
     category: BenchmarkCategory

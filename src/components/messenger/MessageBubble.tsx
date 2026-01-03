@@ -14,7 +14,7 @@
 
 import { Check, CheckCheck, Reply } from 'lucide-react'
 import type { Message, AIAgent } from '@/types/conversation'
-import { getAuthorDisplayName, getAuthorColor, formatRelativeTime } from '@/lib/utils'
+import { getAuthorDisplayName, getAuthorColor } from '@/lib/utils'
 import { memo } from 'react'
 
 interface MessageBubbleProps {
@@ -35,7 +35,7 @@ function MessageBubble({
 
   // Find AI contact if this is an AI message
   const aiContact = isAI
-    ? aiContacts.find(c => c.id === message.author.contactId)
+    ? aiContacts.find(c => c.id === (message.author as { type: 'ai-contact'; contactId: string; contactName: string }).contactId)
     : null
 
   const authorName = getAuthorDisplayName(message.author)

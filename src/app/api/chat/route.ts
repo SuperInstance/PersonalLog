@@ -11,7 +11,7 @@ import { getFilterSettings } from '@/lib/wizard/model-store'
 import { DEFAULT_FILTRATION } from '@/lib/wizard/models'
 import type { FiltrationConfig } from '@/lib/wizard/models'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 interface ChatRequest {

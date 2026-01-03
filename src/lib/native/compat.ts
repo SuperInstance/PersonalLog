@@ -29,7 +29,7 @@ export function detectWasmFeatures(): WasmFeatures {
     const basicWasm = new WebAssembly.Module(
       new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00])
     )
-    features.supported = WebAssembly.validate(basicWasm)
+    features.supported = WebAssembly.validate(basicWasm as any)
 
     if (!features.supported) {
       return features
@@ -44,7 +44,7 @@ export function detectWasmFeatures(): WasmFeatures {
           0x01, 0x07, 0x01, 0x00, 0x01, 0x61, 0x00, 0x00
         ])
       )
-      features.simd = WebAssembly.validate(simdWasm)
+      features.simd = WebAssembly.validate(simdWasm as any)
     } catch {
       features.simd = false
     }
@@ -57,7 +57,7 @@ export function detectWasmFeatures(): WasmFeatures {
           0x01, 0x05, 0x01, 0x00, 0x61, 0x00, 0x00, 0x00,
         ])
       )
-      features.bulkMemory = WebAssembly.validate(bulkWasm)
+      features.bulkMemory = WebAssembly.validate(bulkWasm as any)
     } catch {
       features.bulkMemory = false
     }
@@ -73,7 +73,7 @@ export function detectWasmFeatures(): WasmFeatures {
           0x01, 0x05, 0x01, 0x00, 0x61, 0x00, 0x00, 0x00,
         ])
       )
-      features.exceptions = WebAssembly.validate(excWasm)
+      features.exceptions = WebAssembly.validate(excWasm as any)
     } catch {
       features.exceptions = false
     }

@@ -29,8 +29,9 @@ import {
   Sparkles,
   ChevronRight,
   Brain,
-  Flask,
+  TestTube,
   Zap,
+  AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -54,7 +55,7 @@ interface SettingsCard {
   description: string;
   icon: React.ElementType;
   href: string;
-  color: 'blue' | 'purple' | 'green' | 'amber' | 'cyan' | 'indigo';
+  color: 'blue' | 'purple' | 'green' | 'amber' | 'cyan' | 'indigo' | 'red';
 }
 
 export default function SettingsPage() {
@@ -189,6 +190,15 @@ export default function SettingsPage() {
       href: '/settings/personalization',
       color: 'green',
     },
+
+    // Error Monitoring - Round 6
+    {
+      title: 'Error Monitoring',
+      description: 'View system errors, logs, and diagnostic information',
+      icon: AlertTriangle,
+      href: '/settings/errors',
+      color: 'red',
+    },
   ], []); // Empty deps - cards are static
 
   const colorClasses = useMemo(() => ({
@@ -198,6 +208,7 @@ export default function SettingsPage() {
     amber: 'from-amber-500 to-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
     cyan: 'from-cyan-500 to-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800',
     indigo: 'from-indigo-500 to-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800',
+    red: 'from-red-500 to-red-600 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
   }), []); // Empty deps - colorClasses is static
 
   return (

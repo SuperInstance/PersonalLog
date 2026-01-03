@@ -135,7 +135,7 @@ export async function createConversation(
     request.onsuccess = () => resolve(conversation)
     request.onerror = () => reject(new StorageError(`Failed to create conversation: ${title}`, {
       technicalDetails: request.error?.message,
-      cause: request.error
+      cause: request.error || undefined
     }))
   })
 }
@@ -173,7 +173,7 @@ export async function getConversation(id: string): Promise<Conversation | null> 
     request.onsuccess = () => resolve(request.result || null)
     request.onerror = () => reject(new StorageError(`Failed to get conversation: ${id}`, {
       technicalDetails: request.error?.message,
-      cause: request.error
+      cause: request.error || undefined
     }))
   })
 }
@@ -550,7 +550,7 @@ export async function updateMessage(
     request.onsuccess = () => resolve(request.result || null)
     request.onerror = () => reject(new StorageError(`Failed to get message: ${id}`, {
       technicalDetails: request.error?.message,
-      cause: request.error
+      cause: request.error || undefined
     }))
   })
 
@@ -591,7 +591,7 @@ export async function updateMessage(
     request.onsuccess = () => resolve(updated)
     request.onerror = () => reject(new StorageError(`Failed to update message: ${id}`, {
       technicalDetails: request.error?.message,
-      cause: request.error
+      cause: request.error || undefined
     }))
   })
 }
@@ -626,7 +626,7 @@ export async function deleteMessage(id: string): Promise<void> {
     request.onsuccess = () => resolve()
     request.onerror = () => reject(new StorageError(`Failed to delete message: ${id}`, {
       technicalDetails: request.error?.message,
-      cause: request.error
+      cause: request.error || undefined
     }))
   })
 }
@@ -659,7 +659,7 @@ async function deleteMessagesByConversation(conversationId: string): Promise<voi
 
     request.onerror = () => reject(new StorageError(`Failed to delete messages for conversation: ${conversationId}`, {
       technicalDetails: request.error?.message,
-      cause: request.error
+      cause: request.error || undefined
     }))
   })
 }

@@ -38,6 +38,7 @@ export {
   CoreProviders,
 } from './AppProviders'
 
+import { AppProviders } from './AppProviders'
 export default AppProviders
 
 // ============================================================================

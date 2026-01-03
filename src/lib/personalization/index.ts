@@ -40,6 +40,39 @@ export {
 } from './learner'
 
 export {
+  PatternAnalyzer,
+  TimePatternAnalyzer,
+  TaskPatternAnalyzer,
+  WorkflowAnalyzer,
+  ContextualPatternAnalyzer,
+  AnomalyDetector,
+} from './patterns'
+
+export {
+  RuleBasedModel,
+  NaiveBayesClassifier,
+  KNearestNeighbors,
+  CollaborativeFiltering,
+  ContentBasedFiltering,
+  PredictiveEngine,
+} from './predictions'
+
+export type {
+  ProviderPrediction,
+  FeaturePrediction,
+  ContextualRecommendation,
+} from './predictions'
+
+export type {
+  TimePatterns,
+  TaskPatterns,
+  WorkflowPattern,
+  ContextualPattern,
+  Anomaly,
+  PatternContext,
+} from './patterns'
+
+export {
   PreferenceModel,
   PersonalizationModel,
   ModelFactory,
@@ -110,7 +143,7 @@ export {
 
 import { ModelFactory } from './models'
 import { PreferenceLearner, PreferenceAggregator, PatternDetector } from './learner'
-import type { UserAction, PreferenceKey } from './types'
+import type { UserAction, PreferenceKey, PreferenceValue } from './types'
 
 /**
  * Convenience API for quick personalization access
@@ -190,7 +223,7 @@ class PersonalizationAPI {
   /**
    * Set a preference value
    */
-  set(key: PreferenceKey, value: unknown, userId: string = 'default'): void {
+  set(key: PreferenceKey, value: PreferenceValue, userId: string = 'default'): void {
     this.getModel(userId).getPreferences().set(key, value, 'explicit')
   }
 
@@ -272,7 +305,7 @@ export function getPreference<T = unknown>(key: PreferenceKey, userId?: string):
  * Set a preference value
  */
 export function setPreference(key: PreferenceKey, value: unknown, userId?: string): void {
-  getPersonalizationAPI().set(key, value, userId)
+  getPersonalizationAPI().set(key, value as PreferenceValue, userId)
 }
 
 /**
@@ -302,6 +335,28 @@ export function togglePersonalizationLearning(enabled: boolean, userId?: string)
 export function getPersonalizationStats(userId?: string) {
   return getPersonalizationAPI().getStats(userId)
 }
+
+// Import hooks and components for default export
+import {
+  usePersonalization,
+  usePersonalizedSetting,
+  usePersonalizedTheme,
+  usePersonalizedTypography,
+  usePersonalizedLayout,
+  usePersonalizedContent,
+  useLearningState,
+  usePreferenceExplanation,
+} from './hooks'
+
+import {
+  PersonalizedProvider,
+  PersonalizedSetting,
+  PersonalizedText,
+  PersonalizedContainer,
+  PersonalizedTheme,
+  PersonalizedExplanation,
+  PersonalizedControls,
+} from '@/components/personalization/Personalized'
 
 // ============================================================================
 // DEFAULT EXPORTS

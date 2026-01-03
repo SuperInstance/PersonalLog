@@ -180,12 +180,15 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         systemPrompt: contactForm.systemPrompt || `You are ${contactForm.nickname || baseModel.name}, a helpful AI assistant.`,
         personality: {
           vibeAttributes: [],
-          learnedFrom: {},
+          learnedFrom: {
+            messageCount: 0,
+          },
         },
         contextFiles: [],
         responseStyle: contactForm.responseStyle,
         temperature: contactForm.temperature,
         color: contactForm.color,
+        maxTokens: baseModel.maxTokens || 4096,
       })
 
       setCreatedContactId(contact.id)

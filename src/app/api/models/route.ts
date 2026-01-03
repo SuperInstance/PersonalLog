@@ -20,8 +20,16 @@ import {
   deleteContact,
   forkContact,
 } from '@/lib/wizard/model-store'
+import {
+  applyCacheHeaders,
+  CacheConfigs,
+  CacheTags,
+  generateETag,
+  checkConditionalRequest,
+  createNotModifiedResponse,
+} from '@/lib/cache/cache-utils'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // GET /api/models - List all models and contacts
@@ -32,13 +40,40 @@ export async function GET(request: NextRequest) {
     const provider = searchParams.get('provider')
     const baseModelId = searchParams.get('baseModelId')
 
+    let data: any
+
     if (type === 'contacts') {
       const contacts = await listContacts(baseModelId || undefined)
-      return NextResponse.json({ contacts })
+      data = { contacts }
+    } else {
+      const models = await listModels(provider as any || undefined)
+      data = { models }
     }
 
-    const models = await listModels(provider as any || undefined)
-    return NextResponse.json({ models })
+    // Generate ETag for conditional requests
+    const etag = generateETag(data)
+
+    // Check if client has cached version
+    const conditional = checkConditionalRequest(request)
+    if (conditional.etag === etag) {
+      return createNotModifiedResponse()
+    }
+
+    // Models rarely change - cache aggressively
+    const response = NextResponse.json(
+      data,
+      {
+        headers: {
+          ETag: etag,
+        },
+      }
+    )
+
+    const tag = type === 'contacts' ? CacheTags.CONTACTS : CacheTags.MODELS
+    return applyCacheHeaders(response, {
+      ...CacheConfigs.rarelyChanging,
+      tag,
+    })
   } catch (error) {
     console.error('Models GET error:', error)
     return NextResponse.json(
@@ -54,13 +89,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { type, ...data } = body
 
+    let result
     if (type === 'contact') {
       const contact = await createContact(data)
-      return NextResponse.json({ contact }, { status: 201 })
+      result = { contact }
+    } else {
+      const model = await addModel(data)
+      result = { model }
     }
 
-    const model = await addModel(data)
-    return NextResponse.json({ model }, { status: 201 })
+    const response = NextResponse.json(result, { status: 201 })
+    return applyCacheHeaders(response, CacheConfigs.personalized)
   } catch (error) {
     console.error('Models POST error:', error)
     return NextResponse.json(
@@ -76,13 +115,17 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const { type, id, ...updates } = body
 
+    let result
     if (type === 'contact') {
       const contact = await updateContact(id, updates)
-      return NextResponse.json({ contact })
+      result = { contact }
+    } else {
+      const model = await updateModel(id, updates)
+      result = { model }
     }
 
-    const model = await updateModel(id, updates)
-    return NextResponse.json({ model })
+    const response = NextResponse.json(result)
+    return applyCacheHeaders(response, CacheConfigs.personalized)
   } catch (error) {
     console.error('Models PATCH error:', error)
     return NextResponse.json(
@@ -109,7 +152,8 @@ export async function DELETE(request: NextRequest) {
       await deleteModel(id)
     }
 
-    return NextResponse.json({ success: true })
+    const response = NextResponse.json({ success: true })
+    return applyCacheHeaders(response, CacheConfigs.dynamic)
   } catch (error) {
     console.error('Models DELETE error:', error)
     return NextResponse.json(

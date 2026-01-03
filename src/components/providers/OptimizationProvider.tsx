@@ -24,8 +24,11 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { createOptimizationEngine, allRules } from '@/lib/optimization'
-import type { OptimizationStatus, OptimizationEngineState, AppliedRule } from '@/lib/optimization'
+import type { OptimizationStatus, OptimizationEngineState } from '@/lib/optimization'
 import type { OptimizationContextValue, ProvidersConfig } from './types'
+
+// Local type for applied rules (since optimization engine only exports string[])
+type AppliedRule = string
 
 const OptimizationContext = createContext<OptimizationContextValue | null>(null)
 
@@ -42,7 +45,7 @@ export interface OptimizationProviderProps {
  */
 export function OptimizationProvider({ config, children }: OptimizationProviderProps) {
   const engineRef = useRef<ReturnType<typeof createOptimizationEngine> | null>(null)
-  const [status, setStatus] = useState<OptimizationStatus>('idle')
+  const [status, setStatus] = useState<OptimizationStatus>('pending')
   const [state, setState] = useState<OptimizationEngineState | null>(null)
   const [appliedRules, setAppliedRules] = useState<AppliedRule[]>([])
   const [isEnabled, setIsEnabled] = useState(config?.enabled ?? false)
@@ -80,34 +83,12 @@ export function OptimizationProvider({ config, children }: OptimizationProviderP
 
         engineRef.current = engine
 
-        // Subscribe to events
-        engine.on('state_changed', (newState: OptimizationEngineState) => {
-          if (mounted) {
-            setState(newState)
-            setStatus(newState.status)
-            setAppliedRules(newState.appliedRules ?? [])
-          }
-        })
-
-        engine.on('optimization_applied', (result: any) => {
-          if (mounted) {
-            setAppliedRules(prev => [...prev, result])
-          }
-        })
-
-        engine.on('error', (err: Error) => {
-          console.error('[OptimizationProvider] Engine error:', err)
-        })
-
         // Start the engine if enabled
         if (isEnabled) {
           await engine.start()
         }
 
         if (mounted) {
-          setState(engine.getState())
-          setStatus(engine.getState().status)
-          setAppliedRules(engine.getState().appliedRules ?? [])
           setIsInitialized(true)
           setIsLoading(false)
         }
@@ -157,10 +138,15 @@ export function OptimizationProvider({ config, children }: OptimizationProviderP
 
     try {
       const suggestions = await engineRef.current.suggestOptimizations()
-      return suggestions.map(s => ({
-        ruleId: s.ruleId,
-        name: s.name,
-        impact: s.impact,
+      // Flatten all priority categories into a single array
+      return [
+        ...suggestions.high,
+        ...suggestions.medium,
+        ...suggestions.low,
+      ].map(s => ({
+        ruleId: s.rule.id,
+        name: s.rule.name,
+        impact: `${Math.round(s.estimatedImprovement)}%`,
         confidence: s.confidence,
       }))
     } catch (err) {
@@ -188,10 +174,11 @@ export function OptimizationProvider({ config, children }: OptimizationProviderP
     try {
       const suggestions = await engineRef.current.suggestOptimizations()
 
-      // Apply safe optimizations automatically
-      for (const suggestion of suggestions) {
-        if (suggestion.autoApplySafe) {
-          await engineRef.current!.applyOptimization(suggestion.ruleId)
+      // Apply safe optimizations automatically (high and medium priority)
+      const allCandidates = [...suggestions.high, ...suggestions.medium]
+      for (const candidate of allCandidates) {
+        if (candidate.rule.autoApplySafe) {
+          await engineRef.current!.applyOptimization(candidate.rule.id)
         }
       }
     } catch (err) {
@@ -215,24 +202,29 @@ export function OptimizationProvider({ config, children }: OptimizationProviderP
   }, [])
 
   // Get health status
-  const getHealth = useCallback(async () => {
+  const getHealth = useCallback(async (): Promise<{
+    health: 'healthy' | 'degraded' | 'unhealthy'
+    issues: string[]
+  }> => {
     if (!engineRef.current) {
       return {
-        health: 'unhealthy' as const,
+        health: 'unhealthy',
         issues: ['Engine not initialized'],
       }
     }
 
     try {
       const health = engineRef.current.getHealthStatus()
+      const healthStatus: 'healthy' | 'degraded' | 'unhealthy' =
+        health.overall >= 80 ? 'healthy' : health.overall >= 50 ? 'degraded' : 'unhealthy'
       return {
-        health: health.overallHealth,
-        issues: health.issues,
+        health: healthStatus,
+        issues: health.issues.map(issue => issue.description),
       }
     } catch (err) {
       console.error('[OptimizationProvider] Get health failed:', err)
       return {
-        health: 'unhealthy' as const,
+        health: 'unhealthy',
         issues: ['Failed to get health status'],
       }
     }

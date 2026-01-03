@@ -49,8 +49,8 @@ export async function addMessageWithAnalytics(
   } catch (error) {
     // Track error if sending fails
     await trackError({
-      errorType: error.name || 'MessageError',
-      errorMessage: error.message,
+      errorType: error instanceof Error ? error.name : 'MessageError',
+      errorMessage: error instanceof Error ? error.message : String(error),
       context: 'addMessage',
       recoverable: true,
     })
@@ -165,7 +165,7 @@ export async function trackedFetch(
     // Also track as an error
     await trackError({
       errorType: 'NetworkError',
-      errorMessage: error.message,
+      errorMessage: error instanceof Error ? error.message : String(error),
       context: `fetch:${url}`,
       recoverable: true,
     })
@@ -492,20 +492,23 @@ export async function createSmartSummary(conversationId: string) {
 
     return summary
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorName = error instanceof Error ? error.name : 'Error'
+
     // Track feature failure
     await trackFeatureUsed({
       featureId: 'smart-summary',
       duration: performance.now() - featureStartTime,
       success: false,
       context: {
-        error: error.message,
+        error: errorMessage,
       },
     })
 
     // Track the error
     await trackError({
-      errorType: error.name,
-      errorMessage: error.message,
+      errorType: errorName,
+      errorMessage,
       context: 'smart-summary',
       recoverable: true,
     })

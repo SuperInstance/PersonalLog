@@ -413,8 +413,8 @@ export interface VirtualListRef {
   scrollToBottom: () => void;
 }
 
-export function useVirtualListRef(): React.RefObject<VirtualListRef> {
-  return useRef<VirtualListRef>(null);
+export function useVirtualListRef(): React.RefObject<VirtualListRef | null> {
+  return useRef<VirtualListRef | null>(null);
 }
 
 export default VirtualList;

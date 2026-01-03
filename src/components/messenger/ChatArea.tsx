@@ -97,7 +97,7 @@ export default function ChatArea({
       author: 'user',
       content: { text: messageText },
       timestamp: new Date().toISOString(),
-      isOptimistic: true,
+      metadata: {},
     }
 
     setMessages(prev => [...prev, optimisticMessage])

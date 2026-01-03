@@ -158,7 +158,7 @@ export async function example4_PerformanceClassConfig() {
 
   console.log(`Performance Class: ${profile.performanceClass}`);
   console.log('\nConfiguration:');
-  Object.entries(config).forEach(([key, value]) => {
+  (Object.entries(config) as Array<[string, any]>).forEach(([key, value]) => {
     console.log(`  ${key}: ${JSON.stringify(value)}`);
   });
 

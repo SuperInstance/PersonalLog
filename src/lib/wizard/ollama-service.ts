@@ -97,7 +97,7 @@ export class OllamaService {
         hasGpu,
         gpuName: gpuModel?.details?.gpu?.name,
         vramTotal,
-        canParallel: !hasGpu || (vramTotal && vramTotal >= 16), // Need 16GB+ for parallel
+        canParallel: !hasGpu || Boolean(vramTotal && vramTotal >= 16), // Need 16GB+ for parallel
         maxConcurrent: this.estimateMaxConcurrent(vramTotal, hasGpu),
       }
     } catch {
@@ -193,6 +193,7 @@ export class OllamaService {
         supportsFunctions: false,
         estimatedSpeed: this.estimateSpeed(ollamaModel, hardware),
       },
+      createdAt: new Date().toISOString(),
     }
   }
 

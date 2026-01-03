@@ -81,8 +81,6 @@ export function createExperiment(options: {
     earlyStoppingEnabled: options.earlyStopping ?? true,
     banditEnabled: options.bandit ?? true,
     tags: [],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
   });
 
   return experiment;

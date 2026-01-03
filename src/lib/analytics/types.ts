@@ -438,6 +438,11 @@ export interface EngagementSummary {
   mostActiveHour: number
   retentionRate: number  // Returning users
   peakUsageHours: number[]
+  // Additional properties for analytics display
+  activeDays: number  // Number of days with activity
+  avgSessionsPerDay: number  // Average sessions per day
+  totalTime: number  // Total time in seconds
+  peakUsageHour: number  // Peak usage hour (0-23)
 }
 
 // ============================================================================

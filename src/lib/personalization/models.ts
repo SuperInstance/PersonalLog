@@ -36,6 +36,8 @@ const DEFAULT_UI: UIPreferences = {
   fontSize: 1.0,
   animations: 'reduced',
   sidebarPosition: 'left',
+  autoScrollMessages: true,
+  groupMessagesByContext: false,
 }
 
 const DEFAULT_CONTENT: ContentPreferences = {
@@ -43,6 +45,7 @@ const DEFAULT_CONTENT: ContentPreferences = {
   readingLevel: 'standard',
   language: 'en',
   autoPlayMedia: false,
+  recentQueries: [],
 }
 
 const DEFAULT_PATTERNS: InteractionPatterns = {
@@ -82,12 +85,15 @@ export class PreferenceModel {
     this.set('ui.fontSize', DEFAULT_UI.fontSize, 'default')
     this.set('ui.animations', DEFAULT_UI.animations, 'default')
     this.set('ui.sidebarPosition', DEFAULT_UI.sidebarPosition, 'default')
+    this.set('ui.autoScrollMessages', DEFAULT_UI.autoScrollMessages, 'default')
+    this.set('ui.groupMessagesByContext', DEFAULT_UI.groupMessagesByContext, 'default')
 
     // Content defaults
     this.set('content.topicsOfInterest', DEFAULT_CONTENT.topicsOfInterest, 'default')
     this.set('content.readingLevel', DEFAULT_CONTENT.readingLevel, 'default')
     this.set('content.language', DEFAULT_CONTENT.language, 'default')
     this.set('content.autoPlayMedia', DEFAULT_CONTENT.autoPlayMedia, 'default')
+    this.set('content.recentQueries', DEFAULT_CONTENT.recentQueries, 'default')
   }
 
   /**
@@ -125,12 +131,20 @@ export class PreferenceModel {
     this.preferences.set(key, preference)
 
     // Notify observers
-    this.notify({
-      type: source === 'learned' ? 'preference-learned' : 'preference-changed',
-      key,
-      value,
-      ...(source === 'learned' && { confidence: preference.confidence }),
-    })
+    if (source === 'learned') {
+      this.notify({
+        type: 'preference-learned',
+        key,
+        value,
+        confidence: preference.confidence,
+      })
+    } else {
+      this.notify({
+        type: 'preference-changed',
+        key,
+        value,
+      })
+    }
   }
 
   /**
@@ -407,9 +421,9 @@ export class PersonalizationModel {
   toUserModel(): UserModel {
     return {
       userId: this.userId,
-      communication: this.preferences.getPreference('communication.responseLength')!,
-      ui: this.preferences.getPreference('ui.theme')!,
-      content: this.preferences.getPreference('content.topicsOfInterest')!,
+      communication: this.preferences.getPreference('communication.responseLength')! as any,
+      ui: this.preferences.getPreference('ui.theme')! as any,
+      content: this.preferences.getPreference('content.topicsOfInterest')! as any,
       patterns: this.patterns,
       preferences: this.preferences.getAll(),
       learning: this.learning,

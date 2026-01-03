@@ -81,7 +81,7 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
   const { shortcuts, disabled = false, preventDefault = true } = config
 
   // Keep track of registered handlers for cleanup
-  const handlersRef = useRef(new Map<string, KeyboardShortcut['handler']())
+  const handlersRef = useRef(new Map<string, (event: KeyboardEvent) => void>())
 
   useEffect(() => {
     if (disabled) return
@@ -143,6 +143,7 @@ export const presetShortcuts = {
     metaKey: true,
     ctrlKey: true,
     description: 'New conversation',
+    handler: () => {},
   } satisfies KeyboardShortcut,
 
   focusSearch: {
@@ -150,6 +151,7 @@ export const presetShortcuts = {
     metaKey: true,
     ctrlKey: true,
     description: 'Focus search',
+    handler: () => {},
   } satisfies KeyboardShortcut,
 
   openSettings: {
@@ -157,11 +159,13 @@ export const presetShortcuts = {
     metaKey: true,
     ctrlKey: true,
     description: 'Open settings',
+    handler: () => {},
   } satisfies KeyboardShortcut,
 
   closeModals: {
     key: 'Escape',
     description: 'Close modals/drawers',
+    handler: () => {},
   } satisfies KeyboardShortcut,
 
   nextConversation: {
@@ -169,6 +173,7 @@ export const presetShortcuts = {
     metaKey: true,
     ctrlKey: true,
     description: 'Next conversation',
+    handler: () => {},
   } satisfies KeyboardShortcut,
 
   previousConversation: {
@@ -176,6 +181,7 @@ export const presetShortcuts = {
     metaKey: true,
     ctrlKey: true,
     description: 'Previous conversation',
+    handler: () => {},
   } satisfies KeyboardShortcut,
 
   sendMessage: {
@@ -183,6 +189,7 @@ export const presetShortcuts = {
     metaKey: true,
     ctrlKey: true,
     description: 'Send message',
+    handler: () => {},
   } satisfies KeyboardShortcut,
 }
 

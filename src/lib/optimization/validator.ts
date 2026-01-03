@@ -365,7 +365,7 @@ export class ExperimentManager {
     if (elapsed < experiment.minDuration) return false;
 
     // Check sample sizes
-    const minSampleSize = Math.max(30, experiment.validation?.minSampleSize || 30);
+    const minSampleSize = 30;
     if (
       data.control.length < minSampleSize ||
       data.treatment.length < minSampleSize

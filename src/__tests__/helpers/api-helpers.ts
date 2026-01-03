@@ -108,13 +108,21 @@ export function createMockDELETERequest(options: {
 }
 
 /**
- * Create mock params object for dynamic routes
+ * Create mock params object for dynamic routes (Next.js 15 compatible)
  *
  * @example
+ * // For Next.js 15 (async params) - default
  * const params = createMockParams({ id: 'conversation-123' })
+ *
+ * @example
+ * // For Next.js 14 (sync params)
+ * const params = createMockParams({ id: 'conversation-123' }, false)
  */
-export function createMockParams(params: Record<string, string>): { params: Record<string, string> } {
-  return { params }
+export function createMockParams<T extends Record<string, string>>(
+  params: T,
+  async: boolean = true
+): { params: T | Promise<T> } {
+  return async ? { params: Promise.resolve(params) } : { params }
 }
 
 // ============================================================================
@@ -192,6 +200,168 @@ export function createMockAIProvider(options: {
 }
 
 /**
+ * Create a mock conversation object
+ *
+ * @example
+ * const conversation = createMockConversation({ id: 'conv-1', title: 'Test' })
+ */
+export function createMockConversation(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+  return {
+    id: 'conv-123',
+    title: 'Test Conversation',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides,
+  }
+}
+
+/**
+ * Create an array of mock conversations
+ *
+ * @example
+ * const conversations = createMockConversations(3)
+ */
+export function createMockConversations(count: number): Record<string, unknown>[] {
+  return Array.from({ length: count }, (_, i) => createMockConversation({
+    id: `conv-${i + 1}`,
+    title: `Conversation ${i + 1}`,
+  }))
+}
+
+/**
+ * Create a mock message object
+ *
+ * @example
+ * const message = createMockMessage({ role: 'user', content: 'Hello' })
+ */
+export function createMockMessage(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+  return {
+    id: 'msg-123',
+    role: 'user',
+    content: 'Test message',
+    timestamp: new Date().toISOString(),
+    ...overrides,
+  }
+}
+
+/**
+ * Create an array of mock messages
+ *
+ * @example
+ * const messages = createMockMessages(3)
+ *
+ * @example
+ * const messages = createMockMessages(3, { conversationId: 'conv-123' })
+ */
+export function createMockMessages(
+  count: number,
+  overrides: Partial<Record<string, unknown>> = {}
+): Record<string, unknown>[] {
+  return Array.from({ length: count }, (_, i) => createMockMessage({
+    id: `msg-${i + 1}`,
+    content: `Message ${i + 1}`,
+    ...overrides,
+  }))
+}
+
+/**
+ * Create a mock AI agent/contact object
+ *
+ * @example
+ * const agent = createMockAIAgent({ id: 'agent-1', name: 'Claude' })
+ */
+export function createMockAIAgent(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+  return {
+    id: 'agent-123',
+    name: 'Test Agent',
+    model: 'test-model',
+    provider: 'openai',
+    ...overrides,
+  }
+}
+
+/**
+ * Create a mock ModelConfig object with all required fields
+ *
+ * @example
+ * const model = createMockModelConfig({ id: 'model-1', name: 'GPT-4' })
+ */
+export function createMockModelConfig(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+  return {
+    id: 'model-123',
+    name: 'Test Model',
+    provider: 'openai',
+    modelName: 'gpt-4',
+    createdAt: new Date().toISOString(),
+    isActive: true,
+    capabilities: {
+      maxContext: 128000,
+      supportsStreaming: true,
+      supportsImages: false,
+      supportsFunctions: true,
+      estimatedSpeed: 'fast' as const,
+    },
+    ...overrides,
+  }
+}
+
+/**
+ * Create an array of mock ModelConfig objects
+ *
+ * @example
+ * const models = createMockModelConfigs(3)
+ */
+export function createMockModelConfigs(count: number): Record<string, unknown>[] {
+  return Array.from({ length: count }, (_, i) => createMockModelConfig({
+    id: `model-${i + 1}`,
+    name: `Model ${i + 1}`,
+  }))
+}
+
+/**
+ * Create a mock AIContact object with all required fields
+ *
+ * @example
+ * const contact = createMockAIContact({ id: 'contact-1', nickname: 'Claude' })
+ */
+export function createMockAIContact(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+  return {
+    id: 'contact-123',
+    nickname: 'Test Contact',
+    firstName: 'Test',
+    baseModelId: 'model-123',
+    systemPrompt: 'You are a helpful assistant.',
+    personality: {
+      vibeAttributes: [],
+      learnedFrom: {
+        messageCount: 0,
+      },
+    },
+    contextFiles: [],
+    responseStyle: 'balanced' as const,
+    temperature: 0.7,
+    maxTokens: 2048,
+    color: '#000000',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides,
+  }
+}
+
+/**
+ * Create an array of mock AIContact objects
+ *
+ * @example
+ * const contacts = createMockAIContacts(3)
+ */
+export function createMockAIContacts(count: number): Record<string, unknown>[] {
+  return Array.from({ length: count }, (_, i) => createMockAIContact({
+    id: `contact-${i + 1}`,
+    nickname: `Contact ${i + 1}`,
+  }))
+}
+
+/**
  * Mock conversation store for testing conversation endpoints
  *
  * @example
@@ -239,7 +409,7 @@ export function createMockVectorStore(options: {
   entries?: unknown[]
   checkpoints?: unknown[]
   syncResult?: unknown
-}) {
+} = {}) {
   const {
     searchResults = [],
     entries = [],
@@ -352,6 +522,22 @@ export function mockEnvKeys(keys: Record<string, string>): () => void {
     }
   }
 }
+
+/**
+ * Restore environment variables to original values
+ *
+ * @example
+ * restoreEnvKeys()
+ */
+export function restoreEnvKeys(): void {
+  // This is a no-op now since mockEnvKeys returns a restore function
+  // Kept for backwards compatibility
+}
+
+/**
+ * Legacy restore environment function alias
+ */
+export const restoreEnv = restoreEnvKeys
 
 // ============================================================================
 // STREAMING RESPONSE HELPERS

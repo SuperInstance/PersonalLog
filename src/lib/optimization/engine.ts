@@ -18,6 +18,7 @@ import type {
   OptimizationEngineState,
   OptimizationSuggestions,
   HealthStatus,
+  OptimizationTarget,
   PerformanceSnapshot,
   OptimizationEvent,
   OptimizationEventType,
@@ -450,7 +451,7 @@ export class OptimizationEngine {
         avgImprovement,
       },
       trends: {
-        improvements: {},
+        improvements: {} as Record<OptimizationTarget, number>,
         successRate:
           records.length > 0 ? (successful + rolledBack) / records.length : 1,
       },
@@ -523,11 +524,11 @@ export class OptimizationEngine {
           avgImprovement: 0,
         },
         trends: {
-          improvements: {},
+          improvements: {} as Record<OptimizationTarget, number>,
           successRate: 1,
         },
       },
-      baseline: {},
+      baseline: {} as Record<OptimizationTarget, number>,
       lastMonitorTime: 0,
       lastAnalysisTime: 0,
     };

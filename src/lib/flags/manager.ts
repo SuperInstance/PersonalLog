@@ -74,14 +74,14 @@ async function detectHardware(): Promise<HardwareCapabilities> {
 
   // Detect GPU
   const canvas = document.createElement('canvas');
-  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
   const hasGPU = !!gl;
   let gpuInfo;
   if (hasGPU && gl) {
     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
     if (debugInfo) {
-      const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-      const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      const vendor = gl.getParameter((debugInfo as any).UNMASKED_VENDOR_WEBGL);
+      const renderer = gl.getParameter((debugInfo as any).UNMASKED_RENDERER_WEBGL);
       gpuInfo = {
         vendor,
         model: renderer,

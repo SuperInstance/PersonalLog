@@ -116,8 +116,13 @@ export class EventCollector {
   /**
    * Initialize the collector
    */
-  async initialize(): Promise<void> {
+  async initialize(config?: Partial<AnalyticsConfig>): Promise<void> {
     if (this.isInitialized) return
+
+    // Apply configuration if provided
+    if (config) {
+      this.updateConfig(config)
+    }
 
     // Check for session expiry
     if (this.sessionManager.isExpired()) {

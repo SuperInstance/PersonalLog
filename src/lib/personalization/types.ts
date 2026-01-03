@@ -36,6 +36,10 @@ export interface UIPreferences {
   animations: 'none' | 'reduced' | 'full'
   /** Sidebar position */
   sidebarPosition: 'left' | 'right' | 'hidden'
+  /** Auto-scroll to new messages */
+  autoScrollMessages: boolean
+  /** Group messages by context */
+  groupMessagesByContext: boolean
 }
 
 /**
@@ -50,6 +54,8 @@ export interface ContentPreferences {
   language: string
   /** Media handling */
   autoPlayMedia: boolean
+  /** Recent search queries */
+  recentQueries: string[]
 }
 
 /**

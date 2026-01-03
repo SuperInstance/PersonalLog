@@ -84,12 +84,17 @@ export function detectWasmFeatures(): WasmFeatures {
     exceptions: false,
   }
 
+  // Check for browser environment
+  if (typeof window === 'undefined' && typeof self === 'undefined') {
+    return features
+  }
+
   try {
     // Basic WASM support (minimum viable version)
     const basicWasm = new WebAssembly.Module(
       new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00])
     )
-    features.supported = WebAssembly.validate(basicWasm)
+    features.supported = WebAssembly.validate(basicWasm as any)
 
     if (!features.supported) {
       return features
@@ -104,7 +109,7 @@ export function detectWasmFeatures(): WasmFeatures {
           0x01, 0x07, 0x01, 0x00, 0x01, 0x61, 0x00, 0x00
         ])
       )
-      features.simd = WebAssembly.validate(simdWasm)
+      features.simd = WebAssembly.validate(simdWasm as any)
     } catch {
       features.simd = false
     }
@@ -117,7 +122,7 @@ export function detectWasmFeatures(): WasmFeatures {
           0x01, 0x05, 0x01, 0x00, 0x61, 0x00, 0x00, 0x00,
         ])
       )
-      features.bulkMemory = WebAssembly.validate(bulkWasm)
+      features.bulkMemory = WebAssembly.validate(bulkWasm as any)
     } catch {
       features.bulkMemory = false
     }
@@ -191,6 +196,13 @@ export async function loadWasmModule(): Promise<boolean> {
   // Return cached promise if already loading
   if (initPromise) {
     return initPromise
+  }
+
+  // Check for browser environment
+  if (typeof window === 'undefined' && typeof self === 'undefined') {
+    // Server-side - WASM not available
+    useWasm = false
+    return false
   }
 
   initPromise = (async () => {
@@ -680,7 +692,7 @@ export function enableWasm(): void {
 // ============================================================================
 
 // Auto-load WASM in browser environments
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' || typeof self !== 'undefined') {
   // Load asynchronously, don't block initial render
   loadWasmModule().catch(console.error)
 }

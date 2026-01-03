@@ -30,7 +30,7 @@ export { BenchmarkSuite, getBenchmarkSuite } from './suite'
 // Types
 export type {
   BenchmarkResult,
-  BenchmarkSuite as BenchmarkSuiteResult,
+  BenchmarkSuiteResult,
   BenchmarkCategory,
   BenchmarkOptions,
   BenchmarkProgress,

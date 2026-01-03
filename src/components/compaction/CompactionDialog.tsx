@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react'
-import { X, Compress, Archive, Sparkles, CheckCircle2 } from 'lucide-react'
+import { X, Minimize2, Archive, Sparkles, CheckCircle2 } from 'lucide-react'
 import type { Conversation, CompactStrategy, Message } from '@/types/conversation'
 
 interface CompactionDialogProps {
@@ -72,7 +72,7 @@ export default function CompactionDialog({
                 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'
                 : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
             }`}>
-              {isNearLimit ? <Archive className="w-5 h-5" /> : <Compress className="w-5 h-5" />}
+              {isNearLimit ? <Archive className="w-5 h-5" /> : <Minimize2 className="w-5 h-5" />}
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
@@ -126,7 +126,7 @@ export default function CompactionDialog({
               <StrategyButton
                 selected={strategy === 'user-directed'}
                 onClick={() => setStrategy('user-directed')}
-                icon={<Compress className="w-4 h-4" />}
+                icon={<Minimize2 className="w-4 h-4" />}
                 title="Custom Instructions"
                 description="You specify what to prioritize and what to summarize"
               />
@@ -239,7 +239,7 @@ export default function CompactionDialog({
               'Compacting...'
             ) : (
               <>
-                <Compress className="w-4 h-4" />
+                <Minimize2 className="w-4 h-4" />
                 Compact
               </>
             )}

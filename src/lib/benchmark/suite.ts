@@ -7,7 +7,7 @@
 
 import {
   BenchmarkResult,
-  BenchmarkSuite,
+  BenchmarkSuiteResult,
   BenchmarkOptions,
   BenchmarkProgress,
   BenchmarkOperation,
@@ -46,7 +46,7 @@ export class BenchmarkSuite {
   /**
    * Run all benchmarks
    */
-  async runAll(options: BenchmarkOptions = {}): Promise<BenchmarkSuite> {
+  async runAll(options: BenchmarkOptions = {}): Promise<BenchmarkSuiteResult> {
     this.results = []
     this.abortController = new AbortController()
 
@@ -241,18 +241,18 @@ export class BenchmarkSuite {
       used: 0,
     }
 
-    if (performance.memory) {
+    if (performance.memory && 'jsHeapSizeLimit' in performance.memory) {
       memory = {
-        total: performance.memory.jsHeapSizeLimit,
-        available: performance.memory.jsHeapSizeLimit - performance.memory.usedJSHeapSize,
-        used: performance.memory.usedJSHeapSize,
+        total: (performance.memory as any).jsHeapSizeLimit,
+        available: (performance.memory as any).jsHeapSizeLimit - (performance.memory as any).usedJSHeapSize,
+        used: (performance.memory as any).usedJSHeapSize,
       }
     }
 
     // GPU info (if available)
     let gpu: HardwareProfile['gpu'] = undefined
     const canvas = document.createElement('canvas')
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null
     if (gl) {
       const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
       if (debugInfo) {
@@ -470,6 +470,7 @@ export class BenchmarkSuite {
       category,
       impact: 'high',
       reasoning: `Performance in ${category} operations is significantly below optimal.`,
+      recommendation: `Review ${category} configuration for optimization opportunities.`,
       configChanges: {},
     }
 
@@ -528,6 +529,9 @@ export class BenchmarkSuite {
             compression: true,
           },
         }
+
+      default:
+        return baseRecommendation
     }
   }
 
@@ -541,6 +545,7 @@ export class BenchmarkSuite {
       category,
       impact: 'medium',
       reasoning: `Performance in ${category} operations could be improved.`,
+      recommendation: `Performance in ${category} operations could be improved.`,
       configChanges: {},
     }
 
@@ -593,6 +598,9 @@ export class BenchmarkSuite {
             deduplication: true,
           },
         }
+
+      default:
+        return baseRecommendation
     }
   }
 
