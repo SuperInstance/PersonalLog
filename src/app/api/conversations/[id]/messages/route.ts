@@ -18,10 +18,11 @@ export const dynamic = 'force-dynamic'
 // GET /api/conversations/[id]/messages - Get all messages for a conversation
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const messages = await getMessages(params.id)
+    const { id } = await params
+    const messages = await getMessages(id)
     return NextResponse.json({ messages })
   } catch (error) {
     console.error('Messages GET error:', error)
@@ -35,17 +36,14 @@ export async function GET(
 // POST /api/conversations/[id]/messages - Add a new message
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { type, author, content } = body
 
-    const message = await addMessage(params.id, {
-      type,
-      author,
-      content,
-    })
+    const message = await addMessage(id, type, author, content)
 
     return NextResponse.json({ message }, { status: 201 })
   } catch (error) {
@@ -60,7 +58,7 @@ export async function POST(
 // PATCH /api/conversations/[id]/messages - Update a message
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
@@ -80,7 +78,7 @@ export async function PATCH(
 // DELETE /api/conversations/[id]/messages - Delete a message
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url)

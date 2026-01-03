@@ -127,7 +127,7 @@ export function useFeatureFlag(
  */
 export function usePerformanceTracking(componentName: string) {
   const { track } = useAnalytics()
-  const { trackMetric } = useExperiments()
+  const { trackMetric: trackMetricInExperiments } = useExperiments()
 
   const trackRender = useCallback(async () => {
     const start = performance.now()
@@ -165,9 +165,9 @@ export function usePerformanceTracking(componentName: string) {
 
     if (metric.includes('_')) {
       const [experimentId, metricName] = metric.split('_', 2)
-      trackMetric(experimentId, metricName, value)
+      trackMetricInExperiments(experimentId, metricName, value)
     }
-  }, [track, trackMetric, componentName])
+  }, [track, trackMetricInExperiments, componentName])
 
   return {
     trackRender,

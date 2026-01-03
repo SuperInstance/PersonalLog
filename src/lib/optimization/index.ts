@@ -146,40 +146,14 @@ export {
   // Performance rules
   performanceRules,
   getPerformanceRule,
-  reduceVectorBatchSize,
-  increaseVectorBatchSize,
-  enableAggressiveCaching,
-  disableCaching,
-  enableVirtualScrolling,
-  reduceRenderComplexity,
-  enableRequestBatching,
-  enableRequestDeduplication,
 
   // Quality rules
   qualityRules,
   getQualityRule,
-  enableRetryWithBackoff,
-  enableCircuitBreaker,
-  enableFeatureDegradation,
-  enableTimeoutProtection,
-  enableDataValidation,
-  enableChecksumVerification,
-  enableDetailedErrorLogging,
-  enablePerformanceMonitoring,
 
   // Resource rules
   resourceRules,
   getResourceRule,
-  reduceMemoryCache,
-  enableMemoryCompaction,
-  reduceVectorIndex,
-  reduceCpuConcurrency,
-  enableWorkThrottling,
-  enableStorageCompression,
-  enableDataPruning,
-  reduceStorageBatch,
-  enableBatterySaver,
-  reduceBackgroundActivity,
 } from './rules';
 
 // ============================================================================

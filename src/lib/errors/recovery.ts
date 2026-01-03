@@ -302,7 +302,7 @@ export class StorageRecoveryStrategy {
   /**
    * Request more storage quota
    */
-  async requestQuota(requestedBytes: number): Promise<boolean {
+  async requestQuota(requestedBytes: number): Promise<boolean> {
     if ('storage' in navigator && 'requestPersistent' in navigator.storage) {
       try {
         // @ts-ignore - experimental API

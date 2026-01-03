@@ -108,6 +108,51 @@ cargo install wasm-pack
 
 For detailed build instructions, troubleshooting, and CI/CD information, see [BUILD.md](./docs/BUILD.md) or [WASM_QUICK_START.md](./docs/WASM_QUICK_START.md).
 
+## Deployment
+
+PersonalLog is configured for seamless deployment to Vercel:
+
+### Quick Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/SuperInstance/PersonalLog)
+
+**One-click deployment:**
+1. Click the button above
+2. Connect your GitHub account
+3. Configure environment variables (see below)
+4. Deploy!
+
+### Environment Variables for Production
+
+Required for production deployment:
+
+```bash
+# Required
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+BUILD_WASM=false
+
+# Optional: Add AI provider API keys
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+See [`.env.example`](./.env.example) for all available variables.
+
+### Deployment Documentation
+
+For comprehensive deployment guides, including:
+- Environment configuration
+- Preview deployments
+- Custom domains
+- Monitoring and analytics
+- Troubleshooting and rollbacks
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+### Alternative: Netlify
+
+PersonalLog also supports Netlify deployment. See [DEPLOYMENT.md](./DEPLOYMENT.md#netlify-alternative) for configuration.
+
 ## Tech Stack
 
 - **Next.js 15** - React framework with App Router

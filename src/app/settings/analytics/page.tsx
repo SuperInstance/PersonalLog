@@ -58,7 +58,7 @@ export default function AnalyticsSettingsPage() {
           totalEvents: engData.totalSessions * 10 || 0, // Rough estimate
           totalSessions: engData.totalSessions,
           avgSessionDuration: engData.avgSessionDuration,
-          activeDays: engData.activeDays,
+          activeDays: 0, // TODO: Calculate active days from engagement data
         });
       }
     } catch (err) {

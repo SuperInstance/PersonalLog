@@ -7,7 +7,6 @@
 'use client'
 
 import React, { ReactElement, cloneElement, ReactNode } from 'react'
-import { usePersonalization } from '@/lib/personalization/hooks'
 import { generateCSSVariables, getDensityClassName, getFontSizeClassName } from '@/lib/personalization/adapters'
 
 // ============================================================================

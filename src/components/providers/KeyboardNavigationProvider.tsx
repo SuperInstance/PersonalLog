@@ -17,7 +17,7 @@
 
 import React, { createContext, useContext, useRef, useState, useCallback, useEffect } from 'react'
 
-interface FocusContextValue {
+export interface FocusContextValue {
   /** Current focused element */
   focusedElement: HTMLElement | null
   /** Previous focused element (for restoration) */

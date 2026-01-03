@@ -7,7 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { OpenAIProvider, AnthropicProvider, LocalAIProvider } from '@/lib/ai/provider'
-import { getFilterSettings, DEFAULT_FILTRATION } from '@/lib/wizard/models'
+import { getFilterSettings } from '@/lib/wizard/model-store'
+import { DEFAULT_FILTRATION } from '@/lib/wizard/models'
 import type { FiltrationConfig } from '@/lib/wizard/models'
 
 export const runtime = 'edge'
@@ -81,13 +82,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Build chat request
-    const chatRequest = {
+    const chatRequest: any = {
       prompt: userPrompt,
       messages: messages.map(m => ({
         author: m.role === 'user' ? 'user' : 'ai',
         content: { text: m.content },
         timestamp: new Date().toISOString(),
-      })) as any,
+      })),
       agentId: contactId,
     }
 

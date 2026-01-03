@@ -29,7 +29,7 @@ import MessageBubble from './MessageBubble'
 import MessageSelectionBar from './MessageSelectionBar'
 import NewChatDialog from './NewChatDialog'
 import type { Conversation, Message } from '@/types/conversation'
-import { addMessage, getMessages, clearSelection, setMessageSelection } from '@/lib/storage'
+import { addMessage, getMessages, clearSelection, setMessageSelection } from '@/lib/storage/conversation-store'
 import { getAuthorDisplayName, getAuthorColor } from '@/lib/utils'
 
 interface ChatAreaProps {

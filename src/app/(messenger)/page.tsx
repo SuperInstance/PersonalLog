@@ -16,7 +16,8 @@ import { useRouter, useParams } from 'next/navigation'
 import ConversationList from '@/components/messenger/ConversationList'
 import ChatArea from '@/components/messenger/ChatArea'
 import AIContactsPanel from '@/components/ai-contacts/AIContactsPanel'
-import { createConversation, listConversations, initializeDefaultAgents } from '@/lib/storage'
+import { createConversation, listConversations } from '@/lib/storage/conversation-store'
+import { initializeDefaultAgents } from '@/lib/storage/ai-contact-store'
 import type { Conversation } from '@/types/conversation'
 
 export default function MessengerPage() {

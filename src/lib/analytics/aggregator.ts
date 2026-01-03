@@ -249,7 +249,11 @@ export class AnalyticsAggregator {
         existing.lastUsed = event.timestamp
       }
       if (data.duration) existing.durations.push(data.duration)
-      if (data.success) existing.successes++ else existing.failures++
+      if (data.success) {
+        existing.successes++
+      } else {
+        existing.failures++
+      }
 
       featureMap.set(featureId, existing)
     }
@@ -410,7 +414,11 @@ export class AnalyticsAggregator {
       }
 
       existing.durations.push(duration)
-      if (success) existing.successes++ else existing.failures++
+      if (success) {
+        existing.successes++
+      } else {
+        existing.failures++
+      }
       existing.timestamps.push(new Date(event.timestamp).getTime())
 
       metricsMap.set(cat, existing)

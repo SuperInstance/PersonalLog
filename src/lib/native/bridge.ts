@@ -202,7 +202,10 @@ export async function loadWasmModule(): Promise<boolean> {
         const errorHandler = getErrorHandler();
         errorHandler.handle(new Error('WASM not supported in this browser'), {
           component: 'WASM-Loader',
-          additional: { fallback: 'JavaScript' }
+          additional: {
+            fallback: 'JavaScript',
+            message: 'Your browser does not support WebAssembly. Using JavaScript fallback for vector operations.'
+          }
         });
         useWasm = false
         return false
@@ -213,7 +216,17 @@ export async function loadWasmModule(): Promise<boolean> {
       const wasmUrl = '/native/rust/pkg/personallog_native.js'
 
       try {
-        const wasmModuleImport = await import(/* @vite-ignore */ wasmUrl)
+        // Add timeout for WASM loading
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('WASM loading timeout (10s)')), 10000)
+        })
+
+        const wasmModuleImport = await Promise.race([
+          import(/* @vite-ignore */ wasmUrl),
+          timeoutPromise
+        ])
+
+        // Initialize WASM module
         await wasmModuleImport.default()
 
         wasmModule = wasmModuleImport as unknown as WasmModule
@@ -224,27 +237,49 @@ export async function loadWasmModule(): Promise<boolean> {
         console.log(`[WASM] Loaded successfully (v${version}, SIMD: ${hasSimd})`)
         useWasm = true
         return true
-      } catch (importError) {
+      } catch (importError: any) {
+        // Provide helpful error messages
+        let errorMessage = 'Failed to load WASM module'
+        let hint = 'WASM will use JavaScript fallback for vector operations.'
+
+        if (importError.message.includes('timeout')) {
+          errorMessage = 'WASM loading timeout'
+          hint = 'The module took too long to load. Using JavaScript fallback.'
+        } else if (importError.message.includes('Failed to fetch')) {
+          errorMessage = 'WASM module not found'
+          hint = 'Run "npm run build:wasm" to build WASM, or use JavaScript fallback.'
+        } else if (importError.message.includes('not a valid WebAssembly module')) {
+          errorMessage = 'Invalid WASM module'
+          hint = 'The WASM binary may be corrupted. Try rebuilding with "npm run build:wasm:release".'
+        }
+
         // Report to error handler with helpful context
         const errorHandler = getErrorHandler();
-        errorHandler.handle(importError, {
+        errorHandler.handle(new Error(errorMessage, { cause: importError }), {
           component: 'WASM-Loader',
           additional: {
             operation: 'importWasmModule',
             url: wasmUrl,
-            hint: 'Run: npm run build:wasm'
+            hint,
+            fallback: 'JavaScript'
           }
         });
+
+        console.warn(`[WASM] ${errorMessage}. ${hint}`)
         useWasm = false
         return false
       }
 
-    } catch (error) {
-      // Report to error handler
+    } catch (error: any) {
+      // Catch-all error handler
       const errorHandler = getErrorHandler();
       errorHandler.handle(error, {
         component: 'WASM-Loader',
-        additional: { operation: 'initialize' }
+        additional: {
+          operation: 'initialize',
+          fallback: 'JavaScript',
+          message: 'Failed to initialize WASM. Using JavaScript fallback.'
+        }
       });
       useWasm = false
       return false
@@ -302,7 +337,11 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
       try {
         return wasm.cosine_similarity(a32, b32)
       } catch (e) {
-        console.warn('[WASM] cosine_similarity failed, using JS fallback:', e)
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(e, {
+          component: 'WASM-cosine_similarity',
+          additional: { fallback: 'JavaScript', dimensions: a.length }
+        });
         return cosineSimilarityJS(a, b)
       }
     },
@@ -316,7 +355,11 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
       try {
         return wasm.dot_product(a32, b32)
       } catch (e) {
-        console.warn('[WASM] dot_product failed, using JS fallback:', e)
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(e, {
+          component: 'WASM-dot_product',
+          additional: { fallback: 'JavaScript', dimensions: a.length }
+        });
         return dotProductJS(a, b)
       }
     },
@@ -330,7 +373,11 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
       try {
         return wasm.euclidean_distance(a32, b32)
       } catch (e) {
-        console.warn('[WASM] euclidean_distance failed, using JS fallback:', e)
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(e, {
+          component: 'WASM-euclidean_distance',
+          additional: { fallback: 'JavaScript', dimensions: a.length }
+        });
         return Math.sqrt(a.reduce((sum, val, i) => sum + Math.pow(val - b[i], 2), 0))
       }
     },
@@ -343,7 +390,15 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
         const result = wasm.batch_cosine_similarity(query32, vectors32, dimension)
         return Array.from(result)
       } catch (e) {
-        console.warn('[WASM] batch_cosine_similarity failed, using JS fallback:', e)
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(e, {
+          component: 'WASM-batch_cosine_similarity',
+          additional: {
+            fallback: 'JavaScript',
+            dimension,
+            numVectors: vectors.length / dimension
+          }
+        });
         // JS fallback
         const numVectors = vectors.length / dimension
         const results: number[] = []
@@ -363,7 +418,15 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
         const result = wasm.top_k_similar(query32, vectors32, dimension, k)
         return Array.from(result)
       } catch (e) {
-        console.warn('[WASM] top_k_similar failed, using JS fallback:', e)
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(e, {
+          component: 'WASM-top_k_similar',
+          additional: {
+            fallback: 'JavaScript',
+            dimension,
+            k
+          }
+        });
         // JS fallback
         const scores = this.batch_cosine_similarity(query, vectors, dimension)
         const indexed = scores.map((score, idx) => ({ idx, score }))
@@ -379,7 +442,11 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
         const result = wasm.normalize_vector(v32)
         return Array.from(result)
       } catch (e) {
-        console.warn('[WASM] normalize_vector failed, using JS fallback:', e)
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(e, {
+          component: 'WASM-normalize_vector',
+          additional: { fallback: 'JavaScript', dimensions: v.length }
+        });
         return normalizeVectorJS(v)
       }
     },
@@ -391,7 +458,11 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
         const result = wasm.vector_mean(vectors32, dimension)
         return Array.from(result)
       } catch (e) {
-        console.warn('[WASM] vector_mean failed, using JS fallback:', e)
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(e, {
+          component: 'WASM-vector_mean',
+          additional: { fallback: 'JavaScript', dimension }
+        });
         const numVectors = vectors.length / dimension
         const mean = new Array(dimension).fill(0)
         for (let i = 0; i < numVectors; i++) {
@@ -411,7 +482,11 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
         const result = wasm.weighted_sum(vectors32, weights32, dimension)
         return Array.from(result)
       } catch (e) {
-        console.warn('[WASM] weighted_sum failed, using JS fallback:', e)
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(e, {
+          component: 'WASM-weighted_sum',
+          additional: { fallback: 'JavaScript', dimension }
+        });
         const numVectors = vectors.length / dimension
         const result = new Array(dimension).fill(0)
         for (let i = 0; i < numVectors; i++) {
@@ -428,7 +503,11 @@ function createWasmOps(wasm: WasmModule): WasmVectorOps {
         const result = wasm.hash_embedding(text, dimensions)
         return Array.from(result)
       } catch (e) {
-        console.warn('[WASM] hash_embedding failed, using JS fallback:', e)
+        const errorHandler = getErrorHandler();
+        errorHandler.handle(e, {
+          component: 'WASM-hash_embedding',
+          additional: { fallback: 'JavaScript', dimensions, textLength: text.length }
+        });
         // Simple JS fallback
         const vector = new Array(dimensions).fill(0)
         let hash = 0

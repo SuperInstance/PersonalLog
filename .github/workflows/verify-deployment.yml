@@ -1,0 +1,179 @@
+name: Verify Deployment
+
+# Trigger on push to main and pull requests
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify-deployment:
+    name: Verify Deployment Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Vercel configuration
+        run: |
+          echo "Verifying vercel.json..."
+          if [ ! -f vercel.json ]; then
+            echo "❌ vercel.json not found"
+            exit 1
+          fi
+          echo "✅ vercel.json found"
+
+      - name: Verify environment variables
+        run: |
+          echo "Checking .env.example..."
+          if [ ! -f .env.example ]; then
+            echo "❌ .env.example not found"
+            exit 1
+          fi
+          echo "✅ .env.example found"
+
+          # Check for critical variables
+          if ! grep -q "NEXT_PUBLIC_APP_URL" .env.example; then
+            echo "❌ NEXT_PUBLIC_APP_URL not documented"
+            exit 1
+          fi
+          echo "✅ Critical environment variables documented"
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test build (without WASM)
+        env:
+          BUILD_WASM: false
+        run: |
+          echo "Testing production build..."
+          npm run build
+          echo "✅ Build successful"
+
+      - name: Verify build output
+        run: |
+          if [ ! -d .next ]; then
+            echo "❌ Build output not found"
+            exit 1
+          fi
+          echo "✅ Build output verified"
+
+      - name: Check bundle size
+        run: |
+          echo "Checking bundle sizes..."
+          # This is a simple check - you can add more sophisticated analysis
+          find .next/static -name "*.js" -exec du -h {} \; | sort -rh | head -10
+          echo "✅ Bundle size check complete"
+
+  verify-env-validation:
+    name: Verify Environment Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test environment validation
+        run: |
+          echo "Testing environment validation utilities..."
+          node -e "
+            const path = require('path');
+            const fs = require('fs');
+
+            // Check if env-validation.ts exists
+            const envPath = path.join(__dirname, 'src/lib/env-validation.ts');
+            if (!fs.existsSync(envPath)) {
+              console.error('❌ env-validation.ts not found');
+              process.exit(1);
+            }
+            console.log('✅ env-validation.ts exists');
+
+            // Check for required functions
+            const content = fs.readFileSync(envPath, 'utf8');
+            const requiredFunctions = [
+              'validateEnv',
+              'getEnv',
+              'getEnvConfig',
+              'validateEnvOrThrow',
+              'getPublicEnvConfig'
+            ];
+
+            requiredFunctions.forEach(fn => {
+              if (!content.includes(fn)) {
+                console.error(\`❌ Function \${fn} not found\`);
+                process.exit(1);
+              }
+              console.log(\`✅ Function \${fn} found\`);
+            });
+          "
+
+  verify-docs:
+    name: Verify Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check DEPLOYMENT.md
+        run: |
+          if [ ! -f DEPLOYMENT.md ]; then
+            echo "❌ DEPLOYMENT.md not found"
+            exit 1
+          fi
+          echo "✅ DEPLOYMENT.md found"
+
+          # Check for critical sections
+          if ! grep -q "Quick Start" DEPLOYMENT.md; then
+            echo "❌ Quick Start section missing"
+            exit 1
+          fi
+          echo "✅ Quick Start section found"
+
+          if ! grep -q "Environment Configuration" DEPLOYMENT.md; then
+            echo "❌ Environment Configuration section missing"
+            exit 1
+          fi
+          echo "✅ Environment Configuration section found"
+
+          if ! grep -q "Troubleshooting" DEPLOYMENT.md; then
+            echo "❌ Troubleshooting section missing"
+            exit 1
+          fi
+          echo "✅ Troubleshooting section found"
+
+      - name: Check README.md deployment section
+        run: |
+          if ! grep -q "Deployment" README.md; then
+            echo "❌ Deployment section not found in README.md"
+            exit 1
+          fi
+          echo "✅ Deployment section found in README.md"
+
+          if ! grep -q "DEPLOYMENT.md" README.md; then
+            echo "❌ Link to DEPLOYMENT.md not found"
+            exit 1
+          fi
+          echo "✅ Link to DEPLOYMENT.md found"

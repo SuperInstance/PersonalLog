@@ -9,12 +9,14 @@
  * - ConversationItem is memoized to prevent unnecessary re-renders
  * - Filtered conversations computed once per render
  * - Expensive calculations (preview, time) memoized
+ * - Uses VirtualList for 50+ conversations (windowed rendering)
  */
 
 import { useState, useMemo, memo, useCallback } from 'react'
 import { Search, Pin, MoreVertical } from 'lucide-react'
 import type { Conversation } from '@/types/conversation'
 import { getAuthorDisplayName, formatDate } from '@/lib/utils'
+import { VirtualList } from '@/components/ui/VirtualList'
 
 interface ConversationListProps {
   conversations: Conversation[]
@@ -171,10 +173,13 @@ export default function ConversationList({
     )
   }
 
+  // Use virtual list for 30+ conversations for better performance
+  const useVirtualList = filteredRegular.length >= 30
+
   return (
-    <div className="p-2">
+    <div className="p-2 flex flex-col h-full">
       {/* Search */}
-      <div className="mb-3 px-1">
+      <div className="mb-3 px-1 flex-shrink-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -187,46 +192,61 @@ export default function ConversationList({
         </div>
       </div>
 
-      {/* Pinned Conversations */}
-      {filteredPinned.length > 0 && (
-        <div className="mb-4">
-          <h3 className="px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Pinned
-          </h3>
-          <div className="space-y-1">
-            {filteredPinned.map(conv => (
-              <ConversationItem key={conv.id} conversation={conv} pinned />
-            ))}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        {/* Pinned Conversations - always show directly (usually few) */}
+        {filteredPinned.length > 0 && (
+          <div className="mb-4 flex-shrink-0">
+            <h3 className="px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Pinned
+            </h3>
+            <div className="space-y-1">
+              {filteredPinned.map(conv => (
+                <ConversationItem key={conv.id} conversation={conv} pinned />
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Regular Conversations - use VirtualList for many items */}
+        <div className="flex-1 min-h-0">
+          {filteredRegular.length > 0 && (
+            <h3 className="px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Chats
+            </h3>
+          )}
+
+          {useVirtualList ? (
+            <VirtualList
+              items={filteredRegular}
+              renderItem={(conversation) => <ConversationItem key={conversation.id} conversation={conversation} />}
+              height="100%"
+              itemHeight={80} // Approximate height of each conversation item
+              overscan={5}
+              getKey={(conversation) => conversation.id}
+              className="scrollbar-thin"
+            />
+          ) : (
+            <>
+              {filteredRegular.map(conv => (
+                <ConversationItem key={conv.id} conversation={conv} />
+              ))}
+
+              {/* Empty State */}
+              {filteredRegular.length === 0 && searchQuery && (
+                <div className="py-8 text-center text-sm text-slate-400">
+                  No conversations found
+                </div>
+              )}
+
+              {filteredRegular.length === 0 && !searchQuery && conversations.length === 0 && (
+                <div className="py-8 text-center text-sm text-slate-400">
+                  <p>No conversations yet</p>
+                  <p className="text-xs mt-1">Click "New Chat" to start</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
-
-      {/* Regular Conversations */}
-      <div>
-        {filteredRegular.length > 0 && (
-          <h3 className="px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Chats
-          </h3>
-        )}
-        <div className="space-y-1">
-          {filteredRegular.map(conv => (
-            <ConversationItem key={conv.id} conversation={conv} />
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {filteredRegular.length === 0 && searchQuery && (
-          <div className="py-8 text-center text-sm text-slate-400">
-            No conversations found
-          </div>
-        )}
-
-        {filteredRegular.length === 0 && !searchQuery && conversations.length === 0 && (
-          <div className="py-8 text-center text-sm text-slate-400">
-            <p>No conversations yet</p>
-            <p className="text-xs mt-1">Click "New Chat" to start</p>
-          </div>
-        )}
       </div>
     </div>
   )
