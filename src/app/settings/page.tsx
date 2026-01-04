@@ -32,6 +32,7 @@ import {
   TestTube,
   Zap,
   AlertTriangle,
+  HardDrive,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -198,6 +199,15 @@ export default function SettingsPage() {
       icon: AlertTriangle,
       href: '/settings/errors',
       color: 'red',
+    },
+
+    // Data & Sync - Round 8
+    {
+      title: 'Data Management',
+      description: 'Manage storage, backups, sync, and data operations',
+      icon: HardDrive,
+      href: '/settings/data',
+      color: 'blue',
     },
   ], []); // Empty deps - cards are static
 
