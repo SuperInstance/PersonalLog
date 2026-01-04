@@ -4,10 +4,12 @@
   "description": "Messenger-style journaling with AI contacts, knowledge management, and self-improving filtration",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay"],
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "scope": "/",
+  "categories": ["productivity", "utilities", "lifestyle", "education"],
   "icons": [
     {
       "src": "/icon-72x72.png",
@@ -70,7 +72,22 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["productivity", "utilities", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
   "shortcuts": [
     {
       "name": "New Entry",

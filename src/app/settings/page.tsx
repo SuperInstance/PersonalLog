@@ -34,6 +34,7 @@ import {
   AlertTriangle,
   HardDrive,
   Palette,
+  Image as ImageIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -57,7 +58,7 @@ interface SettingsCard {
   description: string;
   icon: React.ElementType;
   href: string;
-  color: 'blue' | 'purple' | 'green' | 'amber' | 'cyan' | 'indigo' | 'red';
+  color: 'blue' | 'purple' | 'green' | 'amber' | 'cyan' | 'indigo' | 'red' | 'pink';
 }
 
 export default function SettingsPage() {
@@ -219,6 +220,15 @@ export default function SettingsPage() {
       href: '/settings/appearance',
       color: 'purple',
     },
+
+    // Multi-Media - Round 11
+    {
+      title: 'Multi-Media',
+      description: 'Configure images, audio, video, and AI vision capabilities',
+      icon: ImageIcon,
+      href: '/settings/multimedia',
+      color: 'pink',
+    },
   ], []); // Empty deps - cards are static
 
   const colorClasses = useMemo(() => ({
@@ -229,6 +239,7 @@ export default function SettingsPage() {
     cyan: 'from-cyan-500 to-cyan-600 bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800',
     indigo: 'from-indigo-500 to-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800',
     red: 'from-red-500 to-red-600 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
+    pink: 'from-pink-500 to-pink-600 bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800',
   }), []); // Empty deps - colorClasses is static
 
   return (

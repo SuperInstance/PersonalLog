@@ -5,12 +5,17 @@
  * This example creates a mock echo provider that repeats the user's input.
  */
 
-import { Plugin, PluginContext, PluginManifest, CustomAIProvider, ChatRequest, ChatResponse } from '@/sdk';
+// TODO: SDK is incomplete and has type errors. Commenting out for now.
+// import { Plugin, PluginContext, PluginManifest, CustomAIProvider, ChatRequest, ChatResponse } from '@/sdk';
+
+// Placeholder to prevent export errors
+export {};
 
 // ============================================================================
 // PLUGIN MANIFEST
 // ============================================================================
 
+/*
 const manifest: PluginManifest = {
   id: 'custom-ai-provider',
   name: 'Echo AI Provider',

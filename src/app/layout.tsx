@@ -21,6 +21,8 @@ import { AppProviders } from "@/components/providers";
 import { ErrorBoundary } from "@/components/errors/ErrorBoundary";
 import { KeyboardNavigationProvider } from "@/components/providers/KeyboardNavigationProvider";
 import { LiveAnnouncerProvider } from "@/components/ui/LiveAnnouncer";
+import { OfflineIndicator } from "@/components/mobile/OfflineIndicator";
+import { PWAInstallPrompt } from "@/components/mobile/InstallPrompt";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -191,9 +193,13 @@ export default function RootLayout({
               >
                 <AppNav />
                 {/* Main content landmark for accessibility */}
-                <main id="main-content" role="main" tabIndex={-1}>
+                <main id="main-content" role="main" tabIndex={-1} className="pb-16 md:pb-0">
                   {children}
                 </main>
+
+                {/* Mobile-specific components */}
+                <OfflineIndicator />
+                <PWAInstallPrompt />
               </AppProviders>
             </LiveAnnouncerProvider>
           </KeyboardNavigationProvider>

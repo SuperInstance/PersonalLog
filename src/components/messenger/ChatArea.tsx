@@ -36,12 +36,14 @@ interface ChatAreaProps {
   conversation: Conversation | null
   onUpdateConversation: (conversation: Conversation) => void
   onNewConversation: () => void
+  onBackToList?: () => void
 }
 
 export default function ChatArea({
   conversation,
   onUpdateConversation,
   onNewConversation,
+  onBackToList,
 }: ChatAreaProps) {
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
@@ -54,6 +56,9 @@ export default function ChatArea({
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // Mobile detection
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
   // Fixed: Wrapped loadMessages in useCallback and added to dependencies
   const loadMessages = useCallback(async () => {
@@ -221,8 +226,20 @@ export default function ChatArea({
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-slate-950">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-800" role="banner">
+      <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-slate-200 dark:border-slate-800" role="banner">
         <div className="flex items-center gap-3">
+          {/* Mobile back button */}
+          {isMobile && onBackToList && (
+            <button
+              onClick={onBackToList}
+              className="p-1.5 -ml-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              aria-label="Back to conversations"
+            >
+              <svg className="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
           <div className="flex -space-x-2" aria-hidden="true">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-sm font-semibold border-2 border-white dark:border-slate-950">
               You

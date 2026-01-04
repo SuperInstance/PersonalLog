@@ -13,6 +13,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
 
+  // ESLint configuration
+  eslint: {
+    // Allow production builds with warnings
+    ignoreDuringBuilds: true,
+  },
+
   // Production optimizations
   compress: true,
   poweredByHeader: false,

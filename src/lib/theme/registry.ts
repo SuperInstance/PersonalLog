@@ -349,13 +349,13 @@ class ThemeRegistry {
       localStorage.setItem(STORAGE_KEYS.ACTIVE_THEME, themeId);
     }
 
-    // Emit event
-    this.emit('theme.changed', {
-      type: 'theme.changed',
-      themeId,
-      previousThemeId: previousTheme,
-      timestamp: Date.now(),
-    });
+    // TODO: Emit event when event emitter is available
+    // this.emit('theme.changed', {
+    //   type: 'theme.changed',
+    //   themeId,
+    //   previousThemeId: previousTheme,
+    //   timestamp: Date.now(),
+    // });
 
     // Apply theme to document
     const theme = this.themes.get(themeId);

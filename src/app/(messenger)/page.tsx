@@ -11,13 +11,16 @@
  * - Prevents unnecessary re-renders of child components
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import ConversationList from '@/components/messenger/ConversationList'
 import ChatArea from '@/components/messenger/ChatArea'
 import AIContactsPanel from '@/components/ai-contacts/AIContactsPanel'
+import { MobileBottomNav } from '@/components/mobile/MobileBottomNav'
 import { createConversation, listConversations } from '@/lib/storage/conversation-store'
 import { initializeDefaultAgents } from '@/lib/storage/ai-contact-store'
+import { useSwipeGesture } from '@/lib/mobile'
+import { useMobileDetection } from '@/lib/mobile'
 import type { Conversation } from '@/types/conversation'
 
 export default function MessengerPage() {
@@ -28,6 +31,27 @@ export default function MessengerPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [showConversationList, setShowConversationList] = useState(false)
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const device = useMobileDetection()
+
+  // Mobile: Handle swipe gestures for navigation
+  // Note: Swipe gestures disabled until needed
+  // useSwipeGesture(containerRef as any, {
+  //   onSwipeLeft: () => {
+  //     if (device.isMobile && selectedConversation && !showConversationList) {
+  //       // Swipe left shows conversation list on mobile
+  //       setShowConversationList(true)
+  //     }
+  //   },
+  //   onSwipeRight: () => {
+  //     if (device.isMobile && showConversationList) {
+  //       // Swipe right hides conversation list
+  //       setShowConversationList(false)
+  //     }
+  //   },
+  // })
 
   // Fixed: Added loadConversations and initializeDefaultAgents to dependencies
   // Wrapped in useCallback to maintain stable reference
@@ -100,9 +124,10 @@ export default function MessengerPage() {
   }, [selectedConversation?.id])
 
   return (
-    <div className="flex h-full">
-      {/* Sidebar */}
-      <div
+    <>
+      <div ref={containerRef} className="flex h-full">
+        {/* Sidebar */}
+        <div
         className={`flex flex-col border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 transition-all duration-300 ${
           sidebarCollapsed ? 'w-16' : 'w-80'
         }`}
@@ -149,7 +174,12 @@ export default function MessengerPage() {
         </div>
 
         {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto">
+        <div
+          className={`flex-1 overflow-y-auto ${
+            device.isMobile && showConversationList ? 'block' : ''
+          } ${device.isMobile && !showConversationList ? 'hidden md:block' : ''
+          }`}
+        >
           <ConversationList
             conversations={conversations}
             selectedConversation={selectedConversation}
@@ -177,13 +207,22 @@ export default function MessengerPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div
+        className={`flex-1 flex flex-col ${
+          device.isMobile && showConversationList ? 'hidden' : ''
+        }`}
+      >
         <ChatArea
           conversation={selectedConversation}
           onUpdateConversation={handleUpdateConversation}
           onNewConversation={handleNewConversation}
+          onBackToList={() => setShowConversationList(false)}
         />
       </div>
     </div>
+
+    {/* Mobile bottom navigation */}
+    <MobileBottomNav />
+  </>
   )
 }
