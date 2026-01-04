@@ -14,8 +14,8 @@ import type {
   ExtensionRuntimeState,
   ExtensionRegistryEntry,
   ExtensionRegistrationOptions,
-  ExtensionState,
 } from './types';
+import { ExtensionState } from './types';
 
 // ============================================================================
 // EXTENSION REGISTRY CLASS

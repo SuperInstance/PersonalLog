@@ -25,16 +25,23 @@ function ToastContainer() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-      {toasts.map(toast => (
-        <Toast
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-3 max-w-md pointer-events-none">
+      {toasts.map((toast, index) => (
+        <div
           key={toast.id}
-          id={toast.id}
-          message={toast.message}
-          variant={toast.variant}
-          duration={toast.duration}
-          onClose={removeToast}
-        />
+          className="pointer-events-auto"
+          style={{
+            animationDelay: `${index * 50}ms`,
+          }}
+        >
+          <Toast
+            id={toast.id}
+            message={toast.message}
+            variant={toast.variant}
+            duration={toast.duration}
+            onClose={removeToast}
+          />
+        </div>
       ))}
     </div>
   )

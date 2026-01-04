@@ -66,15 +66,20 @@ export function AppNav() {
   return (
     <>
       {/* Desktop Nav */}
-      <nav className="hidden md:flex items-center gap-1 px-4 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+      <nav
+        className="hidden md:flex items-center gap-1 px-4 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800"
+        role="navigation"
+        aria-label="Main navigation"
+        id="main-navigation"
+      >
         <div className="flex items-center gap-2 mr-4">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" aria-hidden="true">
             <MessageSquare className="w-4 h-4 text-white" />
           </div>
           <span className="font-semibold text-slate-900 dark:text-white">PersonalLog</span>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" role="menubar">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href)
             const Icon = item.icon
@@ -91,8 +96,10 @@ export function AppNav() {
                   }
                 `}
                 title={item.description}
+                role="menuitem"
+                aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-4 h-4" aria-hidden="true" />
                 <span>{item.label}</span>
               </Link>
             )
@@ -107,7 +114,7 @@ export function AppNav() {
         {/* Mobile Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" aria-hidden="true">
               <MessageSquare className="w-4 h-4 text-white" />
             </div>
             <span className="font-semibold text-slate-900 dark:text-white">PersonalLog</span>
@@ -116,6 +123,9 @@ export function AppNav() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 -mr-2 text-slate-600 dark:text-slate-400"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -123,7 +133,11 @@ export function AppNav() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="px-4 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+          <div
+            className="px-4 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800"
+            id="mobile-menu"
+            role="menu"
+          >
             {navItems.map((item) => {
               const isActive = pathname.startsWith(item.href)
               const Icon = item.icon
@@ -140,8 +154,10 @@ export function AppNav() {
                       : 'text-slate-600 dark:text-slate-400'
                     }
                   `}
+                  role="menuitem"
+                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-5 h-5" aria-hidden="true" />
                   <span>{item.label}</span>
                 </Link>
               )

@@ -52,13 +52,13 @@ export class ExtensionBuilder {
   protected extension: Partial<Extension>;
   protected priority: ExtensionPriority = ExtensionPriority.NORMAL;
   protected dependencies: ExtensionId[] = [];
-  protected autoActivate = true;
+  protected shouldAutoActivate = true;
 
   constructor(pluginId: string, id: string, point: ExtensionPoint, name: string) {
     this.pluginId = pluginId;
     this.extension = {
       id: `${pluginId}.${id}` as ExtensionId,
-      point,
+      point: point as any,
       name,
       priority: ExtensionPriority.NORMAL,
       pluginId,
@@ -95,8 +95,8 @@ export class ExtensionBuilder {
   /**
    * Set auto-activation
    */
-  autoActivate(enabled: boolean): this {
-    this.autoActivate = enabled;
+  setAutoActivate(enabled: boolean): this {
+    this.shouldAutoActivate = enabled;
     return this;
   }
 
@@ -127,12 +127,12 @@ export class ExtensionBuilder {
     }
 
     manager.register(this.extension as Extension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
 
-    return this.extension.id;
+    return this.extension.id!;
   }
 }
 
@@ -147,7 +147,7 @@ export class CommandExtensionBuilder extends ExtensionBuilder {
     super(pluginId, id, 'command' as ExtensionPoint, title);
     this.command = {
       ...this.extension,
-      point: 'command' as ExtensionPoint,
+      point: 'command' as any,
       title,
       handler: null as any,
     };
@@ -199,7 +199,7 @@ export class CommandExtensionBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.command as CommandExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -218,7 +218,7 @@ export class MessageMiddlewareBuilder extends ExtensionBuilder {
     super(pluginId, id, 'message.middleware' as ExtensionPoint, name);
     this.middleware = {
       ...this.extension,
-      point: 'message.middleware' as ExtensionPoint,
+      point: 'message.middleware' as any,
       middleware: null as any,
     };
   }
@@ -234,7 +234,7 @@ export class MessageMiddlewareBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.middleware as MessageMiddlewareExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -249,7 +249,7 @@ export class MessageFilterBuilder extends ExtensionBuilder {
     super(pluginId, id, 'message.filter' as ExtensionPoint, name);
     this.filter = {
       ...this.extension,
-      point: 'message.filter' as ExtensionPoint,
+      point: 'message.filter' as any,
       filter: null as any,
     };
   }
@@ -265,7 +265,7 @@ export class MessageFilterBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.filter as MessageFilterExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -280,7 +280,7 @@ export class MessageEnricherBuilder extends ExtensionBuilder {
     super(pluginId, id, 'message.enricher' as ExtensionPoint, name);
     this.enricher = {
       ...this.extension,
-      point: 'message.enricher' as ExtensionPoint,
+      point: 'message.enricher' as any,
       enricher: null as any,
     };
   }
@@ -296,7 +296,7 @@ export class MessageEnricherBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.enricher as MessageEnricherExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -315,7 +315,7 @@ export class SidebarPanelBuilder extends ExtensionBuilder {
     super(pluginId, id, 'ui.sidebar.panel' as ExtensionPoint, title);
     this.panel = {
       ...this.extension,
-      point: 'ui.sidebar.panel' as ExtensionPoint,
+      point: 'ui.sidebar.panel' as any,
       title,
       position: 'bottom',
       render: null as any,
@@ -357,7 +357,7 @@ export class SidebarPanelBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.panel as SidebarPanelExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -372,11 +372,11 @@ export class MenuItemBuilder extends ExtensionBuilder {
     super(pluginId, id, 'ui.menu.item' as ExtensionPoint, label);
     this.item = {
       ...this.extension,
-      point: 'ui.menu.item' as ExtensionPoint,
+      point: 'ui.menu.item' as any,
       label,
       location,
       action: null as any,
-    };
+    } as any;
   }
 
   /**
@@ -414,7 +414,7 @@ export class MenuItemBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.item as MenuItemExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -429,7 +429,7 @@ export class ToolbarButtonBuilder extends ExtensionBuilder {
     super(pluginId, id, 'ui.toolbar.button' as ExtensionPoint, label);
     this.button = {
       ...this.extension,
-      point: 'ui.toolbar.button' as ExtensionPoint,
+      point: 'ui.toolbar.button' as any,
       label,
       position,
       onClick: null as any,
@@ -463,7 +463,7 @@ export class ToolbarButtonBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.button as ToolbarButtonExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -478,7 +478,7 @@ export class ModalDialogBuilder extends ExtensionBuilder {
     super(pluginId, id, 'ui.modal.dialog' as ExtensionPoint, title);
     this.dialog = {
       ...this.extension,
-      point: 'ui.modal.dialog' as ExtensionPoint,
+      point: 'ui.modal.dialog' as any,
       title,
       size: 'md',
       render: null as any,
@@ -504,7 +504,7 @@ export class ModalDialogBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.dialog as ModalDialogExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -519,7 +519,7 @@ export class StatusBarBuilder extends ExtensionBuilder {
     super(pluginId, id, 'ui.status.item' as ExtensionPoint, id);
     this.item = {
       ...this.extension,
-      point: 'ui.status.item' as ExtensionPoint,
+      point: 'ui.status.item' as any,
       position: 'right',
       render: null as any,
     };
@@ -552,7 +552,7 @@ export class StatusBarBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.item as StatusBarExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -572,11 +572,11 @@ export class ContextMenuBuilder extends ExtensionBuilder {
     super(pluginId, id, 'ui.context.menu' as ExtensionPoint, label);
     this.item = {
       ...this.extension,
-      point: 'ui.context.menu' as ExtensionPoint,
+      point: 'ui.context.menu' as any,
       label,
       context,
       action: null as any,
-    };
+    } as any;
   }
 
   /**
@@ -614,7 +614,7 @@ export class ContextMenuBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.item as ContextMenuExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -633,7 +633,7 @@ export class ExportFormatBuilder extends ExtensionBuilder {
     super(pluginId, id, 'data.export.format' as ExtensionPoint, name);
     this.format = {
       ...this.extension,
-      point: 'data.export.format' as ExtensionPoint,
+      point: 'data.export.format' as any,
       name,
       extension,
       mimeType: 'text/plain',
@@ -668,7 +668,7 @@ export class ExportFormatBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.format as ExportFormatExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -683,7 +683,7 @@ export class ImportSourceBuilder extends ExtensionBuilder {
     super(pluginId, id, 'data.import.source' as ExtensionPoint, name);
     this.source = {
       ...this.extension,
-      point: 'data.import.source' as ExtensionPoint,
+      point: 'data.import.source' as any,
       name,
       formats,
       import: null as any,
@@ -709,7 +709,7 @@ export class ImportSourceBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.source as ImportSourceExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -734,7 +734,7 @@ export class AIProviderBuilder extends ExtensionBuilder {
     super(pluginId, id, 'ai.provider' as ExtensionPoint, name);
     this.provider = {
       ...this.extension,
-      point: 'ai.provider' as ExtensionPoint,
+      point: 'ai.provider' as any,
       name,
       type,
       models,
@@ -761,7 +761,7 @@ export class AIProviderBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.provider as AIProviderExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });
@@ -780,7 +780,7 @@ export class ThemeBuilder extends ExtensionBuilder {
     super(pluginId, id, 'theme' as ExtensionPoint, name);
     this.theme = {
       ...this.extension,
-      point: 'theme' as ExtensionPoint,
+      point: 'theme' as any,
       name,
       type: 'custom',
       colors: {},
@@ -814,7 +814,7 @@ export class ThemeBuilder extends ExtensionBuilder {
   register(): ExtensionId {
     const manager = getExtensionManager();
     manager.register(this.theme as ThemeExtension, {
-      autoActivate: this.autoActivate,
+      autoActivate: this.shouldAutoActivate,
       priority: this.priority,
       dependencies: this.dependencies,
     });

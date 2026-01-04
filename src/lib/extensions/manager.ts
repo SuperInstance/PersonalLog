@@ -297,7 +297,7 @@ export class ExtensionManager {
    * Execute message middleware pipeline
    */
   async processMessage(message: Message, context: any): Promise<Message> {
-    const results = await this.execute('message.middleware', { message, context });
+    const results = await this.execute('message.middleware' as any, { message, context });
 
     // Apply transformations in order
     let processedMessage = message;
@@ -314,7 +314,7 @@ export class ExtensionManager {
    * Filter messages using filter extensions
    */
   async filterMessage(message: Message, context: any): Promise<boolean> {
-    const results = await this.execute('message.filter', { message, context });
+    const results = await this.execute('message.filter' as any, { message, context });
 
     // All filters must pass (return true)
     return results.every((r) => r.success !== false && r.data !== false);
@@ -324,7 +324,7 @@ export class ExtensionManager {
    * Enrich message metadata using enricher extensions
    */
   async enrichMessage(message: Message, context: any): Promise<Record<string, any>> {
-    const results = await this.execute('message.enricher', { message, context });
+    const results = await this.execute('message.enricher' as any, { message, context });
 
     // Merge all metadata
     const metadata: Record<string, any> = { ...message.metadata };
@@ -389,7 +389,7 @@ export class ExtensionManager {
    * Get export formats
    */
   getExportFormats(): Array<{ id: string; name: string; extension: string }> {
-    const extensions = this.registry.getActive('data.export.format');
+    const extensions = this.registry.getActive('data.export.format' as any);
     return extensions.map((e) => ({
       id: e.extension.id,
       name: (e.extension as any).name,
@@ -401,7 +401,7 @@ export class ExtensionManager {
    * Get import sources
    */
   getImportSources(): Array<{ id: string; name: string; formats: string[] }> {
-    const extensions = this.registry.getActive('data.import.source');
+    const extensions = this.registry.getActive('data.import.source' as any);
     return extensions.map((e) => ({
       id: e.extension.id,
       name: (e.extension as any).name,
@@ -413,7 +413,7 @@ export class ExtensionManager {
    * Get AI providers
    */
   getAIProviders(): Array<{ id: string; name: string; type: string; models: string[] }> {
-    const extensions = this.registry.getActive('ai.provider');
+    const extensions = this.registry.getActive('ai.provider' as any);
     return extensions.map((e) => ({
       id: e.extension.id,
       name: (e.extension as any).name,
@@ -433,7 +433,7 @@ export class ExtensionManager {
     keybinding?: string;
     category?: string;
   }> {
-    const extensions = this.registry.getActive('command');
+    const extensions = this.registry.getActive('command' as any);
     return extensions.map((e) => ({
       id: e.extension.id,
       title: (e.extension as any).title,

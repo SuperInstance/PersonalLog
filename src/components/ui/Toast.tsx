@@ -77,7 +77,7 @@ export function Toast({
 
   return (
     <div
-      className={`${container} border rounded-lg shadow-lg p-4 min-w-[300px] max-w-md transition-all`}
+      className={`${container} border-2 rounded-xl shadow-lg p-4 min-w-[300px] max-w-md transition-all duration-300 animate-slide-in-top hover:shadow-xl`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -86,16 +86,16 @@ export function Toast({
         <p className="flex-1 text-sm text-slate-900 dark:text-slate-100">{message}</p>
         <button
           onClick={() => onClose?.(id)}
-          className="flex-shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+          className="flex-shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-all duration-200 hover:scale-110 active:scale-95 transform"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Progress bar */}
-      <div className="mt-2 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+      <div className="mt-2 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
         <div
-          className={`h-full ${variant === 'success' ? 'bg-green-500' : variant === 'error' ? 'bg-red-500' : variant === 'warning' ? 'bg-amber-500' : 'bg-blue-500'} transition-all`}
+          className={`h-full ${variant === 'success' ? 'bg-green-500' : variant === 'error' ? 'bg-red-500' : variant === 'warning' ? 'bg-amber-500' : 'bg-blue-500'} transition-all duration-300 ease-out`}
           style={{ width: `${progress}%` }}
         />
       </div>

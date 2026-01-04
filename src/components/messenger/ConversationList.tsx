@@ -91,26 +91,36 @@ export default function ConversationList({
     return (
       <div
         onClick={() => onSelectConversation(conversation)}
-        className={`group flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+        className={`group flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] ${
           isSelected
-            ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800'
-            : 'hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'
+            ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700 shadow-md'
+            : 'hover:bg-slate-100 dark:hover:bg-slate-800 border-2 border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-sm'
         }`}
+        role="listitem"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onSelectConversation(conversation)
+          }
+        }}
+        aria-selected={isSelected}
+        aria-label={`${conversation.title}, ${getConversationPreview(conversation)}, ${getConversationTime(conversation)}`}
       >
         {/* Avatar */}
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0" aria-hidden="true">
           {hasAI ? (
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold shadow-md">
               {conversation.aiContacts.map(c => c.name[0]).join('')}
             </div>
           ) : (
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white font-semibold">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center text-white font-semibold shadow-md">
               You
             </div>
           )}
           {pinned && (
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center">
-              <Pin className="w-3 h-3 text-white" />
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center shadow-sm animate-bounce-subtle">
+              <Pin className="w-3 h-3 text-white fill-current" />
             </div>
           )}
         </div>
@@ -119,14 +129,14 @@ export default function ConversationList({
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-0.5">
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {conversation.title}
               </h3>
-              <span className="text-xs text-slate-400 flex-shrink-0">
+              <span className="text-xs text-slate-400 flex-shrink-0" aria-label={`Last active ${getConversationTime(conversation)}`}>
                 {getConversationTime(conversation)}
               </span>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+            <p className="text-sm text-slate-500 dark:text-slate-400 truncate group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
               {getConversationPreview(conversation)}
             </p>
           </div>
@@ -139,12 +149,14 @@ export default function ConversationList({
               e.stopPropagation()
               togglePin(conversation, e)
             }}
-            className={`opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-all ${
+            className={`opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all duration-200 transform hover:scale-110 active:scale-95 ${
               conversation.metadata.pinned ? 'opacity-100' : ''
             }`}
             title={conversation.metadata.pinned ? 'Unpin' : 'Pin'}
+            aria-label={conversation.metadata.pinned ? 'Unpin conversation' : 'Pin conversation'}
+            aria-pressed={conversation.metadata.pinned}
           >
-            <Pin className={`w-4 h-4 text-slate-400 ${conversation.metadata.pinned ? 'fill-amber-400 text-amber-400' : ''}`} />
+            <Pin className={`w-4 h-4 transition-all ${conversation.metadata.pinned ? 'fill-amber-400 text-amber-400' : 'text-slate-400 hover:text-amber-500'}`} />
           </button>
         )}
       </div>
@@ -153,7 +165,7 @@ export default function ConversationList({
 
   if (collapsed) {
     return (
-      <div className="p-2 space-y-1">
+      <div className="p-2 space-y-1" role="list" aria-label="Collapsed conversations">
         {conversations.map(conversation => (
           <div
             key={conversation.id}
@@ -163,6 +175,16 @@ export default function ConversationList({
                 ? 'bg-blue-500 text-white ring-2 ring-blue-300'
                 : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700'
             }`}
+            role="listitem"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelectConversation(conversation)
+              }
+            }}
+            aria-label={conversation.title}
+            aria-selected={selectedConversation?.id === conversation.id}
           >
             {conversation.aiContacts.length > 0
               ? conversation.aiContacts[0].name[0]
@@ -177,17 +199,19 @@ export default function ConversationList({
   const useVirtualList = filteredRegular.length >= 30
 
   return (
-    <div className="p-2 flex flex-col h-full">
+    <div className="p-2 flex flex-col h-full" role="region" aria-label="Conversation list">
       {/* Search */}
       <div className="mb-3 px-1 flex-shrink-0">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Search conversations"
+            aria-controls="conversation-list"
           />
         </div>
       </div>
@@ -196,10 +220,10 @@ export default function ConversationList({
         {/* Pinned Conversations - always show directly (usually few) */}
         {filteredPinned.length > 0 && (
           <div className="mb-4 flex-shrink-0">
-            <h3 className="px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <h3 className="px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider" id="pinned-heading">
               Pinned
             </h3>
-            <div className="space-y-1">
+            <div className="space-y-1" role="list" aria-labelledby="pinned-heading">
               {filteredPinned.map(conv => (
                 <ConversationItem key={conv.id} conversation={conv} pinned />
               ))}
@@ -208,38 +232,42 @@ export default function ConversationList({
         )}
 
         {/* Regular Conversations - use VirtualList for many items */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0" id="conversation-list" role="region" aria-label="All conversations" aria-live="polite">
           {filteredRegular.length > 0 && (
-            <h3 className="px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <h3 className="px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider" id="chats-heading">
               Chats
             </h3>
           )}
 
           {useVirtualList ? (
-            <VirtualList
-              items={filteredRegular}
-              renderItem={(conversation) => <ConversationItem key={conversation.id} conversation={conversation} />}
-              height="100%"
-              itemHeight={80} // Approximate height of each conversation item
-              overscan={5}
-              getKey={(conversation) => conversation.id}
-              className="scrollbar-thin"
-            />
+            <div role="list" aria-labelledby="chats-heading">
+              <VirtualList
+                items={filteredRegular}
+                renderItem={(conversation) => <ConversationItem key={conversation.id} conversation={conversation} />}
+                height="100%"
+                itemHeight={80} // Approximate height of each conversation item
+                overscan={5}
+                getKey={(conversation) => conversation.id}
+                className="scrollbar-thin"
+              />
+            </div>
           ) : (
             <>
-              {filteredRegular.map(conv => (
-                <ConversationItem key={conv.id} conversation={conv} />
-              ))}
+              <div role="list" aria-labelledby="chats-heading">
+                {filteredRegular.map(conv => (
+                  <ConversationItem key={conv.id} conversation={conv} />
+                ))}
+              </div>
 
               {/* Empty State */}
               {filteredRegular.length === 0 && searchQuery && (
-                <div className="py-8 text-center text-sm text-slate-400">
+                <div className="py-8 text-center text-sm text-slate-400" role="status" aria-live="polite">
                   No conversations found
                 </div>
               )}
 
               {filteredRegular.length === 0 && !searchQuery && conversations.length === 0 && (
-                <div className="py-8 text-center text-sm text-slate-400">
+                <div className="py-8 text-center text-sm text-slate-400" role="status">
                   <p>No conversations yet</p>
                   <p className="text-xs mt-1">Click "New Chat" to start</p>
                 </div>

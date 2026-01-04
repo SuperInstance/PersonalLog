@@ -195,19 +195,19 @@ export default function ChatArea({
   if (!conversation) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="text-center">
-          <div className="w-20 h-20 bg-slate-200 dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-4">
-            <MessageSquare className="w-10 h-10 text-slate-400" />
+        <div className="text-center animate-scale-in">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg animate-pulse-glow">
+            <MessageSquare className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
             Welcome to PersonalLog
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 mb-4">
-            Select a conversation or start a new one
+          <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-sm mx-auto">
+            Your intelligent personal knowledge management system. Select a conversation or start a new one to begin.
           </p>
           <button
             onClick={onNewConversation}
-            className="px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors"
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
           >
             New Conversation
           </button>
@@ -221,9 +221,9 @@ export default function ChatArea({
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-slate-950">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-800" role="banner">
         <div className="flex items-center gap-3">
-          <div className="flex -space-x-2">
+          <div className="flex -space-x-2" aria-hidden="true">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-sm font-semibold border-2 border-white dark:border-slate-950">
               You
             </div>
@@ -246,7 +246,7 @@ export default function ChatArea({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" role="toolbar" aria-label="Conversation actions">
           {/* Mode Toggle */}
           <button
             onClick={handleOpenLongForm}
@@ -277,19 +277,32 @@ export default function ChatArea({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div
+        className="flex-1 overflow-y-auto px-4 py-6"
+        role="log"
+        aria-label="Messages"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.length === 0 ? (
-            <div className="text-center py-12">
-              <Sparkles className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
-              <p className="text-slate-500 dark:text-slate-400">
-                Start a conversation by sending a message
+            <div className="text-center py-12 animate-fade-in" role="status">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-purple-500 dark:text-purple-400" aria-hidden="true" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                No messages yet
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-4">
+                {hasAI
+                  ? `Start a conversation with ${conversation.aiContacts.map(a => a.name).join(' & ')}`
+                  : 'Start by writing a note to yourself'
+                }
               </p>
-              {hasAI && (
-                <p className="text-sm text-slate-400 mt-1">
-                  {conversation.aiContacts.map(a => a.name).join(', ')} is here to help
-                </p>
-              )}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-600 dark:text-slate-400">
+                <span className="font-mono">⌘</span>
+                <span>+ Enter to send</span>
+              </div>
             </div>
           ) : (
             messages.map(message => {
@@ -305,12 +318,12 @@ export default function ChatArea({
                     aiContacts={conversation.aiContacts}
                   />
                   {isSending && (
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 right-2" aria-label="Sending message" role="status">
                       <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
                     </div>
                   )}
                   {isFailed && (
-                    <div className="absolute top-2 right-2 flex items-center gap-2">
+                    <div className="absolute top-2 right-2 flex items-center gap-2" role="alert" aria-live="assertive">
                       <span className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
                         Failed to send
                       </span>
@@ -326,6 +339,7 @@ export default function ChatArea({
                           setMessages(prev => prev.filter(m => m.id !== message.id))
                         }}
                         className="text-xs text-blue-500 hover:underline"
+                        aria-label="Retry sending message"
                       >
                         Retry
                       </button>
@@ -335,7 +349,7 @@ export default function ChatArea({
               )
             })
           )}
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} tabIndex={-1} aria-hidden="true" />
         </div>
       </div>
 
@@ -350,13 +364,14 @@ export default function ChatArea({
       )}
 
       {/* Input Area */}
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4" role="form" aria-label="Message composer">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-end gap-3 bg-slate-100 dark:bg-slate-900 rounded-2xl p-3">
             {/* Attach Button */}
             <button
               className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-colors"
               aria-label="Attach file"
+              type="button"
             >
               <Paperclip className="w-5 h-5 text-slate-500" />
             </button>
@@ -371,6 +386,8 @@ export default function ChatArea({
               rows={1}
               className="flex-1 bg-transparent resize-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none max-h-32"
               style={{ minHeight: '24px' }}
+              aria-label={hasAI ? `Message to ${conversation.aiContacts[0].name}` : 'Message'}
+              aria-describedby="message-input-hint"
             />
 
             {/* Voice Record Button */}
@@ -383,6 +400,7 @@ export default function ChatArea({
               }`}
               aria-label={isRecording ? 'Stop recording' : 'Start voice recording'}
               aria-pressed={isRecording}
+              type="button"
             >
               <Mic className="w-5 h-5" />
             </button>
@@ -393,6 +411,7 @@ export default function ChatArea({
               disabled={!inputText.trim()}
               className="p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white rounded-xl transition-colors disabled:cursor-not-allowed"
               aria-label="Send message"
+              type="submit"
             >
               <Send className="w-5 h-5" />
             </button>
@@ -400,11 +419,15 @@ export default function ChatArea({
 
           {/* AI Hint */}
           {hasAI && (
-            <div className="mt-2 text-center">
+            <div className="mt-2 text-center" id="message-input-hint">
               <p className="text-xs text-slate-400">
-                💬 Brief mode • Click{' '}
-                <button onClick={handleOpenLongForm} className="text-blue-500 hover:underline">
-                  expand
+                💬 Brief mode • Press Enter to send, Shift+Enter for new line •{' '}
+                <button
+                  onClick={handleOpenLongForm}
+                  className="text-blue-500 hover:underline"
+                  aria-label="Switch to long-form mode"
+                >
+                  Expand mode
                 </button>{' '}
                 for longer responses
               </p>
