@@ -6,6 +6,10 @@
 [![Next](https://img.shields.io/badge/Next.js-15.3-black)](https://nextjs.org)
 [![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](https://www.rust-lang.org)
 [![WASM](https://img.shields.io/badge/WebAssembly-2.0-purple.svg)](https://webassembly.org)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/SuperInstance/PersonalLog/ci.yml?branch=main)](https://github.com/SuperInstance/PersonalLog/actions)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+[![Test Coverage](https://img.shields.io/badge/coverage-%3E80%25-brightgreen)](https://github.com/SuperInstance/PersonalLog/tree/main/tests)
+[![Code Style](https://img.shields.io/badge/code%20style-prettier-ff69b4)](https://prettier.io)
 
 **PersonalLog** is your AI-powered personal knowledge and communication hub. A messenger-style interface for AI conversations, intelligent knowledge management, and seamless everyday productivity.
 

@@ -600,7 +600,7 @@ export default function OptimizationSettingsPage() {
                 About Auto-Optimization
               </h3>
               <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                The optimization system monitors your app's performance and automatically suggests
+                The optimization system monitors your app&apos;s performance and automatically suggests
                 improvements. You can choose to apply them manually or enable auto-apply for
                 hands-free optimization.
               </p>

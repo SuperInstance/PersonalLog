@@ -59,12 +59,12 @@ export function OfflineIndicator() {
         {isOnline ? (
           <>
             <Check className="w-4 h-4" aria-hidden="true" />
-            <span>You're back online</span>
+            <span>You&apos;re back online</span>
           </>
         ) : (
           <>
             <WifiOff className="w-4 h-4" aria-hidden="true" />
-            <span>You're offline. Some features may be limited.</span>
+            <span>You&apos;re offline. Some features may be limited.</span>
           </>
         )}
       </div>

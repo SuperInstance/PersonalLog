@@ -139,9 +139,9 @@ export function setupBatchSizeExperiment() {
 }
 
 /**
- * Track search performance
+ * Track search performance (Hook version - use in components)
  */
-export function trackSearchPerformance(experimentId: string, variantId: string) {
+export function useSearchPerformance(experimentId: string, variantId: string) {
   const { start, end } = useDurationMetric();
 
   const performSearch = async (query: string) => {
@@ -165,6 +165,37 @@ export function trackSearchPerformance(experimentId: string, variantId: string) 
   };
 
   return { performSearch };
+}
+
+/**
+ * Track search performance (Non-hook version - use outside components)
+ */
+export async function trackSearchPerformance(
+  experimentId: string,
+  variantId: string,
+  query: string
+) {
+  const startTime = performance.now();
+
+  try {
+    const results = await searchVectors(query);
+    const duration = performance.now() - startTime;
+
+    // Track duration
+    trackMetric(experimentId, variantId, 'search_time', duration);
+
+    // Track memory usage
+    if (performance.memory) {
+      const memUsage = performance.memory.usedJSHeapSize / (1024 * 1024);
+      trackMetric(experimentId, variantId, 'memory_usage', memUsage);
+    }
+
+    return results;
+  } catch (error) {
+    const duration = performance.now() - startTime;
+    trackMetric(experimentId, variantId, 'search_time', duration);
+    throw error;
+  }
 }
 
 // ============================================================================

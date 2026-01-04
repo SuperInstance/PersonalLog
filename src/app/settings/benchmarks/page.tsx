@@ -156,7 +156,7 @@ export default function BenchmarksPage() {
             About Benchmarks
           </h3>
           <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-            Benchmarks measure your system's performance across various operations including vector math,
+            Benchmarks measure your system&apos;s performance across various operations including vector math,
             storage I/O, rendering, memory allocation, and network requests. Results are stored locally
             and can help identify performance bottlenecks.
           </p>

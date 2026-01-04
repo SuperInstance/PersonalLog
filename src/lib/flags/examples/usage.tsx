@@ -435,6 +435,7 @@ import { useRouter } from 'next/router';
 function SSRSafeFeature() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const hasFeature = useFeatureFlag('ui.animations');
 
   useEffect(() => {
     setIsClient(true);
@@ -444,8 +445,6 @@ function SSRSafeFeature() {
   if (!isClient || !router.isReady) {
     return <div>Loading...</div>;
   }
-
-  const hasFeature = useFeatureFlag('ui.animations');
 
   return hasFeature ? <AnimatedUI /> : <StaticUI />;
 }
@@ -530,18 +529,18 @@ function ChatInterfaceMigrated() {
 function NewFeature() {
   const result = useFeatureFlagResult('experimental.new_feature');
 
-  if (!result?.enabled) {
-    return null; // Silent rollout - users don't know it exists
-  }
-
   // Track usage
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).analytics) {
+    if (result?.enabled && typeof window !== 'undefined' && (window as any).analytics) {
       (window as any).analytics.track('new_feature_viewed', {
         variant: result.variant,
       });
     }
-  }, [result.variant]);
+  }, [result]);
+
+  if (!result?.enabled) {
+    return null; // Silent rollout - users don't know it exists
+  }
 
   return <div>New feature is available!</div>;
 }

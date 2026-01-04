@@ -88,6 +88,8 @@ export default function ConversationList({
     const isSelected = selectedConversation?.id === conversation.id
     const hasAI = conversation.aiContacts.length > 0
 
+    ConversationItem.displayName = 'ConversationItem'
+
     return (
       <div
         onClick={() => onSelectConversation(conversation)}
@@ -104,7 +106,6 @@ export default function ConversationList({
             onSelectConversation(conversation)
           }
         }}
-        aria-selected={isSelected}
         aria-label={`${conversation.title}, ${getConversationPreview(conversation)}, ${getConversationTime(conversation)}`}
       >
         {/* Avatar */}
@@ -184,7 +185,6 @@ export default function ConversationList({
               }
             }}
             aria-label={conversation.title}
-            aria-selected={selectedConversation?.id === conversation.id}
           >
             {conversation.aiContacts.length > 0
               ? conversation.aiContacts[0].name[0]
@@ -269,7 +269,7 @@ export default function ConversationList({
               {filteredRegular.length === 0 && !searchQuery && conversations.length === 0 && (
                 <div className="py-8 text-center text-sm text-slate-400" role="status">
                   <p>No conversations yet</p>
-                  <p className="text-xs mt-1">Click "New Chat" to start</p>
+                  <p className="text-xs mt-1">Click &quot;New Chat&quot; to start</p>
                 </div>
               )}
             </>

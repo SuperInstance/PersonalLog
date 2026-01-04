@@ -200,7 +200,7 @@ export function FiltrationSettings({ onSave, className = '' }: FiltrationSetting
               1
             </div>
             <p>
-              <strong>You type:</strong> "pls help me fix my code"
+              <strong>You type:</strong> &quot;pls help me fix my code&quot;
             </p>
           </div>
           <div className="flex gap-3">
@@ -208,7 +208,7 @@ export function FiltrationSettings({ onSave, className = '' }: FiltrationSetting
               2
             </div>
             <p>
-              <strong>AI receives:</strong> "Please provide detailed guidance on how to fix my code"
+              <strong>AI receives:</strong> &quot;Please provide detailed guidance on how to fix my code&quot;
             </p>
           </div>
           <div className="flex gap-3">
@@ -216,7 +216,7 @@ export function FiltrationSettings({ onSave, className = '' }: FiltrationSetting
               3
             </div>
             <p>
-              <strong>AI responds:</strong> "I'd be happy to help! Let me show you..."
+              <strong>AI responds:</strong> &quot;I&apos;d be happy to help! Let me show you...&quot;
             </p>
           </div>
           <div className="flex gap-3">
@@ -224,7 +224,7 @@ export function FiltrationSettings({ onSave, className = '' }: FiltrationSetting
               4
             </div>
             <p>
-              <strong>You see:</strong> "Let me show you..." <span className="text-gray-500">(filler removed)</span>
+              <strong>You see:</strong> &quot;Let me show you...&quot; <span className="text-gray-500">(filler removed)</span>
             </p>
           </div>
         </div>

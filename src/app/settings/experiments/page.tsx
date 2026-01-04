@@ -505,7 +505,7 @@ export default function ExperimentsSettingsPage() {
               </h3>
               <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
                 Experiments help us test different variations of features to improve your experience.
-                When you participate, you're randomly assigned to a variant (control or experimental).
+                When you participate, you&apos;re randomly assigned to a variant (control or experimental).
                 Your participation helps us determine which version works better through statistical analysis.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-purple-700 dark:text-purple-300">

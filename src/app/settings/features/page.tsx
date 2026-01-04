@@ -266,7 +266,7 @@ export default function FeaturesPage() {
           </h3>
           <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
             Feature flags enable or disable functionality based on your hardware capabilities and preferences.
-            Features marked as "Auto" are automatically managed by the system, while others can be manually toggled.
+            Features marked as &quot;Auto&quot; are automatically managed by the system, while others can be manually toggled.
           </p>
           <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
             <div className="flex items-center gap-2">

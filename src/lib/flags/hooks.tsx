@@ -562,13 +562,12 @@ interface FeatureGateProps {
 
 export function FeatureGate({ children, featureId, fallback = null, loading = null }: FeatureGateProps) {
   const context = useContext(FeatureFlagsContext);
+  const enabled = useFeatureFlag(featureId);
 
   // Show loading while initializing
   if (!context.initialized) {
     return <>{loading}</>;
   }
-
-  const enabled = useFeatureFlag(featureId);
 
   return <>{enabled ? children : fallback}</>;
 }

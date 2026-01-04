@@ -45,7 +45,7 @@ export function VibeTuningTab({
           Quick Vibe Adjustments
         </h3>
         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-          Click + or - to adjust personality attributes. These will modify the AI's responses.
+          Click + or - to adjust personality attributes. These will modify the AI&apos;s responses.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -33,7 +33,7 @@ export function BenchmarkResults({
           No Benchmarks Yet
         </h3>
         <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
-          Run benchmarks to measure your system's performance across vector operations, storage, rendering, memory, and network.
+          Run benchmarks to measure your system&apos;s performance across vector operations, storage, rendering, memory, and network.
         </p>
         <button
           onClick={onRun}

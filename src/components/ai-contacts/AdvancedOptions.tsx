@@ -391,9 +391,9 @@ function VibeTuning({
               Tell the AI to adjust its personality during chat. For example:
             </p>
             <ul className="text-sm text-slate-600 dark:text-slate-400 mt-2 space-y-1 ml-4">
-              <li>• "Be more enthusiastic"</li>
-              <li>• "Keep it shorter"</li>
-              <li>• "Sound more professional"</li>
+              <li>• &quot;Be more enthusiastic&quot;</li>
+              <li>• &quot;Keep it shorter&quot;</li>
+              <li>• &quot;Sound more professional&quot;</li>
             </ul>
           </div>
         </div>

@@ -532,7 +532,7 @@ export default function SettingsPage() {
           </h3>
           <p className="text-sm text-blue-700 dark:text-blue-300">
             API keys are stored locally in your browser and are never sent to any server other than the
-            respective provider's API. Configure your keys here to enable cloud LLM features across all
+            respective provider&apos;s API. Configure your keys here to enable cloud LLM features across all
             PersonalLog modules.
           </p>
         </section>

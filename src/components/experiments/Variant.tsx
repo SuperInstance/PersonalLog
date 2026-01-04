@@ -109,27 +109,34 @@ export function Control(props: Omit<VariantProps, 'variant'>): React.ReactElemen
 export function Experiment({ experiment, userId, fallback, children }: ExperimentProps): React.ReactElement {
   const assignedVariant = useVariant(experiment, userId);
 
-  // Find the matching variant child
-  const childrenArray = React.Children.toArray(children);
+  // Track exposure if a variant is assigned (ALWAYS call hook, even if no match)
+  const matchingVariant = React.useMemo(() => {
+    if (!assignedVariant) return null;
+
+    // Find the matching variant child
+    const childrenArray = React.Children.toArray(children);
+
+    for (const child of childrenArray) {
+      if (React.isValidElement(child)) {
+        const childVariant = (child.props as any).variant;
+        if (childVariant === assignedVariant.id) {
+          return child;
+        }
+      }
+    }
+
+    return null;
+  }, [assignedVariant, children]);
+
+  // Always call the hook (unconditionally)
+  useExposeVariant(experiment, assignedVariant?.id || '', userId);
 
   if (!assignedVariant) {
     return <>{fallback || null}</>;
   }
 
-  // Render the first matching variant
-  for (const child of childrenArray) {
-    if (React.isValidElement(child)) {
-      const childVariant = (child.props as any).variant;
-      if (childVariant === assignedVariant.id) {
-        // Track exposure
-        useExposeVariant(experiment, assignedVariant.id, userId);
-        return <>{child}</>;
-      }
-    }
-  }
-
-  // No matching variant found
-  return <>{fallback || null}</>;
+  // Return the matching variant or fallback
+  return <>{matchingVariant || fallback || null}</>;
 }
 
 /**
@@ -145,6 +152,9 @@ interface VariantGroupProps {
 export function VariantGroup({ experiment, userId, variants, fallback }: VariantGroupProps): React.ReactElement {
   const assignedVariant = useVariant(experiment, userId);
 
+  // Always call the hook (unconditionally)
+  useExposeVariant(experiment, assignedVariant?.id || '', userId);
+
   if (!assignedVariant) {
     return <>{fallback || null}</>;
   }
@@ -154,9 +164,6 @@ export function VariantGroup({ experiment, userId, variants, fallback }: Variant
   if (!content) {
     return <>{fallback || null}</>;
   }
-
-  // Track exposure
-  useExposeVariant(experiment, assignedVariant.id, userId);
 
   return <>{content}</>;
 }

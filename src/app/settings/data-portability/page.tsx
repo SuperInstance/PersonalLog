@@ -425,7 +425,7 @@ function ImportPreviewComponent({
             {preview.conflicts.length} Conflict(s) Detected
           </div>
           <div className="text-sm text-orange-700">
-            Conflicts will be resolved using the "Rename" strategy.
+            Conflicts will be resolved using the &quot;Rename&quot; strategy.
           </div>
         </div>
       )}

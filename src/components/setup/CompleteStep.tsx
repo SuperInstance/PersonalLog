@@ -47,7 +47,7 @@ export function CompleteStep({
             {contact.nickname}
           </h3>
           <p className="text-sm text-slate-500">
-            "{contact.firstName}"
+            &quot;{contact.firstName}&quot;
           </p>
         </div>
       )}
