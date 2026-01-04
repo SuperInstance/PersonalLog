@@ -330,8 +330,46 @@ class ThemeRegistry {
    * Get active theme ID
    */
   getActiveThemeId(): ThemeId | null {
-    this.ensureInitialized();
     return this.activeTheme;
+  }
+
+  /**
+   * Set active theme by ID
+   */
+  async setActiveTheme(themeId: ThemeId): Promise<void> {
+    if (!this.themes.has(themeId)) {
+      throw new Error(`Theme not found: ${themeId}`);
+    }
+
+    const previousTheme = this.activeTheme;
+    this.activeTheme = themeId;
+
+    // Save to storage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_THEME, themeId);
+    }
+
+    // Emit event
+    this.emit('theme.changed', {
+      type: 'theme.changed',
+      themeId,
+      previousThemeId: previousTheme,
+      timestamp: Date.now(),
+    });
+
+    // Apply theme to document
+    const theme = this.themes.get(themeId);
+    if (theme) {
+      const { applyThemeToDocument } = require('./engine');
+      applyThemeToDocument(theme);
+    }
+  }
+
+  /**
+   * Alias for setActiveTheme
+   */
+  async setTheme(themeId: ThemeId): Promise<void> {
+    return this.setActiveTheme(themeId);
   }
 
   // ========================================================================
@@ -739,6 +777,14 @@ class ThemeRegistry {
  * Global theme registry instance
  */
 export const themeRegistry = new ThemeRegistry();
+
+/**
+ * Get theme registry instance
+ * @deprecated Use themeRegistry directly instead
+ */
+export function getThemeRegistry() {
+  return themeRegistry;
+}
 
 // ============================================================================
 // INITIALIZATION

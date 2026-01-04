@@ -31,6 +31,7 @@ import { AnalyticsProvider } from './AnalyticsProvider'
 import { ExperimentsProvider } from './ExperimentsProvider'
 import { OptimizationProvider } from './OptimizationProvider'
 import { PersonalizationProvider } from './PersonalizationProvider'
+import { ExtensionProvider } from './ExtensionProvider'
 import type { ProvidersConfig } from './types'
 
 export interface AppProvidersProps {
@@ -58,6 +59,7 @@ export interface AppProvidersProps {
  * 3. Experiments - A/B testing (needs analytics)
  * 4. Optimization - performance (needs integration + analytics)
  * 5. Personalization - user preferences (needs all above)
+ * 6. Extension - plugin extensions (needs all above)
  */
 export function AppProviders({
   children,
@@ -80,7 +82,9 @@ export function AppProviders({
           <ExperimentsProvider config={experimentsConfig}>
             <OptimizationProvider config={optimizationConfig}>
               <PersonalizationProvider config={personalizationConfig}>
-                {children}
+                <ExtensionProvider>
+                  {children}
+                </ExtensionProvider>
               </PersonalizationProvider>
             </OptimizationProvider>
           </ExperimentsProvider>
@@ -98,13 +102,15 @@ export function AppProviders({
         <ExperimentsProvider config={experimentsConfig}>
           <OptimizationProvider config={optimizationConfig}>
             <PersonalizationProvider config={personalizationConfig}>
-              <InitializationLoader
-                timeout={initTimeout}
-                fallbackOnTimeout={config?.initialization?.fallbackOnTimeout ?? true}
-                showProgress={config?.initialization?.showLoader ?? true}
-              >
-                {children}
-              </InitializationLoader>
+              <ExtensionProvider>
+                <InitializationLoader
+                  timeout={initTimeout}
+                  fallbackOnTimeout={config?.initialization?.fallbackOnTimeout ?? true}
+                  showProgress={config?.initialization?.showLoader ?? true}
+                >
+                  {children}
+                </InitializationLoader>
+              </ExtensionProvider>
             </PersonalizationProvider>
           </OptimizationProvider>
         </ExperimentsProvider>
@@ -131,7 +137,9 @@ export function AppProvidersNoLoader({ children, config }: Omit<AppProvidersProp
         <ExperimentsProvider config={experimentsConfig}>
           <OptimizationProvider config={optimizationConfig}>
             <PersonalizationProvider config={personalizationConfig}>
-              {children}
+              <ExtensionProvider>
+                {children}
+              </ExtensionProvider>
             </PersonalizationProvider>
           </OptimizationProvider>
         </ExperimentsProvider>
@@ -152,7 +160,9 @@ export function CoreProviders({ children, config }: Omit<AppProvidersProps, 'sho
   return (
     <IntegrationProvider config={integrationConfig}>
       <AnalyticsProvider config={analyticsConfig}>
-        {children}
+        <ExtensionProvider>
+          {children}
+        </ExtensionProvider>
       </AnalyticsProvider>
     </IntegrationProvider>
   )
