@@ -33,6 +33,7 @@ import {
   Zap,
   AlertTriangle,
   HardDrive,
+  Palette,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -208,6 +209,15 @@ export default function SettingsPage() {
       icon: HardDrive,
       href: '/settings/data',
       color: 'blue',
+    },
+
+    // Appearance - Round 9
+    {
+      title: 'Appearance',
+      description: 'Customize themes, colors, and visual appearance',
+      icon: Palette,
+      href: '/settings/appearance',
+      color: 'purple',
     },
   ], []); // Empty deps - cards are static
 
