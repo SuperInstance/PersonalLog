@@ -700,6 +700,58 @@ export class ExperimentManager implements IExperimentManager {
       console.error('[Experiments] Failed to load from storage:', e);
     }
   }
+
+  /**
+   * Get all active experiments
+   * Convenience method for tests
+   */
+  getActiveExperiments(): Experiment[] {
+    return Array.from(this.experiments.values()).filter(
+      exp => exp.status === 'running'
+    )
+  }
+
+  /**
+   * Get variant assignment for an experiment
+   * Convenience method for tests
+   */
+  getVariation(experimentId: string, userId: string = 'default'): Variant | null {
+    const experiment = this.experiments.get(experimentId)
+    if (!experiment) {
+      return null
+    }
+
+    const assignment = this.assignmentEngine.assignVariant(
+      experimentId,
+      userId,
+      experiment.variants
+    )
+
+    if (!assignment) {
+      return null
+    }
+
+    // Find and return the variant
+    return experiment.variants.find(v => v.id === assignment.variantId) || null
+  }
+
+  /**
+   * Opt out of an experiment
+   * Convenience method for tests
+   */
+  optOut(experimentId: string, userId: string = 'default'): void {
+    const experiment = this.experiments.get(experimentId)
+    if (!experiment) {
+      throw new Error(`Experiment not found: ${experimentId}`)
+    }
+
+    // Remove user's assignment
+    this.assignmentEngine.removeAssignment(experimentId, userId)
+
+    if (this.config.debug) {
+      console.log('[Experiments] User opted out of experiment:', experimentId)
+    }
+  }
 }
 
 // Global instance

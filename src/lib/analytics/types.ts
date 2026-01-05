@@ -50,6 +50,11 @@ export type EventType =
   | 'feature_used'
   | 'feature_abandoned'
   | 'page_view'
+  | 'conversation_viewed'
+  | 'messenger_opened'
+  | 'knowledge_viewed'
+  | 'ai_chat_started'
+  | 'previous_session_event'
 
   // Errors
   | 'error_occurred'
@@ -65,6 +70,12 @@ export type EventType =
   | 'benchmark_completed'
   | 'data_compacted'
   | 'data_exported'
+
+  // Testing (for test purposes only)
+  | 'test_event'
+  | 'test'
+  | 'test1'
+  | 'test2'
 
 // ============================================================================
 // BASE EVENT

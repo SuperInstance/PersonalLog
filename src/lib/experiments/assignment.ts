@@ -141,6 +141,18 @@ export class AssignmentEngine {
   }
 
   /**
+   * Remove user's assignment (opt out)
+   */
+  removeAssignment(experimentId: string, userId: string): void {
+    const key = this.getAssignmentKey(experimentId, userId);
+    this.assignments.delete(key);
+
+    if (this.config.persistAssignments) {
+      this.saveToStorage();
+    }
+  }
+
+  /**
    * Select variant using deterministic hashing
    */
   private selectVariantHashed(

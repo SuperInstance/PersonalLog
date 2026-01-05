@@ -272,6 +272,70 @@ class PersonalizationAPI {
     this.aggregator.clear()
     // Note: We don't reset explicit preferences, only learned patterns
   }
+
+  /**
+   * Reset all preferences to default
+   * Convenience method for tests
+   */
+  resetPreferences(userId: string = 'default'): void {
+    const model = this.getModel(userId)
+    const prefs = model.getPreferences()
+
+    // Reset all preference keys to defaults
+    const allKeys: PreferenceKey[] = [
+      'communication.responseStyle',
+      'communication.detailLevel',
+      'communication.formality',
+      'communication.emojiUsage',
+      'ui.theme',
+      'ui.density',
+      'ui.fontSize',
+      'ui.animationsEnabled',
+      'ui.reducedMotion',
+      'content.summaryLength',
+      'content.technicalDetail',
+      'content.exampleUsage',
+      'content.codeExamples',
+    ]
+
+    for (const key of allKeys) {
+      prefs.reset(key)
+    }
+
+    // Clear learned patterns
+    this.patternDetector.reset()
+    this.aggregator.clear()
+  }
+
+  /**
+   * Get all preferences
+   * Convenience method for tests
+   */
+  getPreferences(userId: string = 'default') {
+    const model = this.getModel(userId)
+    return model.getPreferences()
+  }
+
+  /**
+   * Export all learned data
+   * Convenience method for tests
+   */
+  async exportData(userId: string = 'default') {
+    const model = this.getModel(userId)
+    const stats = this.getStats(userId)
+
+    // Export model data
+    const { exportUserModel } = await import('./storage')
+    const modelData = await exportUserModel(userId)
+
+    return {
+      model: modelData,
+      patterns: stats.patterns,
+      patternStats: stats.patternStats,
+      learning: stats.learning,
+      timestamp: new Date().toISOString(),
+    }
+  }
 }
 
 // ============================================================================
