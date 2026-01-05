@@ -17,6 +17,23 @@ import {
   AggregatedStats,
 } from './types'
 
+/**
+ * Get events with optional filters
+ * Convenience function for backward compatibility
+ */
+export async function getEvents(options?: {
+  startTime?: string
+  endTime?: string
+  types?: string[]
+  categories?: string[]
+  sessionIds?: string[]
+  limit?: number
+  offset?: number
+  sortOrder?: 'asc' | 'desc'
+}): Promise<AnalyticsEvent[]> {
+  return analyticsEventStore.queryEvents(options)
+}
+
 // ============================================================================
 // USAGE QUERIES
 // ============================================================================

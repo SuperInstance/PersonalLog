@@ -412,3 +412,46 @@ export async function track(type: EventType, data: EventData): Promise<void> {
   const collector = getEventCollector()
   await collector.track(type, data)
 }
+
+/**
+ * Alias for track - for compatibility with tests
+ */
+export async function trackEvent(type: EventType, data: EventData): Promise<void> {
+  await track(type, data)
+}
+
+/**
+ * Get current session ID
+ */
+export function getSessionId(): string {
+  const collector = getEventCollector()
+  // Access the session manager through the collector
+  return (collector as any).sessionManager?.getSessionId() || 'unknown'
+}
+
+/**
+ * Track a page view event
+ */
+export async function trackPageView(page: string, title?: string): Promise<void> {
+  await track('page_view' as EventType, {
+    type: 'page_view',
+    page,
+    title: title || page,
+  })
+}
+
+/**
+ * Clear analytics data (alias for clearAllAnalyticsData)
+ */
+export async function clearAnalyticsData(): Promise<void> {
+  const { clearAllAnalyticsData } = await import('./queries')
+  await clearAllAnalyticsData()
+}
+
+/**
+ * Get analytics config
+ */
+export function getAnalyticsConfig(): AnalyticsConfig {
+  const collector = getEventCollector()
+  return collector.getConfig()
+}

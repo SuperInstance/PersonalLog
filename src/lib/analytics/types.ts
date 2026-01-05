@@ -581,3 +581,20 @@ export interface AnalyticsExport {
     errors: AggregatedStats
   }
 }
+
+// ============================================================================
+// RE-EXPORTS FOR CONVENIENCE
+// ============================================================================
+
+// Re-export analytics config functions from collector for convenience
+export { getAnalyticsConfig } from './collector'
+
+/**
+ * Set analytics config - convenience wrapper
+ */
+export function setAnalyticsConfig(config: Partial<import('./collector').AnalyticsConfig>): void {
+  const { getEventCollector } = require('./collector')
+  const collector = getEventCollector()
+  collector.updateConfig(config)
+}
+

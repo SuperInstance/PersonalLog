@@ -7,6 +7,8 @@
 
 import { NextRequest } from 'next/server'
 import { vi, expect } from 'vitest'
+import type { Conversation, Message } from '@/types/conversation'
+import type { ModelConfig, AIContact } from '@/lib/wizard/models'
 
 // ============================================================================
 // REQUEST MOCKING HELPERS
@@ -199,12 +201,29 @@ export function createMockAIProvider(options: {
  * @example
  * const conversation = createMockConversation({ id: 'conv-1', title: 'Test' })
  */
-export function createMockConversation(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+export function createMockConversation(overrides: Partial<Conversation> = {}): Conversation {
+  const now = new Date().toISOString()
   return {
     id: 'conv-123',
     title: 'Test Conversation',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    type: 'personal',
+    createdAt: now,
+    updatedAt: now,
+    messages: [],
+    aiContacts: [],
+    settings: {
+      responseMode: 'messenger',
+      compactOnLimit: false,
+      compactStrategy: 'summarize',
+    },
+    metadata: {
+      messageCount: 0,
+      totalTokens: 0,
+      hasMedia: false,
+      tags: [],
+      pinned: false,
+      archived: false,
+    },
     ...overrides,
   }
 }
@@ -215,10 +234,11 @@ export function createMockConversation(overrides: Partial<Record<string, unknown
  * @example
  * const conversations = createMockConversations(3)
  */
-export function createMockConversations(count: number): Record<string, unknown>[] {
+export function createMockConversations(count: number, overrides: Partial<Conversation> = {}): Conversation[] {
   return Array.from({ length: count }, (_, i) => createMockConversation({
     id: `conv-${i + 1}`,
     title: `Conversation ${i + 1}`,
+    ...overrides,
   }))
 }
 
@@ -228,12 +248,16 @@ export function createMockConversations(count: number): Record<string, unknown>[
  * @example
  * const message = createMockMessage({ role: 'user', content: 'Hello' })
  */
-export function createMockMessage(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+export function createMockMessage(overrides: Partial<Message> = {}): Message {
+  const now = new Date().toISOString()
   return {
     id: 'msg-123',
-    role: 'user',
-    content: 'Test message',
-    timestamp: new Date().toISOString(),
+    conversationId: 'conv-123',
+    type: 'text',
+    author: 'user',
+    content: { text: 'Test message' },
+    timestamp: now,
+    metadata: {},
     ...overrides,
   }
 }
@@ -249,11 +273,11 @@ export function createMockMessage(overrides: Partial<Record<string, unknown>> = 
  */
 export function createMockMessages(
   count: number,
-  overrides: Partial<Record<string, unknown>> = {}
-): Record<string, unknown>[] {
+  overrides: Partial<Message> = {}
+): Message[] {
   return Array.from({ length: count }, (_, i) => createMockMessage({
     id: `msg-${i + 1}`,
-    content: `Message ${i + 1}`,
+    content: { text: `Message ${i + 1}` },
     ...overrides,
   }))
 }
@@ -264,12 +288,27 @@ export function createMockMessages(
  * @example
  * const agent = createMockAIAgent({ id: 'agent-1', name: 'Claude' })
  */
-export function createMockAIAgent(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+export function createMockAIAgent(overrides: Partial<AIContact> = {}): AIContact {
+  const now = new Date().toISOString()
   return {
     id: 'agent-123',
-    name: 'Test Agent',
-    model: 'test-model',
-    provider: 'openai',
+    nickname: 'Test Agent',
+    firstName: 'Test',
+    baseModelId: 'model-123',
+    systemPrompt: 'You are a helpful assistant.',
+    personality: {
+      vibeAttributes: [],
+      learnedFrom: {
+        messageCount: 0,
+      },
+    },
+    contextFiles: [],
+    responseStyle: 'balanced',
+    temperature: 0.7,
+    maxTokens: 2048,
+    color: '#000000',
+    createdAt: now,
+    updatedAt: now,
     ...overrides,
   }
 }
@@ -280,7 +319,7 @@ export function createMockAIAgent(overrides: Partial<Record<string, unknown>> = 
  * @example
  * const model = createMockModelConfig({ id: 'model-1', name: 'GPT-4' })
  */
-export function createMockModelConfig(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+export function createMockModelConfig(overrides: Partial<ModelConfig> = {}): ModelConfig {
   return {
     id: 'model-123',
     name: 'Test Model',
@@ -293,7 +332,7 @@ export function createMockModelConfig(overrides: Partial<Record<string, unknown>
       supportsStreaming: true,
       supportsImages: false,
       supportsFunctions: true,
-      estimatedSpeed: 'fast' as const,
+      estimatedSpeed: 'fast',
     },
     ...overrides,
   }
@@ -305,7 +344,7 @@ export function createMockModelConfig(overrides: Partial<Record<string, unknown>
  * @example
  * const models = createMockModelConfigs(3)
  */
-export function createMockModelConfigs(count: number): Record<string, unknown>[] {
+export function createMockModelConfigs(count: number): ModelConfig[] {
   return Array.from({ length: count }, (_, i) => createMockModelConfig({
     id: `model-${i + 1}`,
     name: `Model ${i + 1}`,
@@ -318,7 +357,8 @@ export function createMockModelConfigs(count: number): Record<string, unknown>[]
  * @example
  * const contact = createMockAIContact({ id: 'contact-1', nickname: 'Claude' })
  */
-export function createMockAIContact(overrides: Partial<Record<string, unknown>> = {}): Record<string, unknown> {
+export function createMockAIContact(overrides: Partial<AIContact> = {}): AIContact {
+  const now = new Date().toISOString()
   return {
     id: 'contact-123',
     nickname: 'Test Contact',
@@ -332,12 +372,12 @@ export function createMockAIContact(overrides: Partial<Record<string, unknown>> 
       },
     },
     contextFiles: [],
-    responseStyle: 'balanced' as const,
+    responseStyle: 'balanced',
     temperature: 0.7,
     maxTokens: 2048,
     color: '#000000',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
     ...overrides,
   }
 }
@@ -348,7 +388,7 @@ export function createMockAIContact(overrides: Partial<Record<string, unknown>> 
  * @example
  * const contacts = createMockAIContacts(3)
  */
-export function createMockAIContacts(count: number): Record<string, unknown>[] {
+export function createMockAIContacts(count: number): AIContact[] {
   return Array.from({ length: count }, (_, i) => createMockAIContact({
     id: `contact-${i + 1}`,
     nickname: `Contact ${i + 1}`,
@@ -370,7 +410,7 @@ export function createMockConversationStore(options: {
   createConversation?: unknown
   deleteConversation?: void
   addMessage?: unknown
-}) {
+} = {}) {
   const {
     conversations = [],
     messages = [],
@@ -440,7 +480,7 @@ export function createMockModuleRegistry(options: {
     loadedModules?: number
     failedModules?: number
   }
-}) {
+} = {}) {
   const {
     modules = [],
     stats = { totalModules: modules.length, loadedModules: 0, failedModules: 0 },
@@ -467,7 +507,7 @@ export function createMockModuleRegistry(options: {
 export function createMockModelStore(options: {
   models?: unknown[]
   contacts?: unknown[]
-}) {
+} = {}) {
   const { models = [], contacts = [] } = options
 
   return {

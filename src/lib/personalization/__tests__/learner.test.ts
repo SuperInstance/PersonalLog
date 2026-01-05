@@ -33,7 +33,8 @@ describe('PreferenceLearner', () => {
     it('should extract theme preference', () => {
       const action: UserAction = {
         type: 'theme-changed',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
+        context: {},
         data: {
           value: 'dark',
         },
@@ -50,7 +51,8 @@ describe('PreferenceLearner', () => {
     it('should extract response length preference on expansion', () => {
       const action: UserAction = {
         type: 'response-expanded',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
+        context: {},
       };
 
       const signals = learner.analyzeAction(action);
@@ -64,7 +66,8 @@ describe('PreferenceLearner', () => {
     it('should extract response length preference on collapse', () => {
       const action: UserAction = {
         type: 'response-collapsed',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
+        context: {},
       };
 
       const signals = learner.analyzeAction(action);
@@ -78,7 +81,7 @@ describe('PreferenceLearner', () => {
     it('should extract font size preference', () => {
       const action: UserAction = {
         type: 'font-size-changed',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         data: {
           value: 'large',
         },
@@ -95,7 +98,7 @@ describe('PreferenceLearner', () => {
     it('should extract sidebar position preference', () => {
       const action: UserAction = {
         type: 'sidebar-toggled',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         data: {
           position: 'right',
         },
@@ -112,7 +115,7 @@ describe('PreferenceLearner', () => {
     it('should extract emoji usage preference', () => {
       const action: UserAction = {
         type: 'emoji-used',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
       };
 
       const signals = learner.analyzeAction(action);
@@ -126,7 +129,7 @@ describe('PreferenceLearner', () => {
     it('should extract feature usage signal', () => {
       const action: UserAction = {
         type: 'feature-used',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         context: {
           feature: 'search',
         },
@@ -143,7 +146,7 @@ describe('PreferenceLearner', () => {
     it('should throw error for feature usage without feature in context', () => {
       const action: UserAction = {
         type: 'feature-used',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
       };
 
       expect(() => learner.analyzeAction(action)).toThrow(
@@ -154,7 +157,7 @@ describe('PreferenceLearner', () => {
     it('should extract session signals', () => {
       const action: UserAction = {
         type: 'session-ended',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         context: {
           duration: 3600,
         },
@@ -175,7 +178,7 @@ describe('PreferenceLearner', () => {
     it('should extract error frequency signal', () => {
       const action: UserAction = {
         type: 'error-occurred',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
       };
 
       const signals = learner.analyzeAction(action);
@@ -189,7 +192,7 @@ describe('PreferenceLearner', () => {
     it('should extract help seeking signal', () => {
       const action: UserAction = {
         type: 'help-requested',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
       };
 
       const signals = learner.analyzeAction(action);
@@ -203,7 +206,7 @@ describe('PreferenceLearner', () => {
     it('should extract general setting signal', () => {
       const action: UserAction = {
         type: 'setting-changed',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         data: {
           setting: 'ui.compactMode' as any,
           value: true,
@@ -221,7 +224,7 @@ describe('PreferenceLearner', () => {
     it('should throw error for setting signal without required data', () => {
       const action: UserAction = {
         type: 'setting-changed',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         data: {
           setting: 'ui.compactMode' as any,
         },
@@ -236,7 +239,7 @@ describe('PreferenceLearner', () => {
       // Create an action that generates weak signals
       const action: UserAction = {
         type: 'feature-used',
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         context: {
           feature: 'rarely-used',
         },
@@ -251,7 +254,7 @@ describe('PreferenceLearner', () => {
     it('should return empty array for unknown action type', () => {
       const action: UserAction = {
         type: 'unknown-action' as any,
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
       };
 
       const signals = learner.analyzeAction(action);
@@ -278,10 +281,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -298,10 +301,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -309,10 +312,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'light',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -330,10 +333,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'test.key' as const,
         value: 'value',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'setting-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -365,10 +368,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'light',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -398,10 +401,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -430,10 +433,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'light',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -462,10 +465,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -486,10 +489,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -508,10 +511,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -519,10 +522,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'light',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -542,10 +545,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -562,10 +565,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -590,10 +593,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -611,10 +614,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.theme' as const,
         value: 'dark',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 
@@ -622,10 +625,10 @@ describe('PreferenceAggregator', () => {
         preferenceKey: 'ui.fontSize' as const,
         value: 'large',
         strength: 0.8,
-        timestamp: Date.now().toISOString(),
+        timestamp: new Date().toISOString(),
         sourceAction: {
           type: 'font-size-changed',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
         } as UserAction,
       };
 

@@ -54,7 +54,7 @@ describe('GET /api/conversations', () => {
 
     const data = await extractResponseData<{ conversations: unknown[] }>(response)
     expect(data.conversations).toHaveLength(3)
-    expect(conversationStore.listConversations).toHaveBeenCalledWith(undefined)
+    expect(conversationStore.listConversations).toHaveBeenCalledWith({ includeArchived: false })
   })
 
   it('should filter conversations by type', async () => {
@@ -71,7 +71,7 @@ describe('GET /api/conversations', () => {
 
     const data = await extractResponseData<{ conversations: unknown[] }>(response)
     expect(data.conversations).toHaveLength(2)
-    expect(conversationStore.listConversations).toHaveBeenCalledWith('personal')
+    expect(conversationStore.listConversations).toHaveBeenCalledWith({ includeArchived: false })
   })
 
   it('should handle empty conversations list', async () => {

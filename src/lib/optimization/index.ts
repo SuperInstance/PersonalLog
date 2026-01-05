@@ -327,3 +327,21 @@ export async function quickStart(
     getHistory: (limit?: number) => engine.getHistory(limit),
   };
 }
+
+// ============================================================================
+// CONVENIENCE ALIASES FOR TEST COMPATIBILITY
+// ============================================================================
+
+/**
+ * Get the global optimization engine instance
+ * For test compatibility
+ */
+let globalEngine: import('./engine').OptimizationEngine | null = null;
+
+export function getOptimizationEngine() {
+  if (!globalEngine) {
+    const { createOptimizationEngine } = require('./engine');
+    globalEngine = createOptimizationEngine();
+  }
+  return globalEngine;
+}

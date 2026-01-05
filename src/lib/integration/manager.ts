@@ -901,3 +901,12 @@ export function getIntegrationManager(config?: IntegrationConfig): IntegrationMa
 export function resetIntegrationManager(): void {
   globalManager = null;
 }
+
+/**
+ * Initialize integration system - convenience function for tests
+ */
+export async function initializeIntegration(config?: IntegrationConfig): Promise<InitializationResult> {
+  const manager = getIntegrationManager(config);
+  return manager.initialize();
+}
+

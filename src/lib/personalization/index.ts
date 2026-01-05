@@ -336,6 +336,13 @@ export function getPersonalizationStats(userId?: string) {
   return getPersonalizationAPI().getStats(userId)
 }
 
+/**
+ * Alias for getPersonalizationAPI - for test compatibility
+ */
+export function getPersonalizationLearner() {
+  return getPersonalizationAPI()
+}
+
 // Import hooks and components for default export
 import {
   usePersonalization,

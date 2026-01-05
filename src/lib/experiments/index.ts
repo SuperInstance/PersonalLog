@@ -134,3 +134,13 @@ export const DEFAULT_CONFIG = {
   debug: false,
   assignmentSalt: 'personallog-ab-salt',
 } as const;
+
+// ============================================================================
+// CONVENIENCE ALIASES FOR TEST COMPATIBILITY
+// ============================================================================
+
+/**
+ * Alias for getGlobalManager - for test compatibility
+ */
+export { getGlobalManager as getExperimentsManager } from './manager';
+

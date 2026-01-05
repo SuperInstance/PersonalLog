@@ -51,7 +51,7 @@ describe('GET /api/modules', () => {
       url: 'http://localhost:3000/api/modules',
     })
 
-    const response = await GET(request)
+    const response = await GET()
     assertSuccess(response)
 
     const data = await extractResponseData<{
@@ -83,7 +83,7 @@ describe('GET /api/modules', () => {
       url: 'http://localhost:3000/api/modules',
     })
 
-    const response = await GET(request)
+    const response = await GET()
     assertSuccess(response)
 
     const data = await extractResponseData<{ modules: unknown[] }>(response)
@@ -108,7 +108,7 @@ describe('GET /api/modules', () => {
       url: 'http://localhost:3000/api/modules',
     })
 
-    const response = await GET(request)
+    const response = await GET()
     assertSuccess(response)
 
     const data = await extractResponseData<{ modules: unknown[] }>(response)
@@ -125,7 +125,7 @@ describe('GET /api/modules', () => {
       url: 'http://localhost:3000/api/modules',
     })
 
-    const response = await GET(request)
+    const response = await GET()
     assertError(response, 500)
 
     const data = await extractResponseData<{ error: string }>(response)
@@ -140,7 +140,7 @@ describe('GET /api/modules', () => {
       url: 'http://localhost:3000/api/modules',
     })
 
-    const response = await GET(request)
+    const response = await GET()
     expect(response.headers.get('Content-Type')).toContain('application/json')
   })
 
@@ -163,7 +163,7 @@ describe('GET /api/modules', () => {
       url: 'http://localhost:3000/api/modules',
     })
 
-    const response = await GET(request)
+    const response = await GET()
     assertSuccess(response)
 
     const data = await extractResponseData<{

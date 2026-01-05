@@ -404,3 +404,15 @@ export async function getStorageSize(): Promise<{
     estimatedSizeBytes,
   }
 }
+
+// ============================================================================
+// RE-EXPORTS FOR CONVENIENCE (from queries)
+// ============================================================================
+
+// Re-export data management functions from queries for convenience
+export {
+  exportAnalyticsData,
+  deleteAnalyticsData,
+  clearAllAnalyticsData as clearAnalyticsData,
+} from './queries'
+
