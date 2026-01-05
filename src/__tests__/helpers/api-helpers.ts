@@ -7,8 +7,32 @@
 
 import { NextRequest } from 'next/server'
 import { vi, expect } from 'vitest'
-import type { Conversation, Message } from '@/types/conversation'
+import type { Conversation, Message, MessageContent } from '@/types/conversation'
 import type { ModelConfig, AIContact } from '@/lib/wizard/models'
+
+// ============================================================================
+// TYPES FOR TEST HELPERS
+// ============================================================================
+
+/**
+ * Extended message type for test helpers that includes convenience 'text' property
+ */
+export type MessageOverride = Partial<Omit<Message, 'content'>> & {
+  text?: string
+  content?: MessageContent
+}
+
+/**
+ * Extended AIContact type for test helpers that includes convenience 'name' property
+ */
+export type AIContactOverride = Partial<Omit<AIContact, 'displayName'>> & {
+  name?: string
+  displayName?: string
+}
+
+// ============================================================================
+// REQUEST MOCKING HELPERS
+// ============================================================================
 
 // ============================================================================
 // REQUEST MOCKING HELPERS
@@ -248,17 +272,21 @@ export function createMockConversations(count: number, overrides: Partial<Conver
  * @example
  * const message = createMockMessage({ role: 'user', content: 'Hello' })
  */
-export function createMockMessage(overrides: Partial<Message> = {}): Message {
+export function createMockMessage(overrides: MessageOverride = {}): Message {
   const now = new Date().toISOString()
+
+  // Extract text if provided (for convenience)
+  const { text, content, ...rest } = overrides
+
   return {
     id: 'msg-123',
     conversationId: 'conv-123',
     type: 'text',
     author: 'user',
-    content: { text: 'Test message' },
+    content: content || (text ? { text } : { text: 'Test message' }),
     timestamp: now,
     metadata: {},
-    ...overrides,
+    ...rest,
   }
 }
 
@@ -273,7 +301,7 @@ export function createMockMessage(overrides: Partial<Message> = {}): Message {
  */
 export function createMockMessages(
   count: number,
-  overrides: Partial<Message> = {}
+  overrides: MessageOverride = {}
 ): Message[] {
   return Array.from({ length: count }, (_, i) => createMockMessage({
     id: `msg-${i + 1}`,
@@ -288,8 +316,12 @@ export function createMockMessages(
  * @example
  * const agent = createMockAIAgent({ id: 'agent-1', name: 'Claude' })
  */
-export function createMockAIAgent(overrides: Partial<AIContact> = {}): AIContact {
+export function createMockAIAgent(overrides: AIContactOverride = {}): AIContact {
   const now = new Date().toISOString()
+
+  // Extract name if provided (for convenience, maps to displayName)
+  const { name, displayName, ...rest } = overrides
+
   return {
     id: 'agent-123',
     nickname: 'Test Agent',
@@ -309,7 +341,8 @@ export function createMockAIAgent(overrides: Partial<AIContact> = {}): AIContact
     color: '#000000',
     createdAt: now,
     updatedAt: now,
-    ...overrides,
+    displayName: displayName || name || 'Test Agent',
+    ...rest,
   }
 }
 
@@ -357,8 +390,12 @@ export function createMockModelConfigs(count: number): ModelConfig[] {
  * @example
  * const contact = createMockAIContact({ id: 'contact-1', nickname: 'Claude' })
  */
-export function createMockAIContact(overrides: Partial<AIContact> = {}): AIContact {
+export function createMockAIContact(overrides: AIContactOverride = {}): AIContact {
   const now = new Date().toISOString()
+
+  // Extract name if provided (for convenience, maps to displayName)
+  const { name, displayName, ...rest } = overrides
+
   return {
     id: 'contact-123',
     nickname: 'Test Contact',
@@ -378,7 +415,8 @@ export function createMockAIContact(overrides: Partial<AIContact> = {}): AIConta
     color: '#000000',
     createdAt: now,
     updatedAt: now,
-    ...overrides,
+    displayName: displayName || name || 'Test Contact',
+    ...rest,
   }
 }
 
