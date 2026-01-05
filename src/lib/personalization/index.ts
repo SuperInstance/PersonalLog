@@ -283,19 +283,23 @@ class PersonalizationAPI {
 
     // Reset all preference keys to defaults
     const allKeys: PreferenceKey[] = [
-      'communication.responseStyle',
-      'communication.detailLevel',
-      'communication.formality',
-      'communication.emojiUsage',
+      'communication.responseLength',
+      'communication.tone',
+      'communication.useEmojis',
+      'communication.formatting',
       'ui.theme',
       'ui.density',
       'ui.fontSize',
-      'ui.animationsEnabled',
-      'ui.reducedMotion',
+      'ui.animations',
+      'ui.sidebarPosition',
+      'ui.autoScrollMessages',
+      'ui.groupMessagesByContext',
+      'content.topicsOfInterest',
+      'content.readingLevel',
+      'content.language',
+      'content.autoPlayMedia',
       'content.summaryLength',
       'content.technicalDetail',
-      'content.exampleUsage',
-      'content.codeExamples',
     ]
 
     for (const key of allKeys) {

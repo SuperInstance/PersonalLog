@@ -72,14 +72,21 @@ test.describe('App Initialization', () => {
   });
 
   test('should not block initial render', async ({ page }) => {
-    const response = await page.goto('/');
+    const startTime = Date.now();
+    await page.goto('/');
 
-    if (response) {
-      const timing = response.timing();
+    // Measure TTFB using Performance API in browser context
+    const ttfb = await page.evaluate(() => {
+      const timing = performance.timing;
+      return timing.responseStart - timing.navigationStart;
+    });
 
-      // Time to first byte should be reasonable
-      expect(timing.responseEnd).toBeLessThan(3000);
-    }
+    const endTime = Date.now();
+    const totalLoadTime = endTime - startTime;
+
+    // Time to first byte should be reasonable
+    expect(ttfb).toBeLessThan(3000);
+    expect(totalLoadTime).toBeLessThan(5000);
   });
 
   test('should handle fast navigation between pages', async ({ page }) => {

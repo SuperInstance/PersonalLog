@@ -274,7 +274,7 @@ test.describe('Accessibility', () => {
 
       // Check for color contrast violations specifically
       const contrastViolations = results.violations.filter(
-        v => v.id === 'color-contrast'
+        (v: { id: string }) => v.id === 'color-contrast'
       );
 
       expect(contrastViolations).toEqual([]);
@@ -287,7 +287,7 @@ test.describe('Accessibility', () => {
       const results = await runA11yCheck(page);
 
       const colorOnlyViolations = results.violations.filter(
-        v => v.id === 'color-contrast-enhanced'
+        (v: { id: string }) => v.id === 'color-contrast-enhanced'
       );
 
       expect(colorOnlyViolations).toEqual([]);
@@ -302,7 +302,7 @@ test.describe('Accessibility', () => {
       const results = await runA11yCheck(page);
 
       // Check for form-related violations
-      const formViolations = results.violations.filter(v =>
+      const formViolations = results.violations.filter((v: { id: string }) =>
         v.id.includes('label') || v.id.includes('form')
       );
 

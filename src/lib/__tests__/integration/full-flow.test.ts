@@ -245,7 +245,7 @@ describe('Complete User Flow', () => {
       const expManager = getExperimentsManager();
 
       // Opt out
-      expManager.optOut();
+      expManager.optOut('test-experiment', 'test-user');
 
       // Verify
       const active = expManager.getActiveExperiments();
@@ -388,12 +388,13 @@ describe('Complete User Flow', () => {
 
       const { getOptimizationEngine } = await import('../../optimization');
       const engine = getOptimizationEngine();
+      expect(engine).not.toBeNull();
 
       // Apply optimizations
-      await engine.applyOptimizations();
+      await engine!.applyOptimizations([]);
 
       // Get current config
-      const config = engine.getCurrentConfig();
+      const config = engine!.getCurrentConfig();
 
       expect(config).toBeDefined();
     });
@@ -404,8 +405,9 @@ describe('Complete User Flow', () => {
 
       const { getOptimizationEngine } = await import('../../optimization');
       const engine = getOptimizationEngine();
+      expect(engine).not.toBeNull();
 
-      const recommendations = await engine.getRecommendations();
+      const recommendations = await engine!.getRecommendations();
 
       expect(Array.isArray(recommendations)).toBe(true);
     });

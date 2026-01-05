@@ -95,6 +95,9 @@ export interface OptimizationRule {
   /** Description of what this rule does */
   description: string;
 
+  /** Whether this rule is enabled */
+  enabled: boolean;
+
   /** Category */
   category: OptimizationCategory;
 

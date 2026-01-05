@@ -56,6 +56,10 @@ export interface ContentPreferences {
   autoPlayMedia: boolean
   /** Recent search queries */
   recentQueries: string[]
+  /** Summary length preference */
+  summaryLength: 'brief' | 'balanced' | 'detailed'
+  /** Technical detail level */
+  technicalDetail: 'simple' | 'standard' | 'advanced'
 }
 
 /**

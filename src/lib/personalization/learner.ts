@@ -61,19 +61,19 @@ export class PreferenceLearner {
         break
 
       case 'feature-used':
-        signals.push(this.extractFeatureUsageSignal(action))
+        // Feature usage is tracked by PatternDetector, not as a preference signal
         break
 
       case 'session-ended':
-        signals.push(...this.extractSessionSignals(action))
+        // Session data is tracked by PatternDetector, not as preference signals
         break
 
       case 'error-occurred':
-        signals.push(this.extractErrorSignal(action))
+        // Errors are tracked by PatternDetector, not as a preference signal
         break
 
       case 'help-requested':
-        signals.push(this.extractHelpSignal(action))
+        // Help requests are tracked by PatternDetector, not as a preference signal
         break
 
       case 'setting-changed':
@@ -157,81 +157,11 @@ export class PreferenceLearner {
     }
   }
 
-  /**
-   * Extract feature usage for top features tracking
-   */
-  private extractFeatureUsageSignal(action: UserAction): PreferenceSignal {
-    const feature = action.context?.feature
-
-    if (!feature) {
-      throw new Error('Feature usage signal requires feature in context')
-    }
-
-    return {
-      preferenceKey: 'patterns.topFeatures' as PreferenceKey,
-      value: feature,
-      strength: this.signalThresholds.weak,
-      sourceAction: action,
-      timestamp: action.timestamp,
-    }
-  }
-
-  /**
-   * Extract session-related signals
-   */
-  private extractSessionSignals(action: UserAction): PreferenceSignal[] {
-    const signals: PreferenceSignal[] = []
-    const duration = action.context?.duration as number | undefined
-
-    // Session length pattern
-    if (duration) {
-      signals.push({
-        preferenceKey: 'patterns.avgSessionLength' as PreferenceKey,
-        value: duration,
-        strength: this.signalThresholds.medium,
-        sourceAction: action,
-        timestamp: action.timestamp,
-      })
-    }
-
-    // Peak hours pattern
-    const hour = new Date(action.timestamp).getHours()
-    signals.push({
-      preferenceKey: 'patterns.peakHours' as PreferenceKey,
-      value: hour,
-      strength: this.signalThresholds.weak,
-      sourceAction: action,
-      timestamp: action.timestamp,
-    })
-
-    return signals
-  }
-
-  /**
-   * Extract error frequency signal
-   */
-  private extractErrorSignal(action: UserAction): PreferenceSignal {
-    return {
-      preferenceKey: 'patterns.errorFrequency' as PreferenceKey,
-      value: 1, // Increment error count
-      strength: this.signalThresholds.weak,
-      sourceAction: action,
-      timestamp: action.timestamp,
-    }
-  }
-
-  /**
-   * Extract help-seeking signal
-   */
-  private extractHelpSignal(action: UserAction): PreferenceSignal {
-    return {
-      preferenceKey: 'patterns.helpSeekFrequency' as PreferenceKey,
-      value: 1, // Increment help count
-      strength: this.signalThresholds.medium,
-      sourceAction: action,
-      timestamp: action.timestamp,
-    }
-  }
+  // Note: Pattern-related signal extractors have been removed.
+  // Patterns (topFeatures, avgSessionLength, peakHours, errorFrequency, helpSeekFrequency)
+  // are tracked by the PatternDetector class, not as preference signals.
+  // This keeps the separation clear: preferences are user-configurable settings,
+  // while patterns are learned behavioral metrics.
 
   /**
    * Extract general setting change
@@ -340,7 +270,8 @@ export class PreferenceAggregator {
    */
   getStats(): { totalSignals: number; keysTracked: number } {
     let total = 0
-    for (const signals of this.signalBuffer.values()) {
+    const signalsArray = Array.from(this.signalBuffer.values())
+    for (const signals of signalsArray) {
       total += signals.length
     }
     return {

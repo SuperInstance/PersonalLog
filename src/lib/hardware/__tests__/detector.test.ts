@@ -4,6 +4,7 @@
  * Basic tests to verify the hardware detection system works correctly
  */
 
+import { describe, it, expect, beforeEach } from 'vitest';
 import { HardwareDetector } from '../detector';
 
 describe('HardwareDetector', () => {

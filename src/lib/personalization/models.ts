@@ -46,6 +46,8 @@ const DEFAULT_CONTENT: ContentPreferences = {
   language: 'en',
   autoPlayMedia: false,
   recentQueries: [],
+  summaryLength: 'balanced',
+  technicalDetail: 'standard',
 }
 
 const DEFAULT_PATTERNS: InteractionPatterns = {

@@ -51,14 +51,19 @@ describe('OptimizationEngine', () => {
     name: `Test Rule ${id}`,
     category: 'performance',
     description: 'Test rule',
+    enabled: true,
     priority,
     riskLevel: 20,
     autoApplySafe: false,
+    requiresConsent: false,
+    effort: 'low',
+    impact: 'moderate',
+    tags: [],
     conditions: [
       {
         metric: 'memory-usage',
         threshold: 80,
-        operator: '>',
+        operator: 'gt',
       },
     ],
     configChanges: [
@@ -70,7 +75,20 @@ describe('OptimizationEngine', () => {
       },
     ],
     rollbackTimeout: 300000,
-    expectedImprovement: 10,
+    targets: ['memory-usage'],
+    validation: {
+      minSampleSize: 10,
+      confidenceLevel: 0.95,
+      minImprovementPercent: 10,
+      maxDegradationPercent: 10,
+      metrics: [
+        {
+          target: 'memory-usage',
+          mustImprove: true,
+          tolerance: 20,
+        },
+      ],
+    },
   });
 
   beforeEach(() => {
@@ -609,22 +627,40 @@ describe('OptimizationEngine', () => {
       const badRule: OptimizationRule = {
         id: 'bad-rule',
         name: 'Bad Rule',
+        enabled: true,
         category: 'performance',
         description: 'Causes errors',
         priority: 'high',
         riskLevel: 50,
         autoApplySafe: false,
+        requiresConsent: false,
+        effort: 'medium',
+        impact: 'low',
+        tags: [],
         conditions: [],
+        targets: ['memory-usage'],
         configChanges: [
           {
             key: 'bad.config',
             value: null,
-            type: 'invalid',
+            type: 'object',
             reversible: true,
           },
         ],
         rollbackTimeout: 300000,
-        expectedImprovement: 0,
+        validation: {
+          minSampleSize: 5,
+          confidenceLevel: 0.9,
+          minImprovementPercent: 5,
+          maxDegradationPercent: 10,
+          metrics: [
+            {
+              target: 'memory-usage',
+              mustImprove: true,
+              tolerance: 10,
+            },
+          ],
+        },
       };
 
       engine.registerRule(badRule);

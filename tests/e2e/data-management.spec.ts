@@ -270,8 +270,14 @@ test.describe('Data Management', () => {
 
         const download = await downloadPromise;
 
-        const content = await download.createStreamReader();
-        const text = await content.toString();
+        // Use createReadStream() instead of deprecated createStreamReader()
+        const stream = await download.createReadStream();
+        const text = await new Promise<string>((resolve, reject) => {
+          let data = '';
+          stream.on('data', (chunk: Buffer) => { data += chunk; });
+          stream.on('end', () => resolve(data));
+          stream.on('error', reject);
+        });
 
         const json = JSON.parse(text);
 

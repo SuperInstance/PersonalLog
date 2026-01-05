@@ -341,6 +341,7 @@ const customRule: OptimizationRule = {
   id: 'optimize-conversation-loading',
   name: 'Optimize Conversation Loading',
   description: 'Increase batch size for loading conversations',
+  enabled: true,
   category: 'performance',
   targets: ['initial-load-time'],
   priority: 'medium',

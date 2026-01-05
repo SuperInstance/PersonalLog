@@ -155,7 +155,7 @@ describe('Provider Interactions', () => {
       const assignment = manager.assignVariant('test_experiment', 'test-user-123');
 
       expect(assignment).toBeDefined();
-      expect(['control', 'treatment'].includes(assignment?.variantId || '')).toBe(true);
+      expect(['control', 'treatment'].includes(assignment?.id || '')).toBe(true);
     });
 
     it('should get active experiments', async () => {
@@ -171,7 +171,7 @@ describe('Provider Interactions', () => {
       const { getExperimentsManager } = await import('../../experiments');
 
       const manager = getExperimentsManager();
-      manager.optOut();
+      manager.optOut('test_exp', 'test-user-456');
 
       // After opting out, should not be in any experiments
       const assignment = manager.assignVariant('test_exp', 'test-user-456');
@@ -185,7 +185,9 @@ describe('Provider Interactions', () => {
       const { getOptimizationEngine } = await import('../../optimization');
 
       const engine = getOptimizationEngine();
-      const config = engine.getCurrentConfig();
+      expect(engine).not.toBeNull();
+
+      const config = engine!.getCurrentConfig();
 
       expect(config).toBeDefined();
     });
@@ -194,8 +196,9 @@ describe('Provider Interactions', () => {
       const { getOptimizationEngine } = await import('../../optimization');
 
       const engine = getOptimizationEngine();
+      expect(engine).not.toBeNull();
 
-      await engine.applyOptimizations();
+      await engine!.applyOptimizations([]);
 
       // Should not throw
       expect(true).toBe(true);
@@ -205,7 +208,9 @@ describe('Provider Interactions', () => {
       const { getOptimizationEngine } = await import('../../optimization');
 
       const engine = getOptimizationEngine();
-      const recommendations = await engine.getRecommendations();
+      expect(engine).not.toBeNull();
+
+      const recommendations = await engine!.getRecommendations();
 
       expect(Array.isArray(recommendations)).toBe(true);
     });
@@ -282,12 +287,13 @@ describe('Provider Interactions', () => {
 
       const expManager = getExperimentsManager();
       const engine = getOptimizationEngine();
+      expect(engine).not.toBeNull();
 
       // Assign to experiment
       expManager.assignVariant('optimization_test', 'test-user-789');
 
       // Get optimization recommendations
-      const recommendations = await engine.getRecommendations();
+      const recommendations = await engine!.getRecommendations();
 
       expect(recommendations).toBeDefined();
     });
@@ -366,7 +372,7 @@ describe('Provider Interactions', () => {
       const learner = getPersonalizationLearner();
 
       // Both should be able to record metrics
-      expManager.trackMetric('test_metric', 100);
+      expManager.trackMetric('test_exp', 'control', 'test_metric', 100);
       learner.recordAction({
         type: 'test_action',
         timestamp: new Date().toISOString()

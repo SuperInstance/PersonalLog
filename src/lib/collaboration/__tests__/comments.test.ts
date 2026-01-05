@@ -2,7 +2,7 @@
  * Tests for Collaboration Comments System
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   addComment,
   getComment,

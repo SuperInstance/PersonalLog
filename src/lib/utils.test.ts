@@ -3,7 +3,7 @@
  * @module lib/utils.test
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { cn, formatDate, formatRelativeTime, getAuthorDisplayName, getAuthorColor } from './utils'
 import type { MessageAuthor } from '@/types/conversation'
 
@@ -106,7 +106,11 @@ describe('getAuthorDisplayName', () => {
   })
 
   it('should return "System" for system author', () => {
-    const result = getAuthorDisplayName('system')
+    const author: MessageAuthor = {
+      type: 'system',
+      reason: 'auto-message'
+    }
+    const result = getAuthorDisplayName(author)
     expect(result).toBe('System')
   })
 })
@@ -118,7 +122,11 @@ describe('getAuthorColor', () => {
   })
 
   it('should return gray for system', () => {
-    const result = getAuthorColor('system')
+    const author: MessageAuthor = {
+      type: 'system',
+      reason: 'auto-message'
+    }
+    const result = getAuthorColor(author)
     expect(result).toBe('bg-gray-500')
   })
 

@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Sparkles, RotateCcw, Search, Filter } from 'lucide-react';
 import { FeatureFlagManager } from '@/lib/flags/manager';
-import { DEFAULT_FEATURES } from '@/lib/flags/registry';
+import { DEFAULT_FEATURES } from '@/lib/flags/features';
 import type { FeatureFlag, FeatureCategory } from '@/lib/flags/types';
 import { FeatureFlagToggle } from '@/components/settings/FeatureFlagToggle';
 

@@ -605,7 +605,7 @@ export { getAnalyticsConfig } from './collector'
 /**
  * Set analytics config - convenience wrapper
  */
-export function setAnalyticsConfig(config: Partial<import('./collector').AnalyticsConfig>): void {
+export function setAnalyticsConfig(config: Partial<AnalyticsConfig>): void {
   const { getEventCollector } = require('./collector')
   const collector = getEventCollector()
   collector.updateConfig(config)
