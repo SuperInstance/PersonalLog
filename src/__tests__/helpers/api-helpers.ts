@@ -7,7 +7,7 @@
 
 import { NextRequest } from 'next/server'
 import { vi, expect } from 'vitest'
-import type { Conversation, Message, MessageContent } from '@/types/conversation'
+import type { Conversation, Message, MessageContent, ChatRequest } from '@/types/conversation'
 import type { ModelConfig, AIContact } from '@/lib/wizard/models'
 
 // ============================================================================
@@ -429,6 +429,47 @@ export function createMockAIContacts(count: number): AIContact[] {
     id: `contact-${i + 1}`,
     nickname: `Contact ${i + 1}`,
   }))
+}
+
+/**
+ * Create a mock ChatRequest object with all required fields
+ *
+ * @example
+ * const chatRequest = createMockChatRequest({
+ *   prompt: 'Hello',
+ *   agentId: 'agent-123'
+ * })
+ */
+export function createMockChatRequest(overrides: Partial<ChatRequest> = {}): ChatRequest {
+  return {
+    conversationId: 'conv-123',
+    agentId: 'agent-123',
+    messages: [],
+    prompt: 'Test prompt',
+    stream: false,
+    ...overrides,
+  }
+}
+
+/**
+ * Create a mock ChatRequest object with messages
+ *
+ * @example
+ * const chatRequest = createMockChatRequestWithMessages({
+ *   prompt: 'Hello',
+ *   agentId: 'agent-123',
+ *   messages: [userMessage, aiMessage]
+ * })
+ */
+export function createMockChatRequestWithMessages(overrides: Partial<ChatRequest> = {}): ChatRequest {
+  return {
+    conversationId: 'conv-123',
+    agentId: 'agent-123',
+    messages: [],
+    prompt: 'Test prompt',
+    stream: false,
+    ...overrides,
+  }
 }
 
 /**

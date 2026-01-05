@@ -117,7 +117,7 @@ describe('Provider Interactions', () => {
     it('should track events through integration', async () => {
       const { trackEvent } = await import('../../analytics/collector');
 
-      trackEvent('test_event', { category: 'test' });
+      trackEvent('test_event', { type: 'test_event', category: 'test' });
 
       // Should not throw
       expect(true).toBe(true);
@@ -135,7 +135,7 @@ describe('Provider Interactions', () => {
     it('should clear analytics data', async () => {
       const { clearAnalyticsData, trackEvent } = await import('../../analytics/collector');
 
-      await trackEvent('test_event', {});
+      await trackEvent('test_event', { type: 'test_event' });
       await clearAnalyticsData();
 
       const { getEvents } = await import('../../analytics/queries');
@@ -152,9 +152,10 @@ describe('Provider Interactions', () => {
       const manager = getExperimentsManager();
 
       // Should not throw
-      const variant = manager.assignVariant('test_experiment', ['control', 'treatment']);
+      const assignment = manager.assignVariant('test_experiment', 'test-user-123');
 
-      expect(['control', 'treatment'].includes(variant)).toBe(true);
+      expect(assignment).toBeDefined();
+      expect(['control', 'treatment'].includes(assignment?.variantId || '')).toBe(true);
     });
 
     it('should get active experiments', async () => {
@@ -173,9 +174,9 @@ describe('Provider Interactions', () => {
       manager.optOut();
 
       // After opting out, should not be in any experiments
-      const variant = manager.assignVariant('test_exp', ['a', 'b']);
+      const assignment = manager.assignVariant('test_exp', 'test-user-456');
 
-      expect(variant).toBeNull();
+      expect(assignment).toBeNull();
     });
   });
 
@@ -216,8 +217,11 @@ describe('Provider Interactions', () => {
 
       const learner = getPersonalizationLearner();
 
-      learner.recordAction('viewed_conversation', {
-        conversationId: 'test-123',
+      learner.recordAction({
+        type: 'viewed_conversation',
+        timestamp: new Date().toISOString(),
+        context: { feature: 'conversation' },
+        data: { conversationId: 'test-123' }
       });
 
       // Should not throw
@@ -253,12 +257,17 @@ describe('Provider Interactions', () => {
       const { getPersonalizationLearner } = await import('../../personalization');
 
       // Track some events
-      trackEvent('conversation_viewed', { conversationId: 'test' });
-      trackEvent('conversation_viewed', { conversationId: 'test' });
+      trackEvent('conversation_viewed', { type: 'conversation_viewed', conversationId: 'test' });
+      trackEvent('conversation_viewed', { type: 'conversation_viewed', conversationId: 'test' });
 
       // Personalization should be able to learn from this
       const learner = getPersonalizationLearner();
-      learner.recordAction('conversation_viewed', { conversationId: 'test' });
+      learner.recordAction({
+        type: 'conversation_viewed',
+        timestamp: new Date().toISOString(),
+        context: { feature: 'conversation' },
+        data: { conversationId: 'test' }
+      });
 
       const preferences = learner.getPreferences();
 
@@ -275,7 +284,7 @@ describe('Provider Interactions', () => {
       const engine = getOptimizationEngine();
 
       // Assign to experiment
-      expManager.assignVariant('optimization_test', ['control', 'optimized']);
+      expManager.assignVariant('optimization_test', 'test-user-789');
 
       // Get optimization recommendations
       const recommendations = await engine.getRecommendations();
@@ -307,8 +316,9 @@ describe('Provider Interactions', () => {
       const manager = getIntegrationManager({ autoInitialize: false, debug: true });
 
       manager.on('system_status_changed', (event) => {
-        if (event.data.status.stage === 'ready') {
-          initOrder.push(event.data.system);
+        const data = event.data as { status: { stage: string }; system: string };
+        if (data.status.stage === 'ready') {
+          initOrder.push(data.system);
         }
       });
 
@@ -357,7 +367,10 @@ describe('Provider Interactions', () => {
 
       // Both should be able to record metrics
       expManager.trackMetric('test_metric', 100);
-      learner.recordAction('test_action', {});
+      learner.recordAction({
+        type: 'test_action',
+        timestamp: new Date().toISOString()
+      });
 
       // Should not throw
       expect(true).toBe(true);
@@ -387,7 +400,7 @@ describe('Provider Interactions', () => {
 
       const end = performance.now();
 
-      trackEvent('test', {});
+      trackEvent('test', { type: 'test' });
 
       // First import might take time, subsequent should be fast
       expect(end - start).toBeLessThan(1000);
@@ -410,10 +423,10 @@ describe('Provider Interactions', () => {
       const manager = getExperimentsManager();
 
       // Should handle invalid experiment IDs gracefully
-      const variant = manager.assignVariant('', ['a', 'b']);
+      const assignment = manager.assignVariant('', 'test-user-999');
 
       // Should return null or default
-      expect([null, 'a', 'b'].includes(variant)).toBe(true);
+      expect(assignment).toBeNull();
     });
 
     it('should continue with partial provider failure', async () => {

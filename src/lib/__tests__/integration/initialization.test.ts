@@ -97,8 +97,9 @@ describe('Integration Manager - Initialization Flow', () => {
 
       // Listen to system status changes
       manager.on('system_status_changed', (event) => {
-        if (event.data.status.stage === 'initializing') {
-          order.push(event.data.system);
+        const data = event.data as { status: { stage: string }; system: string };
+        if (data.status.stage === 'initializing') {
+          order.push(data.system);
         }
       });
 
@@ -113,7 +114,8 @@ describe('Integration Manager - Initialization Flow', () => {
       const progressUpdates: number[] = [];
 
       manager.on('initialization_progress', (event) => {
-        progressUpdates.push(event.data.progress.percentage);
+        const data = event.data as { progress: { percentage: number } };
+        progressUpdates.push(data.progress.percentage);
       });
 
       await manager.initialize();
@@ -353,7 +355,8 @@ describe('Integration Manager - Initialization Flow', () => {
 
       const statusChanges: string[] = [];
       manager.on('system_status_changed', (event) => {
-        statusChanges.push(event.data.system);
+        const data = event.data as { system: string };
+        statusChanges.push(data.system);
       });
 
       await manager.initialize();

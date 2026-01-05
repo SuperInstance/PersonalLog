@@ -234,7 +234,7 @@ describe('POST /api/models', () => {
   })
 
   it('should return 201 status on successful creation', async () => {
-    vi.mocked(modelStore.addModel).mockResolvedValue({ id: '1', name: 'Model' })
+    vi.mocked(modelStore.addModel).mockResolvedValue(createMockModelConfig({ id: '1', name: 'Model' }))
 
     const request = createMockRequest({
       body: { name: 'Model', provider: 'openai' },
@@ -267,11 +267,8 @@ describe('POST /api/models', () => {
   })
 
   it('should handle contact with capabilities', async () => {
-    const newContact = createMockAIAgent({
+    const newContact = createMockAIContact({
       name: 'Multi-modal AI',
-      canSeeWeb: true,
-      canSeeFiles: true,
-      canGenerateImages: true,
     })
     vi.mocked(modelStore.createContact).mockResolvedValue(newContact)
 
@@ -344,11 +341,11 @@ describe('PATCH /api/models', () => {
   })
 
   it('should update a model', async () => {
-    const updatedModel = {
+    const updatedModel = createMockModelConfig({
       id: 'model-123',
       name: 'Updated Model',
       provider: 'openai',
-    }
+    })
     vi.mocked(modelStore.updateModel).mockResolvedValue(updatedModel)
 
     const request = createMockRequest({

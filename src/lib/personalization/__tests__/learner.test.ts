@@ -330,8 +330,8 @@ describe('PreferenceAggregator', () => {
 
     it('should limit buffer size', () => {
       const signal = {
-        preferenceKey: 'test.key' as const,
-        value: 'value',
+        preferenceKey: 'ui.theme' as const,
+        value: 'dark',
         strength: 0.8,
         timestamp: new Date().toISOString(),
         sourceAction: {
@@ -360,7 +360,7 @@ describe('PreferenceAggregator', () => {
         timestamp: new Date(oldTimestamp).toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: oldTimestamp,
+          timestamp: new Date(oldTimestamp).toISOString(),
         } as UserAction,
       };
 
@@ -425,7 +425,7 @@ describe('PreferenceAggregator', () => {
         timestamp: new Date(Date.now() - 1000).toISOString(),
         sourceAction: {
           type: 'theme-changed',
-          timestamp: Date.now() - 1000,
+          timestamp: new Date(Date.now() - 1000).toISOString(),
         } as UserAction,
       };
 

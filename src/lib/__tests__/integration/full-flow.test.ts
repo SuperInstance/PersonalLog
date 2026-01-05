@@ -65,7 +65,7 @@ describe('Complete User Flow', () => {
 
       // Add some existing data
       const { trackEvent } = await import('../../analytics/collector');
-      trackEvent('previous_session_event', {});
+      trackEvent('previous_session_event', { type: 'previous_session_event' });
 
       const manager = getIntegrationManager({ autoInitialize: false });
       const result = await manager.initialize();
@@ -129,12 +129,16 @@ describe('Complete User Flow', () => {
       if (messengerEnabled) {
         // Track usage
         const { trackEvent } = await import('../../analytics/collector');
-        trackEvent('messenger_opened', {});
+        trackEvent('messenger_opened', { type: 'messenger_opened' });
 
         // Learn preference
         const { getPersonalizationLearner } = await import('../../personalization');
         const learner = getPersonalizationLearner();
-        learner.recordAction('opened_messenger', {});
+        learner.recordAction({
+          type: 'opened_messenger',
+          timestamp: new Date().toISOString(),
+          context: { feature: 'messenger' }
+        });
 
         // Should not throw
         expect(true).toBe(true);
@@ -149,7 +153,7 @@ describe('Complete User Flow', () => {
 
       if (knowledgeEnabled) {
         const { trackEvent } = await import('../../analytics/collector');
-        trackEvent('knowledge_viewed', {});
+        trackEvent('knowledge_viewed', { type: 'knowledge_viewed' });
 
         expect(true).toBe(true);
       }
@@ -163,7 +167,7 @@ describe('Complete User Flow', () => {
 
       if (aiChatEnabled) {
         const { trackEvent } = await import('../../analytics/collector');
-        trackEvent('ai_chat_started', {});
+        trackEvent('ai_chat_started', { type: 'ai_chat_started' });
 
         expect(true).toBe(true);
       }
@@ -223,14 +227,14 @@ describe('Complete User Flow', () => {
 
       // Track some events
       const { trackEvent } = await import('../../analytics/collector');
-      trackEvent('test_event', { value: 123 });
+      trackEvent('test_event', { type: 'test_event', value: 123 });
 
       // Query events
       const { getEvents } = await import('../../analytics/queries');
       const events = await getEvents();
 
       expect(events.length).toBeGreaterThan(0);
-      expect(events[0].data.value).toBe(123);
+      expect((events[0].data as any).value).toBe(123);
     });
 
     it('should opt out of experiments', async () => {
@@ -256,7 +260,10 @@ describe('Complete User Flow', () => {
       const learner = getPersonalizationLearner();
 
       // Set some preferences
-      learner.recordAction('test_action', {});
+      learner.recordAction({
+        type: 'test_action',
+        timestamp: new Date().toISOString()
+      });
 
       // Reset
       learner.resetPreferences();
@@ -274,8 +281,8 @@ describe('Complete User Flow', () => {
 
       // Track some data
       const { trackEvent } = await import('../../analytics/collector');
-      trackEvent('event1', {});
-      trackEvent('event2', {});
+      trackEvent('event1', { type: 'event1' });
+      trackEvent('event2', { type: 'event2' });
 
       // Export
       const { exportAnalyticsData } = await import('../../analytics/storage');
@@ -300,7 +307,7 @@ describe('Complete User Flow', () => {
 
       // Create some data
       const { trackEvent } = await import('../../analytics/collector');
-      trackEvent('test', {});
+      trackEvent('test', { type: 'test' });
 
       // Delete
       const { clearAnalyticsData } = await import('../../analytics/storage');
@@ -327,7 +334,7 @@ describe('Complete User Flow', () => {
       // Try to track event (should not throw even with errors)
       try {
         const { trackEvent } = await import('../../analytics/collector');
-        trackEvent('test', {});
+        trackEvent('test', { type: 'test' });
       } catch (e) {
         // Should not reach here
         expect(true).toBe(false);
@@ -422,12 +429,16 @@ describe('Complete User Flow', () => {
 
       // Step 4: Use a feature
       const { trackEvent } = await import('../../analytics/collector');
-      trackEvent('feature_used', { feature: 'messenger' });
+      trackEvent('feature_used', { type: 'feature_used', featureId: 'messenger', success: true });
 
       // Step 5: Learn from user action
       const { getPersonalizationLearner } = await import('../../personalization');
       const learner = getPersonalizationLearner();
-      learner.recordAction('used_feature', { feature: 'messenger' });
+      learner.recordAction({
+        type: 'used_feature',
+        timestamp: new Date().toISOString(),
+        context: { feature: 'messenger' }
+      });
 
       // Step 6: Navigate to settings
       trackPageView('/settings');

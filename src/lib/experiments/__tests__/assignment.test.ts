@@ -47,6 +47,13 @@ describe('AssignmentEngine', () => {
       persistAssignments: false,
       assignmentSalt: 'test-salt',
       debug: false,
+      defaultConfidenceThreshold: 0.95,
+      defaultMinSampleSize: 100,
+      defaultTrafficAllocation: 1.0,
+      earlyStoppingByDefault: false,
+      banditByDefault: false,
+      storageKey: 'experiments',
+      trackMetrics: true,
     };
 
     engine = new AssignmentEngine(config);
@@ -58,18 +65,21 @@ describe('AssignmentEngine', () => {
         name: 'Control',
         weight: 1,
         isControl: true,
+        config: {},
       },
       {
         id: 'variant-a',
         name: 'Variant A',
         weight: 1,
         isControl: false,
+        config: {},
       },
       {
         id: 'variant-b',
         name: 'Variant B',
         weight: 1,
         isControl: false,
+        config: {},
       },
     ];
   });
@@ -96,6 +106,13 @@ describe('AssignmentEngine', () => {
         persistAssignments: true,
         storageKey: 'test-assignments',
         assignmentSalt: 'test-salt',
+        defaultConfidenceThreshold: 0.95,
+        defaultMinSampleSize: 100,
+        defaultTrafficAllocation: 1.0,
+        earlyStoppingByDefault: false,
+        banditByDefault: false,
+        trackMetrics: true,
+        debug: false,
       });
 
       // Save some test data
@@ -164,6 +181,13 @@ describe('AssignmentEngine', () => {
         persistAssignments: true,
         storageKey: 'test-assignments',
         assignmentSalt: 'test-salt',
+        defaultConfidenceThreshold: 0.95,
+        defaultMinSampleSize: 100,
+        defaultTrafficAllocation: 1.0,
+        earlyStoppingByDefault: false,
+        banditByDefault: false,
+        trackMetrics: true,
+        debug: false,
       });
 
       persistEngine.assignVariant('exp-1', 'user-123', variants);
@@ -219,12 +243,14 @@ describe('AssignmentEngine', () => {
           name: 'Control',
           weight: 7, // 70%
           isControl: true,
+          config: {},
         },
         {
           id: 'variant-a',
           name: 'Variant A',
           weight: 3, // 30%
           isControl: false,
+          config: {},
         },
       ];
 
@@ -460,6 +486,13 @@ describe('AssignmentEngine', () => {
         persistAssignments: true,
         storageKey: 'test-assignments',
         assignmentSalt: 'test-salt',
+        defaultConfidenceThreshold: 0.95,
+        defaultMinSampleSize: 100,
+        defaultTrafficAllocation: 1.0,
+        earlyStoppingByDefault: false,
+        banditByDefault: false,
+        trackMetrics: true,
+        debug: false,
       });
 
       persistEngine.assignVariant('exp-1', 'user-123', variants);
@@ -679,6 +712,14 @@ describe('AssignmentEngine', () => {
         enabled: true,
         assignmentSalt: 'same-salt',
         persistAssignments: false,
+        defaultConfidenceThreshold: 0.95,
+        defaultMinSampleSize: 100,
+        defaultTrafficAllocation: 1.0,
+        earlyStoppingByDefault: false,
+        banditByDefault: false,
+        storageKey: 'experiments',
+        trackMetrics: true,
+        debug: false,
       };
 
       const engine1 = new AssignmentEngine(config);
@@ -695,12 +736,28 @@ describe('AssignmentEngine', () => {
         enabled: true,
         assignmentSalt: 'salt-1',
         persistAssignments: false,
+        defaultConfidenceThreshold: 0.95,
+        defaultMinSampleSize: 100,
+        defaultTrafficAllocation: 1.0,
+        earlyStoppingByDefault: false,
+        banditByDefault: false,
+        storageKey: 'experiments',
+        trackMetrics: true,
+        debug: false,
       });
 
       const engine2 = new AssignmentEngine({
         enabled: true,
         assignmentSalt: 'salt-2',
         persistAssignments: false,
+        defaultConfidenceThreshold: 0.95,
+        defaultMinSampleSize: 100,
+        defaultTrafficAllocation: 1.0,
+        earlyStoppingByDefault: false,
+        banditByDefault: false,
+        storageKey: 'experiments',
+        trackMetrics: true,
+        debug: false,
       });
 
       const assignment1 = engine1.assignVariant('exp-1', 'user-123', variants);

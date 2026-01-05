@@ -112,7 +112,7 @@ export interface UserAction {
   /** Timestamp */
   timestamp: string
   /** Context where action occurred */
-  context: {
+  context?: {
     feature?: string
     view?: string
     duration?: number

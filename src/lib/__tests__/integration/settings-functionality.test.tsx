@@ -245,7 +245,7 @@ describe('Settings Functionality', () => {
       const { clearAnalyticsData, exportAnalyticsData } = await import('../../../lib/analytics/storage');
 
       // Track some events
-      trackEvent('test_event', {});
+      trackEvent('test_event', { type: 'test_event' });
 
       // Clear
       await clearAnalyticsData();
@@ -344,7 +344,11 @@ describe('Settings Functionality', () => {
       const learner = getPersonalizationLearner();
 
       // Set some preferences
-      learner.recordAction('test_action', { value: 'test' });
+      learner.recordAction({
+        type: 'test_action',
+        timestamp: new Date().toISOString(),
+        data: { value: 'test' }
+      });
 
       // Reset
       learner.resetPreferences();
@@ -427,8 +431,8 @@ describe('Settings Functionality', () => {
       const { clearAnalyticsData } = await import('../../../lib/analytics/storage');
 
       // Track some events
-      trackEvent('test1', {});
-      trackEvent('test2', {});
+      trackEvent('test1', { type: 'test1' });
+      trackEvent('test2', { type: 'test2' });
 
       // Clear
       await clearAnalyticsData();
