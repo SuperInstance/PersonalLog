@@ -93,13 +93,6 @@ export default function SyncSettingsPage() {
   })
   const [syncing, setSyncing] = useState(false)
 
-  // Load initial data
-  useEffect(() => {
-    loadSyncData()
-    const interval = setInterval(loadSyncData, 5000)
-    return () => clearInterval(interval)
-  }, [])
-
   // Listen to progress updates
   useEffect(() => {
     const engine = getSyncEngine()
@@ -145,6 +138,13 @@ export default function SyncSettingsPage() {
       console.error('Failed to load sync data:', error)
     }
   }, [])
+
+  // Load initial data
+  useEffect(() => {
+    loadSyncData()
+    const interval = setInterval(loadSyncData, 5000)
+    return () => clearInterval(interval)
+  }, [loadSyncData])
 
   const handleManualSync = useCallback(async () => {
     setSyncing(true)

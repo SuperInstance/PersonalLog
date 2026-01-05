@@ -59,10 +59,10 @@ export function ErrorMonitoringDashboard() {
   useEffect(() => {
     loadLogs();
 
-    if (autoRefresh) {
-      const interval = setInterval(loadLogs, 5000); // Refresh every 5 seconds
-      return () => clearInterval(interval);
-    }
+    const interval = autoRefresh ? setInterval(loadLogs, 5000) : null; // Refresh every 5 seconds
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [filter, autoRefresh]);
 
   const loadLogs = async () => {

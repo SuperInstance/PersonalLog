@@ -6,7 +6,7 @@
  * Displays a specific conversation in the messenger view.
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -25,12 +25,7 @@ export default function ConversationPage() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadConversation()
-    loadConversations()
-  }, [conversationId])
-
-  const loadConversation = async () => {
+  const loadConversation = useCallback(async () => {
     try {
       const conv = await getConversation(conversationId)
       if (conv) {
@@ -45,16 +40,21 @@ export default function ConversationPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [conversationId, router])
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       const convs = await listConversations({ includeArchived: false, limit: 50 })
       setConversations(convs)
     } catch (error) {
       console.error('Failed to load conversations:', error)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadConversation()
+    loadConversations()
+  }, [conversationId, loadConversation, loadConversations])
 
   const handleNewConversation = async () => {
     const { createConversation } = await import('@/lib/storage/conversation-store')

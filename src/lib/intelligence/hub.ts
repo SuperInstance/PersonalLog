@@ -43,6 +43,9 @@ export class IntelligenceHub {
   private experiments: ExperimentManager | null = null;
   private optimizer: OptimizationEngine | null = null;
 
+  // Periodic workflow cleanup
+  private dailyCheckInterval: ReturnType<typeof setInterval> | null = null;
+
   // State
   private activeWorkflows = new Map<string, WorkflowExecution>();
   private conflicts: Conflict[] = [];
@@ -504,7 +507,7 @@ export class IntelligenceHub {
   private startPeriodicWorkflows(): void {
     // Daily optimization check (every hour)
     const dailyCheckInterval = 60 * 60 * 1000;
-    setInterval(() => {
+    this.dailyCheckInterval = setInterval(() => {
       if (this.settings.optimization.enabled) {
         this.analyzeAndOptimize().catch(console.error);
       }
@@ -512,6 +515,26 @@ export class IntelligenceHub {
 
     // Continuous personalization happens via event-driven architecture
     console.log('[Intelligence Hub] Periodic workflows started');
+  }
+
+  /**
+   * Stop periodic workflows
+   */
+  private stopPeriodicWorkflows(): void {
+    if (this.dailyCheckInterval) {
+      clearInterval(this.dailyCheckInterval);
+      this.dailyCheckInterval = null;
+    }
+    console.log('[Intelligence Hub] Periodic workflows stopped');
+  }
+
+  /**
+   * Cleanup and destroy the intelligence hub
+   */
+  async destroy(): Promise<void> {
+    this.stopPeriodicWorkflows();
+    this.initialized = false;
+    console.log('[Intelligence Hub] Destroyed');
   }
 }
 

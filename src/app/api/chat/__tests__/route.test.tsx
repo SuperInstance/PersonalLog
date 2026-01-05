@@ -376,10 +376,12 @@ describe('OPTIONS /api/chat', () => {
 })
 
 describe('Provider-specific behavior', () => {
+  let restore: (() => void) | null = null
+
   afterEach(() => {
-    if (restore()) {
-      restore()()
-      let restore: (() => void) | null = null
+    if (restore) {
+      restore()
+      restore = null
     }
   })
 

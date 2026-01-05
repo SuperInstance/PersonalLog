@@ -7,7 +7,7 @@
  * AI generates posts based on your journal entries, notes, and patterns.
  */
 
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   MessageSquare,
@@ -55,11 +55,7 @@ export default function ForumPage() {
   const [selectedCategory, setSelectedCategory] = useState<ForumCategory | null>(null)
   const [trending, setTrending] = useState<Array<{ topic: string; count: number }>>([])
 
-  useEffect(() => {
-    loadForum()
-  }, [selectedCategory])
-
-  const loadForum = async () => {
+  const loadForum = useCallback(async () => {
     // In production, fetch from API
     const mockPosts: ForumPost[] = [
       {
@@ -143,7 +139,11 @@ This pattern appears regularly in your journal entries. You tend to reflect on h
       { topic: 'Health', count: 6 },
       { topic: 'Learning', count: 5 },
     ])
-  }
+  }, [selectedCategory])
+
+  useEffect(() => {
+    loadForum()
+  }, [loadForum])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)

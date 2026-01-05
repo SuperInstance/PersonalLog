@@ -9,6 +9,7 @@ import type {
   Conversation,
   Message,
   MessageAuthor,
+  MessageContent,
   MessageType,
   ConversationType,
   AIAgent,
@@ -99,6 +100,7 @@ export interface MessageFactoryOptions {
   type?: MessageType;
   author?: MessageAuthor;
   text?: string;
+  content?: MessageContent;
   timestamp?: string;
   selected?: boolean;
   replyTo?: string;
@@ -132,7 +134,7 @@ export function createMockMessage(
     conversationId,
     type: overrides.type || 'text',
     author,
-    content: {
+    content: overrides.content || {
       text: overrides.text || 'Test message content',
     },
     timestamp: overrides.timestamp || now,

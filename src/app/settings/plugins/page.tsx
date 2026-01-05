@@ -7,7 +7,7 @@
  * Install new plugins from files or URLs.
  */
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Puzzle, Loader2 } from 'lucide-react';
 import { PluginList } from '@/components/plugins/PluginList';
@@ -27,11 +27,7 @@ export default function PluginsPage() {
   const pluginManager = getPluginManager();
   const pluginLoader = getPluginLoader();
 
-  useEffect(() => {
-    loadPlugins();
-  }, []);
-
-  const loadPlugins = async () => {
+  const loadPlugins = useCallback(async () => {
     try {
       setLoading(true);
       const manifests = await pluginManager.getInstalledPlugins();
@@ -54,7 +50,11 @@ export default function PluginsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pluginManager]);
+
+  useEffect(() => {
+    loadPlugins();
+  }, [loadPlugins]);
 
   const handleEnable = async (pluginId: string) => {
     try {

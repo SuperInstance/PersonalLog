@@ -11,7 +11,7 @@
  * - Results export
  */
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -55,11 +55,7 @@ export default function ExperimentsSettingsPage() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -115,7 +111,11 @@ export default function ExperimentsSettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [initialized]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleStartExperiment = async (experimentId: string) => {
     try {

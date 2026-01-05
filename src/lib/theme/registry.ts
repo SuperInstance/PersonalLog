@@ -47,6 +47,8 @@ class ThemeRegistry {
   private themeSettings: ThemeSettings;
   private eventListeners: Map<ThemeEventType, Set<ThemeEventListener>> = new Map();
   private initialized: boolean = false;
+  private mediaQuery: MediaQueryList | null = null;
+  private mediaQueryHandler: ((this: MediaQueryList, ev: MediaQueryListEvent) => any) | null = null;
 
   constructor() {
     this.themeSettings = this.getDefaultSettings();
@@ -767,6 +769,32 @@ class ThemeRegistry {
       throw error;
     }
   }
+
+  // ========================================================================
+  // CLEANUP
+  // ========================================================================
+
+  /**
+   * Set media query listener for cleanup
+   */
+  setMediaQueryListener(
+    mediaQuery: MediaQueryList,
+    handler: (this: MediaQueryList, ev: MediaQueryListEvent) => any
+  ): void {
+    this.mediaQuery = mediaQuery;
+    this.mediaQueryHandler = handler;
+  }
+
+  /**
+   * Cleanup media query listeners
+   */
+  cleanup(): void {
+    if (this.mediaQuery && this.mediaQueryHandler) {
+      this.mediaQuery.removeEventListener('change', this.mediaQueryHandler);
+      this.mediaQuery = null;
+      this.mediaQueryHandler = null;
+    }
+  }
 }
 
 // ============================================================================
@@ -798,10 +826,19 @@ export async function initializeThemeRegistry(): Promise<void> {
 
   // Listen for system theme changes
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  mediaQuery.addEventListener('change', () => {
+  const handleChange = () => {
     const settings = themeRegistry.getSettings();
     if (settings.autoSwitch) {
       themeRegistry.autoSwitchTheme();
     }
-  });
+  };
+  mediaQuery.addEventListener('change', handleChange);
+  themeRegistry.setMediaQueryListener(mediaQuery, handleChange);
+}
+
+/**
+ * Cleanup theme registry (call on app unmount)
+ */
+export function cleanupThemeRegistry(): void {
+  themeRegistry.cleanup();
 }

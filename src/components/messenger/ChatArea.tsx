@@ -81,7 +81,7 @@ export default function ChatArea({
     } else {
       setMessages([])
     }
-  }, [conversation?.id, loadMessages])
+  }, [conversation, loadMessages])
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {

@@ -66,6 +66,73 @@ async function getDB(): Promise<IDBDatabase> {
 }
 
 // ============================================================================
+// PASSWORD HASHING HELPERS
+// ============================================================================
+
+/**
+ * Verify a password against a stored hash
+ * @param password The plain text password to verify
+ * @param storedHash The stored hash in format "salt:hash"
+ * @returns true if password matches, false otherwise
+ */
+export async function verifySharePassword(
+  password: string,
+  storedHash: string
+): Promise<boolean> {
+  if (!storedHash) {
+    return false
+  }
+
+  try {
+    const [saltHex, hashHex] = storedHash.split(':')
+    if (!saltHex || !hashHex) {
+      // Legacy format (no salt) - try direct comparison
+      const encoder = new TextEncoder()
+      const data = encoder.encode(password)
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+      return computedHash === storedHash
+    }
+
+    // New PBKDF2 format with salt
+    const encoder = new TextEncoder()
+    const passwordData = encoder.encode(password)
+
+    // Convert salt hex back to bytes
+    const salt = new Uint8Array(saltHex.match(/.{2}/g)?.map(byte => parseInt(byte, 16)) || [])
+
+    // Derive key using PBKDF2
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      passwordData,
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    )
+
+    const hashBuffer = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256',
+      },
+      keyMaterial,
+      256
+    )
+
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+    return computedHash === hashHex
+  } catch (error) {
+    console.error('Password verification error:', error)
+    return false
+  }
+}
+
+// ============================================================================
 // SHARE LINK MANAGEMENT
 // ============================================================================
 
@@ -111,12 +178,38 @@ export async function createShareLink(
   // Hash password if provided
   let hashedPassword: string | undefined
   if (options.password) {
-    // Use Web Crypto API to hash password
+    // Use PBKDF2 for secure password hashing (suitable for passwords)
     const encoder = new TextEncoder()
-    const data = encoder.encode(options.password)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const passwordData = encoder.encode(options.password)
+
+    // Generate a random salt
+    const salt = crypto.getRandomValues(new Uint8Array(16))
+
+    // Derive key using PBKDF2 with 100,000 iterations
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      passwordData,
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    )
+
+    const hashBuffer = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256',
+      },
+      keyMaterial,
+      256
+    )
+
+    // Combine salt and hash for storage
+    const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('')
     const hashArray = Array.from(new Uint8Array(hashBuffer))
-    hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    hashedPassword = `${saltHex}:${hashHex}`
   }
 
   const share: ShareLink = {
@@ -240,12 +333,38 @@ export async function updateShareLink(
   // Hash new password if provided
   let hashedPassword: string | undefined
   if (updates.password && updates.password !== existing.password) {
-    // Use Web Crypto API to hash password
+    // Use PBKDF2 for secure password hashing (suitable for passwords)
     const encoder = new TextEncoder()
-    const data = encoder.encode(updates.password)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const passwordData = encoder.encode(updates.password)
+
+    // Generate a random salt
+    const salt = crypto.getRandomValues(new Uint8Array(16))
+
+    // Derive key using PBKDF2 with 100,000 iterations
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      passwordData,
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    )
+
+    const hashBuffer = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: 100000,
+        hash: 'SHA-256',
+      },
+      keyMaterial,
+      256
+    )
+
+    // Combine salt and hash for storage
+    const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('')
     const hashArray = Array.from(new Uint8Array(hashBuffer))
-    hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    hashedPassword = `${saltHex}:${hashHex}`
   }
 
   const updated: ShareLink = {

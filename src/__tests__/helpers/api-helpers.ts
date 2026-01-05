@@ -6,7 +6,7 @@
  */
 
 import { NextRequest } from 'next/server'
-import { vi } from 'vitest'
+import { vi, expect } from 'vitest'
 
 // ============================================================================
 // REQUEST MOCKING HELPERS
@@ -111,18 +111,12 @@ export function createMockDELETERequest(options: {
  * Create mock params object for dynamic routes (Next.js 15 compatible)
  *
  * @example
- * // For Next.js 15 (async params) - default
  * const params = createMockParams({ id: 'conversation-123' })
- *
- * @example
- * // For Next.js 14 (sync params)
- * const params = createMockParams({ id: 'conversation-123' }, false)
  */
 export function createMockParams<T extends Record<string, string>>(
-  params: T,
-  async: boolean = true
-): { params: T | Promise<T> } {
-  return async ? { params: Promise.resolve(params) } : { params }
+  params: T
+): { params: Promise<T> } {
+  return { params: Promise.resolve(params) }
 }
 
 // ============================================================================
