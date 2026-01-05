@@ -319,12 +319,12 @@ export function createMockMessages(
 export function createMockAIAgent(overrides: AIContactOverride = {}): AIContact {
   const now = new Date().toISOString()
 
-  // Extract name if provided (for convenience, maps to displayName)
+  // Extract name/displayName if provided (for convenience, maps to nickname)
   const { name, displayName, ...rest } = overrides
 
   return {
     id: 'agent-123',
-    nickname: 'Test Agent',
+    nickname: displayName || name || 'Test Agent',
     firstName: 'Test',
     baseModelId: 'model-123',
     systemPrompt: 'You are a helpful assistant.',
@@ -341,7 +341,6 @@ export function createMockAIAgent(overrides: AIContactOverride = {}): AIContact 
     color: '#000000',
     createdAt: now,
     updatedAt: now,
-    displayName: displayName || name || 'Test Agent',
     ...rest,
   }
 }
@@ -393,12 +392,12 @@ export function createMockModelConfigs(count: number): ModelConfig[] {
 export function createMockAIContact(overrides: AIContactOverride = {}): AIContact {
   const now = new Date().toISOString()
 
-  // Extract name if provided (for convenience, maps to displayName)
+  // Extract name/displayName if provided (for convenience, maps to nickname)
   const { name, displayName, ...rest } = overrides
 
   return {
     id: 'contact-123',
-    nickname: 'Test Contact',
+    nickname: displayName || name || 'Test Contact',
     firstName: 'Test',
     baseModelId: 'model-123',
     systemPrompt: 'You are a helpful assistant.',
@@ -415,7 +414,6 @@ export function createMockAIContact(overrides: AIContactOverride = {}): AIContac
     color: '#000000',
     createdAt: now,
     updatedAt: now,
-    displayName: displayName || name || 'Test Contact',
     ...rest,
   }
 }

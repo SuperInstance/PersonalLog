@@ -711,6 +711,29 @@ export class OptimizationEngine {
       console.error('[Optimization Engine] Failed to load state:', error);
     }
   }
+
+  /**
+   * Apply multiple optimizations (convenience method for tests)
+   */
+  async applyOptimizations(ruleIds: string[]): Promise<void> {
+    for (const ruleId of ruleIds) {
+      await this.applyOptimization(ruleId)
+    }
+  }
+
+  /**
+   * Get current configuration (convenience method for tests)
+   */
+  getCurrentConfig(): Record<string, unknown> {
+    return this.getConfiguration()
+  }
+
+  /**
+   * Get recommendations (convenience method for tests)
+   */
+  getRecommendations(): OptimizationRule[] {
+    return this.getAllRules().filter(rule => rule.enabled)
+  }
 }
 
 // ============================================================================
