@@ -47,11 +47,7 @@ describe('GET /api/modules', () => {
 
     vi.mocked(getOrInitRegistry).mockResolvedValue(mockRegistry as any)
 
-    const request = createMockGETRequest({
-      url: 'http://localhost:3000/api/modules',
-    })
-
-    const response = await GET(request)
+    const response = await GET()
     assertSuccess(response)
 
     const data = await extractResponseData<{
@@ -79,11 +75,7 @@ describe('GET /api/modules', () => {
 
     vi.mocked(getOrInitRegistry).mockResolvedValue(mockRegistry as any)
 
-    const request = createMockGETRequest({
-      url: 'http://localhost:3000/api/modules',
-    })
-
-    const response = await GET(request)
+    const response = await GET()
     assertSuccess(response)
 
     const data = await extractResponseData<{ modules: unknown[] }>(response)
@@ -104,11 +96,7 @@ describe('GET /api/modules', () => {
     const mockRegistry = createMockModuleRegistry({ modules: mockModules })
     vi.mocked(getOrInitRegistry).mockResolvedValue(mockRegistry as any)
 
-    const request = createMockGETRequest({
-      url: 'http://localhost:3000/api/modules',
-    })
-
-    const response = await GET(request)
+    const response = await GET()
     assertSuccess(response)
 
     const data = await extractResponseData<{ modules: unknown[] }>(response)
@@ -121,11 +109,7 @@ describe('GET /api/modules', () => {
       new Error('Failed to initialize registry')
     )
 
-    const request = createMockGETRequest({
-      url: 'http://localhost:3000/api/modules',
-    })
-
-    const response = await GET(request)
+    const response = await GET()
     assertError(response, 500)
 
     const data = await extractResponseData<{ error: string }>(response)
@@ -136,11 +120,7 @@ describe('GET /api/modules', () => {
     const mockRegistry = createMockModuleRegistry()
     vi.mocked(getOrInitRegistry).mockResolvedValue(mockRegistry as any)
 
-    const request = createMockGETRequest({
-      url: 'http://localhost:3000/api/modules',
-    })
-
-    const response = await GET(request)
+    const response = await GET()
     expect(response.headers.get('Content-Type')).toContain('application/json')
   })
 
@@ -159,11 +139,7 @@ describe('GET /api/modules', () => {
 
     vi.mocked(getOrInitRegistry).mockResolvedValue(mockRegistry as any)
 
-    const request = createMockGETRequest({
-      url: 'http://localhost:3000/api/modules',
-    })
-
-    const response = await GET(request)
+    const response = await GET()
     assertSuccess(response)
 
     const data = await extractResponseData<{

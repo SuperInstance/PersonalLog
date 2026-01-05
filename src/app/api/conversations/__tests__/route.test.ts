@@ -15,13 +15,13 @@ import {
   createMockRequest,
   createMockGETRequest,
   createMockDELETERequest,
-  createMockConversation,
-  createMockConversations,
   extractResponseData,
   assertSuccess,
   assertError,
   validateErrorResponse,
 } from '@/__tests__/helpers/api-helpers'
+import { createMockConversation, createMockConversations } from '@/__tests__/factories'
+import type { Conversation } from '@/types/conversation'
 
 // Mock conversation store
 vi.mock('@/lib/storage/conversation-store', () => ({

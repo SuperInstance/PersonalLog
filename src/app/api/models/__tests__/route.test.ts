@@ -49,8 +49,8 @@ describe('GET /api/models', () => {
 
   it('should list all models', async () => {
     const mockModels: ModelConfig[] = [
-      createMockModelConfig({ id: 'model-1', name: 'GPT-4', provider: 'openai' as const }) as ModelConfig,
-      createMockModelConfig({ id: 'model-2', name: 'Claude', provider: 'anthropic' as const }) as ModelConfig,
+      createMockModelConfig({ id: 'model-1', name: 'GPT-4', provider: 'openai' as const }),
+      createMockModelConfig({ id: 'model-2', name: 'Claude', provider: 'anthropic' as const }),
     ]
     vi.mocked(modelStore.listModels).mockResolvedValue(mockModels)
 
@@ -67,7 +67,7 @@ describe('GET /api/models', () => {
   })
 
   it('should filter models by provider', async () => {
-    const openaiModels = [createMockModelConfig({ id: "model-1", name: "GPT-4", provider: "openai" as const })]
+    const openaiModels: ModelConfig[] = [createMockModelConfig({ id: "model-1", name: "GPT-4", provider: "openai" as const })]
     vi.mocked(modelStore.listModels).mockResolvedValue(openaiModels)
 
     const request = createMockGETRequest({
@@ -84,7 +84,7 @@ describe('GET /api/models', () => {
   })
 
   it('should list all contacts', async () => {
-    const mockContacts = [
+    const mockContacts: AIContact[] = [
       createMockAIContact({ id: "contact-1", nickname: "Claude", baseModelId: "claude-3-opus" }),
       createMockAIContact({ id: "contact-2", nickname: "GPT-4", baseModelId: "gpt-4" }),
     ]
@@ -104,7 +104,7 @@ describe('GET /api/models', () => {
   })
 
   it('should filter contacts by base model', async () => {
-    const claudeContacts = [
+    const claudeContacts: AIContact[] = [
       createMockAIContact({ id: "contact-1", nickname: "Claude", baseModelId: "claude-3-opus" }),
     ]
     vi.mocked(modelStore.listContacts).mockResolvedValue(claudeContacts)
@@ -185,7 +185,7 @@ describe('POST /api/models', () => {
   })
 
   it('should create a new model', async () => {
-    const newModel = createMockModelConfig({ id: "model-123", name: "New Model", provider: "openai" as const })
+    const newModel: ModelConfig = createMockModelConfig({ id: "model-123", name: "New Model", provider: "openai" as const })
     vi.mocked(modelStore.addModel).mockResolvedValue(newModel)
 
     const request = createMockRequest({
@@ -209,7 +209,7 @@ describe('POST /api/models', () => {
   })
 
   it('should create a new contact', async () => {
-    const newContact = createMockAIContact({ nickname: 'Test AI', baseModelId: 'model-123' })
+    const newContact: AIContact = createMockAIContact({ nickname: 'Test AI', baseModelId: 'model-123' })
     vi.mocked(modelStore.createContact).mockResolvedValue(newContact)
 
     const request = createMockRequest({
@@ -234,7 +234,7 @@ describe('POST /api/models', () => {
   })
 
   it('should return 201 status on successful creation', async () => {
-    vi.mocked(modelStore.addModel).mockResolvedValue({ id: '1', name: 'Model' })
+    vi.mocked(modelStore.addModel).mockResolvedValue(createMockModelConfig({ id: '1', name: 'Model' }))
 
     const request = createMockRequest({
       body: { name: 'Model', provider: 'openai' },
@@ -245,8 +245,8 @@ describe('POST /api/models', () => {
   })
 
   it('should handle contact with personality config', async () => {
-    const newContact = createMockAIAgent({
-      name: 'Custom AI',
+    const newContact: AIContact = createMockAIContact({
+      nickname: 'Custom AI',
       systemPrompt: 'You are a helpful assistant',
     })
     vi.mocked(modelStore.createContact).mockResolvedValue(newContact)
@@ -267,11 +267,8 @@ describe('POST /api/models', () => {
   })
 
   it('should handle contact with capabilities', async () => {
-    const newContact = createMockAIAgent({
-      name: 'Multi-modal AI',
-      canSeeWeb: true,
-      canSeeFiles: true,
-      canGenerateImages: true,
+    const newContact: AIContact = createMockAIContact({
+      nickname: 'Multi-modal AI',
     })
     vi.mocked(modelStore.createContact).mockResolvedValue(newContact)
 
@@ -293,7 +290,7 @@ describe('POST /api/models', () => {
   })
 
   it('should default to model creation when type is not specified', async () => {
-    const newModel = createMockModelConfig({ id: "1", name: "Default Model" })
+    const newModel: ModelConfig = createMockModelConfig({ id: "1", name: "Default Model" })
     vi.mocked(modelStore.addModel).mockResolvedValue(newModel)
 
     const request = createMockRequest({
@@ -344,11 +341,11 @@ describe('PATCH /api/models', () => {
   })
 
   it('should update a model', async () => {
-    const updatedModel = {
+    const updatedModel: ModelConfig = createMockModelConfig({
       id: 'model-123',
       name: 'Updated Model',
-      provider: 'openai',
-    }
+      provider: 'openai' as const,
+    })
     vi.mocked(modelStore.updateModel).mockResolvedValue(updatedModel)
 
     const request = createMockRequest({
@@ -370,7 +367,7 @@ describe('PATCH /api/models', () => {
   })
 
   it('should update a contact', async () => {
-    const updatedContact = createMockAIContact({ id: 'contact-123', name: 'Updated AI' })
+    const updatedContact: AIContact = createMockAIContact({ id: 'contact-123', nickname: 'Updated AI' })
     vi.mocked(modelStore.updateContact).mockResolvedValue(updatedContact)
 
     const request = createMockRequest({
@@ -394,7 +391,7 @@ describe('PATCH /api/models', () => {
   })
 
   it('should handle partial updates', async () => {
-    const updatedModel = createMockModelConfig({ id: "model-123", name: "Model" })
+    const updatedModel: ModelConfig = createMockModelConfig({ id: "model-123", name: "Model" })
     vi.mocked(modelStore.updateModel).mockResolvedValue(updatedModel)
 
     const request = createMockRequest({
@@ -447,7 +444,7 @@ describe('PATCH /api/models', () => {
   })
 
   it('should handle empty updates', async () => {
-    const updatedModel = createMockModelConfig({ id: "model-123", name: "Model" })
+    const updatedModel: ModelConfig = createMockModelConfig({ id: "model-123", name: "Model" })
     vi.mocked(modelStore.updateModel).mockResolvedValue(updatedModel)
 
     const request = createMockRequest({
@@ -578,7 +575,7 @@ describe('Integration scenarios', () => {
   })
 
   it('should handle create then update workflow', async () => {
-    const newContact = createMockAIContact({ id: 'contact-new', name: 'New AI' })
+    const newContact: AIContact = createMockAIContact({ id: 'contact-new', nickname: 'New AI' })
     vi.mocked(modelStore.createContact).mockResolvedValue(newContact)
 
     // Create contact
@@ -593,9 +590,9 @@ describe('Integration scenarios', () => {
     assertSuccess(createResponse)
 
     // Update contact
-    const updatedContact = createMockAIAgent({
+    const updatedContact: AIContact = createMockAIContact({
       id: 'contact-new',
-      name: 'Updated AI',
+      nickname: 'Updated AI',
     })
     vi.mocked(modelStore.updateContact).mockResolvedValue(updatedContact)
 
@@ -614,7 +611,7 @@ describe('Integration scenarios', () => {
   })
 
   it('should handle create then delete workflow', async () => {
-    const newModel = createMockModelConfig({ id: "model-temp", name: "Temp Model" })
+    const newModel: ModelConfig = createMockModelConfig({ id: "model-temp", name: "Temp Model" })
     vi.mocked(modelStore.addModel).mockResolvedValue(newModel)
 
     // Create model
@@ -647,9 +644,9 @@ describe('Integration scenarios', () => {
 
     vi.mocked(modelStore.listModels).mockImplementation(async (provider?) => {
       if (provider === 'openai') {
-        return allModels.filter((m) => m.provider === 'openai')
+        return allModels.filter((m) => m.provider === 'openai') as ModelConfig[]
       }
-      return allModels
+      return allModels as ModelConfig[]
     })
 
     // Get all models

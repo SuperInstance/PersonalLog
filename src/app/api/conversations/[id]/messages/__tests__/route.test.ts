@@ -11,17 +11,17 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET, POST, PATCH, DELETE } from '../route'
+import type { Message } from '@/types/conversation'
 import {
   createMockRequest,
   createMockGETRequest,
   createMockDELETERequest,
   createMockParams,
-  createMockMessage,
-  createMockMessages,
   extractResponseData,
   assertSuccess,
   assertError,
 } from '@/__tests__/helpers/api-helpers'
+import { createMockMessage, createMockMessages } from '@/__tests__/factories'
 
 // Mock conversation store
 vi.mock('@/lib/storage/conversation-store', () => ({
