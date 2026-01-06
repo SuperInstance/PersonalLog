@@ -11,6 +11,8 @@ import { useState, useMemo } from 'react';
 import { Package, TrendingUp, Sparkles } from 'lucide-react';
 import type { MarketplaceAgent, AgentCategory } from '@/lib/marketplace/types';
 import { mockMarketplaceAgents } from '@/lib/marketplace/mock-data';
+import { importAgentFromFile, downloadAgentFile, downloadMultipleAgents } from '@/lib/marketplace';
+import { ExportFormat } from '@/lib/marketplace/types';
 import { SearchBar } from '@/components/marketplace/SearchBar';
 import { CategoryNav } from '@/components/marketplace/CategoryNav';
 import { AgentGallery } from '@/components/marketplace/AgentGallery';
@@ -147,16 +149,72 @@ export default function MarketplacePage() {
 
   // Handle import
   const handleImport = async (files: File[]) => {
-    console.log('Importing files:', files);
-    // TODO: Implement import logic
-    throw new Error('Import not yet implemented');
+    const importResults: Array<{ file: string; success: boolean; message: string }> = [];
+
+    for (const file of files) {
+      try {
+        const result = await importAgentFromFile(file);
+
+        if (result.imported) {
+          // Import successful - add to agents list
+          importResults.push({
+            file: file.name,
+            success: true,
+            message: `Successfully imported agent: ${result.agentId}`,
+          });
+
+          // Reload agents from storage to get the newly imported agent
+          // In production, this would trigger a re-fetch from IndexedDB
+          // For now, we'll just show the success message
+        } else if (result.skipped) {
+          importResults.push({
+            file: file.name,
+            success: false,
+            message: 'Agent already exists (skipped)',
+          });
+        } else if (result.error) {
+          importResults.push({
+            file: file.name,
+            success: false,
+            message: result.error,
+          });
+        }
+      } catch (error) {
+        importResults.push({
+          file: file.name,
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    // Log results (in production, show in UI)
+    console.log('Import results:', importResults);
+
+    // Show summary
+    const successful = importResults.filter((r) => r.success).length;
+    const failed = importResults.length - successful;
+
+    if (failed > 0) {
+      throw new Error(
+        `Import completed with ${successful} successful and ${failed} failed. Check console for details.`
+      );
+    }
   };
 
   // Handle export
   const handleExport = async (format: 'json' | 'yaml', agentIds: string[]) => {
-    console.log('Exporting agents:', format, agentIds);
-    // TODO: Implement export logic
-    throw new Error('Export not yet implemented');
+    const exportFormat = format === 'json' ? ExportFormat.JSON : ExportFormat.YAML;
+
+    // Find agents to export
+    const agentsToExport = agents.filter((agent) => agentIds.includes(agent.id));
+
+    if (agentsToExport.length === 0) {
+      throw new Error('No agents found to export');
+    }
+
+    // Export all selected agents as a single file
+    await downloadMultipleAgents(agentsToExport, exportFormat, `personallog-agents-${Date.now()}`);
   };
 
   return (

@@ -155,12 +155,7 @@ export function AgentGallery({
               { value: 'recent', label: 'Recently Updated' },
               { value: 'name', label: 'Name (A-Z)' },
             ]}
-          >
-            <option value="popular">Most Popular</option>
-            <option value="rating">Top Rated</option>
-            <option value="recent">Recently Updated</option>
-            <option value="name">Name (A-Z)</option>
-          </Select>
+          />
         </div>
       </div>
 

@@ -79,3 +79,28 @@ export {
   getTemplateById,
   searchTemplates,
 } from './templates';
+
+// Export validation
+export type {
+  ValidationResult,
+  ValidationErrorItem,
+  ValidationWarning,
+  ValidationOptions,
+} from './validation';
+export {
+  validateAgentDefinition,
+  validateAgentOrThrow,
+  formatValidationErrors,
+  isValidAgentId,
+  sanitizeAgentForExport,
+} from './validation';
+
+// Export import/export utilities
+export {
+  exportAgent,
+  exportMultipleAgents,
+  importAgent,
+  importMultipleAgents,
+  agentToJSON,
+  agentFromJSON,
+} from './io';

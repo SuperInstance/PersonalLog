@@ -2,11 +2,12 @@
  * Agent Card Component
  *
  * Preview card for marketplace agents with hover effects.
+ * Features loading states, animations, and success feedback.
  */
 
 'use client';
 
-import { Download, Star, User } from 'lucide-react';
+import { Download, Star, User, Loader2, Check } from 'lucide-react';
 import { useState } from 'react';
 import type { MarketplaceAgent } from '@/lib/marketplace/types';
 import { RatingStars } from './RatingStars';
@@ -34,7 +35,9 @@ export function AgentCard({
   className = '',
 }: AgentCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const isInstalled = agent.marketplace.installation?.installed;
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(agent.marketplace.installation?.installed || false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
@@ -51,11 +54,26 @@ export function AgentCard({
     return text.slice(0, maxLength).trim() + '...';
   };
 
+  const handleInstall = async () => {
+    setIsInstalling(true);
+    try {
+      await onInstall(agent.id);
+      setIsInstalled(true);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2000);
+    } catch (error) {
+      console.error('Failed to install agent:', error);
+    } finally {
+      setIsInstalling(false);
+    }
+  };
+
   return (
     <div
       className={cn(
-        'group relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden',
-        isHovered && 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900',
+        'group relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden animate-fade-in',
+        isHovered && 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900 scale-[1.02]',
+        showSuccess && 'ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-900',
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -128,8 +146,9 @@ export function AgentCard({
       <div className="px-4 pb-4 pt-2 border-t border-gray-100 dark:border-gray-700">
         {isInstalled ? (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-green-600 dark:text-green-400 font-medium">
-              ✓ Installed
+            <span className="text-sm text-green-600 dark:text-green-400 font-medium flex items-center gap-1.5 animate-fade-in">
+              <Check className="w-4 h-4" />
+              Installed
             </span>
             <Button
               variant="outline"
@@ -145,14 +164,28 @@ export function AgentCard({
               variant="default"
               size="sm"
               className="flex-1"
-              onClick={() => onInstall(agent.id)}
+              onClick={handleInstall}
+              disabled={isInstalling || showSuccess}
             >
-              + Install
+              {isInstalling ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                  Installing...
+                </>
+              ) : showSuccess ? (
+                <>
+                  <Check className="w-4 h-4 mr-1.5" />
+                  Installed!
+                </>
+              ) : (
+                '+ Install'
+              )}
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => onViewDetails(agent.id)}
+              disabled={isInstalling}
             >
               Details
             </Button>

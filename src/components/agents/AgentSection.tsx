@@ -11,6 +11,10 @@
  * - Lists agents from registry
  * - Filters/hides unavailable agents (with option to show)
  * - Shows count of available vs total agents
+ * - Onboarding tour for first-time users
+ * - Help documentation
+ * - Toast notifications for actions
+ * - Loading states for async operations
  *
  * @example
  * ```typescript
@@ -22,11 +26,19 @@
  * ```
  */
 
-import React, { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, Bot, AlertCircle } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { ChevronDown, ChevronUp, Bot, AlertCircle, Download, Upload, Grid3x3, HelpCircle, Loader2 } from 'lucide-react';
 import { agentRegistry } from '@/lib/agents';
+import { exportAgent, importAgent } from '@/lib/agents/io';
+import { ExportFormat } from '@/lib/marketplace/types';
 import type { AgentDefinition, AgentAvailabilityResult } from '@/lib/agents';
 import { AgentCard } from './AgentCard';
+import { CreateAgentButtonCompact } from '@/components/vibe-coding';
+import { TemplateGallery } from './TemplateGallery';
+import { AgentOnboarding, useAgentOnboarding } from './AgentOnboarding';
+import { AgentHelp } from './AgentHelp';
+import { Modal } from '@/components/ui/Modal';
+import { useToast } from '@/hooks/useToast';
 import type { HardwareProfile } from '@/lib/hardware';
 
 interface AgentSectionProps {
@@ -40,6 +52,8 @@ interface AgentSectionProps {
   showUnavailable?: boolean;
   /** Active agent IDs */
   activeAgentIds?: string[];
+  /** Callback when custom agent is created */
+  onAgentCreated?: (agent: AgentDefinition) => void;
 }
 
 export function AgentSection({
@@ -48,8 +62,16 @@ export function AgentSection({
   collapsed = false,
   showUnavailable = false,
   activeAgentIds = [],
+  onAgentCreated,
 }: AgentSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showTemplateGallery, setShowTemplateGallery] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const { shouldShow } = useAgentOnboarding();
+  const { showSuccess, showError, showInfo } = useToast();
 
   // Get all agents and check availability
   const { availableAgents, unavailableAgents } = useMemo(() => {
@@ -78,6 +100,95 @@ export function AgentSection({
 
   const totalAgents = availableAgents.length + unavailableAgents.length;
 
+  // Handle export agent
+  const handleExportAgent = useCallback(
+    async (agent: AgentDefinition) => {
+      setIsExporting(true);
+      try {
+        await exportAgent(agent, ExportFormat.JSON);
+        showSuccess(`Agent "${agent.name}" exported successfully!`);
+      } catch (error) {
+        console.error('Failed to export agent:', error);
+        showError(`Failed to export "${agent.name}". Please try again.`);
+      } finally {
+        setIsExporting(false);
+      }
+    },
+    [showSuccess, showError]
+  );
+
+  // Handle import agent
+  const handleImportAgent = useCallback(async () => {
+    setIsImporting(true);
+    try {
+      // Create file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,.yaml,.yml';
+
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+          try {
+            const agent = await importAgent(file);
+            // Agent is automatically registered during import
+            showSuccess(`Agent "${agent.name}" imported successfully!`);
+            onAgentCreated?.(agent);
+          } catch (error) {
+            console.error('Failed to import agent:', error);
+            showError('Failed to import agent. Please check the file format and try again.');
+          } finally {
+            setIsImporting(false);
+          }
+        }
+      };
+
+      input.click();
+    } catch (error) {
+      console.error('Failed to open file picker:', error);
+      showError('Failed to open file picker. Please try again.');
+      setIsImporting(false);
+    }
+  }, [showSuccess, showError, onAgentCreated]);
+
+  // Handle template selection
+  const handleSelectTemplate = useCallback(
+    (templateId: string) => {
+      // Import template
+      const { getTemplateById } = require('@/lib/agents/templates/registry');
+      const template = getTemplateById(templateId);
+
+      if (template) {
+        // Generate a unique ID for the new agent
+        const uniqueId = `${template.id}-${Date.now()}`;
+
+        // Create agent from template
+        const newAgent: AgentDefinition = {
+          ...template,
+          id: uniqueId,
+          metadata: {
+            ...template.metadata,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        };
+
+        // Register the agent
+        agentRegistry.registerAgent(newAgent);
+
+        // Show success feedback
+        showSuccess(`Agent "${template.name}" created from template!`);
+
+        // Notify parent component
+        onAgentCreated?.(newAgent);
+
+        // Activate the new agent
+        onActivateAgent(uniqueId);
+      }
+    },
+    [onAgentCreated, onActivateAgent, showSuccess]
+  );
+
   if (collapsed) {
     return (
       <div className="px-2 py-2 space-y-1" role="region" aria-label="AI Agents">
@@ -98,30 +209,73 @@ export function AgentSection({
   return (
     <div className="px-2 py-3" role="region" aria-label="AI Agents">
       {/* Section Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-2 py-1.5 mb-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-        aria-expanded={isExpanded}
-        aria-controls="agent-list"
-      >
-        <div className="flex items-center gap-2">
-          <Bot className="w-4 h-4 text-indigo-500" aria-hidden="true" />
-          <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-            AI Agents
-          </h3>
-          <span
-            className="text-xs text-slate-400 dark:text-slate-500"
-            aria-label={`${availableAgents.length} of ${totalAgents} agents available`}
+      <div className="flex items-center justify-between mb-2">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center justify-between px-2 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-1"
+          aria-expanded={isExpanded}
+          aria-controls="agent-list"
+        >
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-indigo-500" aria-hidden="true" />
+            <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+              AI Agents
+            </h3>
+            <span
+              className="text-xs text-slate-400 dark:text-slate-500"
+              aria-label={`${availableAgents.length} of ${totalAgents} agents available`}
+            >
+              ({availableAgents.length}/{totalAgents})
+            </span>
+          </div>
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4 text-slate-400" aria-hidden="true" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-slate-400" aria-hidden="true" />
+          )}
+        </button>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1 ml-2">
+          {/* Help Button */}
+          <button
+            onClick={() => setShowHelp(true)}
+            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            title="Get help with agents"
+            aria-label="Get help with agents"
           >
-            ({availableAgents.length}/{totalAgents})
-          </span>
+            <HelpCircle className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+          </button>
+
+          {/* Import Button */}
+          <button
+            onClick={handleImportAgent}
+            disabled={isImporting}
+            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Import agent from file"
+            aria-label="Import agent"
+          >
+            {isImporting ? (
+              <Loader2 className="w-4 h-4 text-slate-600 dark:text-slate-400 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+            )}
+          </button>
+
+          {/* Browse Templates Button */}
+          <button
+            onClick={() => setShowTemplateGallery(true)}
+            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            title="Browse agent templates"
+            aria-label="Browse agent templates"
+          >
+            <Grid3x3 className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+          </button>
+
+          {/* Create Agent Button */}
+          <CreateAgentButtonCompact />
         </div>
-        {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-slate-400" aria-hidden="true" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-slate-400" aria-hidden="true" />
-        )}
-      </button>
+      </div>
 
       {/* Agent List */}
       {isExpanded && (
@@ -181,6 +335,37 @@ export function AgentSection({
           )}
         </div>
       )}
+
+      {/* Template Gallery Modal */}
+      <Modal
+        isOpen={showTemplateGallery}
+        onClose={() => setShowTemplateGallery(false)}
+        size="xl"
+        showCloseButton={false}
+        closeOnBackdropClick={true}
+        closeOnEscape={true}
+        className="h-[80vh]"
+      >
+        <TemplateGallery
+          onSelectTemplate={handleSelectTemplate}
+          onClose={() => setShowTemplateGallery(false)}
+          hardwareScore={hardwareProfile?.performanceScore || 100}
+        />
+      </Modal>
+
+      {/* Onboarding Modal */}
+      <AgentOnboarding
+        isOpen={shouldShow}
+        onClose={() => {
+          // Handled internally by localStorage
+        }}
+      />
+
+      {/* Help Modal */}
+      <AgentHelp
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Mic,
+  Store,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -45,6 +46,12 @@ const navItems: NavItem[] = [
     label: 'Knowledge',
     icon: Brain,
     description: 'Browse and edit knowledge base',
+  },
+  {
+    href: '/marketplace',
+    label: 'Marketplace',
+    icon: Store,
+    description: 'Discover and install agents',
   },
   {
     href: '/jepa',

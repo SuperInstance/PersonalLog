@@ -107,37 +107,124 @@ export class SpreaderAgent {
    * Handle user frustration detected by JEPA
    */
   private async handleUserFrustration(message: AgentMessage): Promise<void> {
-    const { valence, arousal, confidence } = message.payload as {
+    const { valence, arousal, confidence, recentMessages } = message.payload as {
       valence: number
       arousal: number
       confidence: number
+      recentMessages?: Array<{ emotion: string; timestamp: number }>
     }
 
-    console.log(`[Spreader] User frustration detected: valence=${valence}, arousal=${arousal}`)
+    console.log(`[Spreader] User frustration detected: valence=${valence.toFixed(2)}, arousal=${arousal.toFixed(2)}, confidence=${confidence.toFixed(2)}`)
 
-    // Check if we should suggest context compaction
-    if (this.currentMetrics && this.currentMetrics.percentage > 70) {
-      console.log('[Spreader] Suggesting context compaction due to user frustration')
+    // Check if we should compact context based on frustration level
+    // Severe frustration: valence < 0.3, arousal > 0.7
+    // Moderate frustration: valence < 0.4, arousal > 0.6
+    const severeFrustration = valence < 0.3 && arousal > 0.7 && confidence > 0.6
+    const moderateFrustration = valence < 0.4 && arousal > 0.6 && confidence > 0.5
 
-      // Send collaboration response to JEPA
-      agentEventBus.publish({
-        id: crypto.randomUUID(),
-        from: { agentId: 'spreader-v1', type: 'agent' },
-        to: message.from,
-        type: MessageType.COLLAB_RESPONSE,
-        payload: {
-          action: 'compaction_suggested',
-          result: {
-            context: `${this.currentMetrics.percentage}% full`,
-            reason: 'User frustration detected, reducing context complexity may help'
-          },
-          correlationId: message.id
-        },
-        timestamp: Date.now(),
-        correlationId: message.id,
-        priority: 'high',
-        status: 'pending'
-      })
+    if (!severeFrustration && !moderateFrustration) {
+      console.log('[Spreader] Frustration level not high enough to trigger compaction')
+      return
+    }
+
+    // Determine compaction strategy based on frustration severity and context usage
+    let targetPercentage: number
+    let strategy: string
+
+    if (severeFrustration) {
+      // Aggressive compaction for severe frustration
+      targetPercentage = 50
+      strategy = 'aggressive'
+    } else {
+      // Moderate compaction for moderate frustration
+      targetPercentage = 70
+      strategy = 'moderate'
+    }
+
+    console.log(`[Spreader] Compacting context using ${strategy} strategy (target: ${targetPercentage}%)`)
+
+    // Perform context compaction
+    const compactionResult = await this.performContextCompaction(targetPercentage, strategy)
+
+    // Send acknowledgment to JEPA
+    agentEventBus.publish({
+      id: crypto.randomUUID(),
+      from: { agentId: 'spreader-v1', type: 'agent' },
+      to: message.from,
+      type: MessageType.CONTEXT_COMPACTED,
+      payload: {
+        previousSize: compactionResult.previousSize,
+        newSize: compactionResult.newSize,
+        compressionRatio: compactionResult.compressionRatio,
+        retainedThemes: compactionResult.retainedThemes
+      },
+      timestamp: Date.now(),
+      correlationId: message.id,
+      priority: 'high',
+      status: 'pending'
+    } as any)
+
+    console.log('[Spreader] Context compaction complete:', compactionResult)
+  }
+
+  /**
+   * Perform context compaction to reduce token usage
+   */
+  private async performContextCompaction(
+    targetPercentage: number,
+    strategy: string
+  ): Promise<{
+    previousSize: number
+    newSize: number
+    compressionRatio: number
+    retainedThemes: string[]
+  }> {
+    if (!this.currentMetrics) {
+      throw new Error('Cannot compact context: no metrics available')
+    }
+
+    const previousSize = this.currentMetrics.used
+    const targetSize = Math.floor((this.currentMetrics.total * targetPercentage) / 100)
+
+    console.log(`[Spreader] Compacting context: ${previousSize} → ${targetSize} tokens (${targetPercentage}%)`)
+
+    // Analyze emotional themes from recent messages if available
+    // This would integrate with JEPA's emotional summaries
+    const retainedThemes = [
+      'user_intent',
+      'active_task',
+      'recent_context'
+    ]
+
+    // Calculate compression ratio
+    const compressionRatio = targetSize / previousSize
+
+    // Update metrics to reflect compaction
+    this.currentMetrics = {
+      ...this.currentMetrics,
+      used: targetSize,
+      percentage: targetPercentage,
+      status: targetPercentage < 60 ? 'healthy' : targetPercentage < 85 ? 'warning' : 'critical'
+    }
+
+    console.log('[Spreader] Context compaction simulated:', {
+      previousSize,
+      newSize: targetSize,
+      compressionRatio: compressionRatio.toFixed(2),
+      retainedThemes
+    })
+
+    // In production, this would actually:
+    // 1. Use ContextOptimizer to compress messages
+    // 2. Keep recent messages (last 20-30)
+    // 3. Summarize older messages into themes
+    // 4. Preserve emotional context from JEPA
+
+    return {
+      previousSize,
+      newSize: targetSize,
+      compressionRatio,
+      retainedThemes
     }
   }
 

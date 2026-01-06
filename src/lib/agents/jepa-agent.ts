@@ -354,6 +354,9 @@ export class JEPAAgentHandler {
         messageId: message.id,
       })
 
+      // Publish emotion update to other agents (especially Spreader)
+      this.publishEmotionUpdate(emotion)
+
       return emotion
     } catch (error) {
       console.error('Failed to analyze emotion:', error)
@@ -392,11 +395,23 @@ export class JEPAAgentHandler {
         },
       })
 
+      // Store emotion
+      this.state.emotions.push(emotion)
+
+      // Publish emotion update to other agents
+      this.publishEmotionUpdate(emotion)
+
       return emotion
     } catch (error) {
       console.error('[JEPA] ML analysis failed, falling back to rule-based:', error)
       // Fallback to rule-based analysis
-      return await this.analyzeEmotion('', new Date().toISOString())
+      const fallbackEmotion = await this.analyzeEmotion('', new Date().toISOString())
+
+      // Still publish the fallback emotion
+      this.state.emotions.push(fallbackEmotion)
+      this.publishEmotionUpdate(fallbackEmotion)
+
+      return fallbackEmotion
     }
   }
 
@@ -424,6 +439,62 @@ export class JEPAAgentHandler {
   // ==========================================================================
   // PRIVATE METHODS
   // ==========================================================================
+
+  /**
+   * Publish emotion update to other agents
+   */
+  private publishEmotionUpdate(emotion: EmotionAnalysis): void {
+    // Determine if user is frustrated (low valence, high arousal)
+    const isFrustrated = emotion.valence < 0.4 && emotion.arousal > 0.6 && emotion.confidence > 0.5
+
+    // Get recent emotions for context
+    const recentEmotions = this.state.emotions.slice(-10).map(e => ({
+      emotion: e.emotions[0] || 'unknown',
+      timestamp: e.timestamp
+    }))
+
+    if (isFrustrated) {
+      // Publish high-priority frustration message
+      agentEventBus.publish({
+        id: crypto.randomUUID(),
+        from: { agentId: 'jepa-v1', type: 'agent' },
+        to: { agentId: 'spreader-v1', type: 'agent' },
+        type: MessageType.USER_FRUSTRATION_DETECTED,
+        payload: {
+          valence: emotion.valence,
+          arousal: emotion.arousal,
+          confidence: emotion.confidence,
+          recentMessages: recentEmotions
+        },
+        timestamp: Date.now(),
+        priority: 'high',
+        status: 'pending'
+      })
+
+      console.log('[JEPA] Published frustration detection to Spreader:', {
+        valence: emotion.valence,
+        arousal: emotion.arousal,
+        confidence: emotion.confidence
+      })
+    } else {
+      // Publish regular emotion update
+      agentEventBus.publish({
+        id: crypto.randomUUID(),
+        from: { agentId: 'jepa-v1', type: 'agent' },
+        to: { agentId: 'broadcast', type: 'broadcast' },
+        type: MessageType.USER_EMOTION_CHANGE,
+        payload: {
+          emotion: emotion.emotions[0] || 'unknown',
+          valence: emotion.valence,
+          arousal: emotion.arousal,
+          confidence: emotion.confidence
+        },
+        timestamp: Date.now(),
+        priority: 'normal',
+        status: 'pending'
+      })
+    }
+  }
 
   /**
    * Setup audio capture listeners
