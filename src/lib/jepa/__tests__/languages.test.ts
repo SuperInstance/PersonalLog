@@ -6,7 +6,7 @@
  * @module lib/jepa/__tests__/languages.test
  */
 
-import { describe, it, expect } from '@jest/globals'
+import { describe, it, expect } from 'vitest'
 import {
   SUPPORTED_LANGUAGES,
   getLanguage,

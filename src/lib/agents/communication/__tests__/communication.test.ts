@@ -2,7 +2,7 @@
  * Agent Communication System Tests
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   agentEventBus,
   AgentEventBus,
@@ -50,7 +50,7 @@ describe('Agent Communication System', () => {
       })
 
       expect(receivedMessage).not.toBeNull()
-      expect(receivedMessage?.type).toBe(MessageType.AGENT_STATUS)
+      expect((receivedMessage as any)?.type).toBe(MessageType.AGENT_STATUS)
 
       // Unsubscribe
       unsubscribe()
@@ -60,9 +60,9 @@ describe('Agent Communication System', () => {
     it('should broadcast messages to all subscribers except sender', () => {
       const received: string[] = []
 
-      agentEventBus.subscribe('agent1', () => received.push('agent1'))
-      agentEventBus.subscribe('agent2', () => received.push('agent2'))
-      agentEventBus.subscribe('agent3', () => received.push('agent3'))
+      agentEventBus.subscribe('agent1', () => { received.push('agent1') })
+      agentEventBus.subscribe('agent2', () => { received.push('agent2') })
+      agentEventBus.subscribe('agent3', () => { received.push('agent3') })
 
       // Broadcast from agent1
       broadcastMessage(
@@ -168,8 +168,8 @@ describe('Agent Communication System', () => {
     it('should broadcast messages to all agents', () => {
       const received: string[] = []
 
-      agentEventBus.subscribe('agent1', () => received.push('agent1'))
-      agentEventBus.subscribe('agent2', () => received.push('agent2'))
+      agentEventBus.subscribe('agent1', () => { received.push('agent1') })
+      agentEventBus.subscribe('agent2', () => { received.push('agent2') })
 
       broadcastMessage(
         'sender',
@@ -201,8 +201,8 @@ describe('Agent Communication System', () => {
         'normal'
       )
 
-      expect(received?.type).toBe(MessageType.USER_EMOTION_CHANGE)
-      expect(received?.payload).toMatchObject({
+      expect((received as any)?.type).toBe(MessageType.USER_EMOTION_CHANGE)
+      expect((received as any)?.payload).toMatchObject({
         emotion: 'frustrated',
         valence: 0.2,
         arousal: 0.8,
@@ -227,8 +227,8 @@ describe('Agent Communication System', () => {
         'high'
       )
 
-      expect(received?.type).toBe(MessageType.CONTEXT_CRITICAL)
-      expect(received?.priority).toBe('high')
+      expect((received as any)?.type).toBe(MessageType.CONTEXT_CRITICAL)
+      expect((received as any)?.priority).toBe('high')
     })
 
     it('should handle collaboration request messages', () => {
@@ -246,8 +246,8 @@ describe('Agent Communication System', () => {
         'normal'
       )
 
-      expect(received?.type).toBe(MessageType.COLLAB_REQUEST)
-      expect(received?.payload.action).toBe('analyze_emotion')
+      expect((received as any)?.type).toBe(MessageType.COLLAB_REQUEST)
+      expect((received as any)?.payload.action).toBe('analyze_emotion')
     })
   })
 
@@ -256,8 +256,8 @@ describe('Agent Communication System', () => {
       const agent1Received: AgentMessage[] = []
       const agent2Received: AgentMessage[] = []
 
-      agentEventBus.subscribe('agent1', (msg) => agent1Received.push(msg))
-      agentEventBus.subscribe('agent2', (msg) => agent2Received.push(msg))
+      agentEventBus.subscribe('agent1', (msg) => { agent1Received.push(msg) })
+      agentEventBus.subscribe('agent2', (msg) => { agent2Received.push(msg) })
 
       // Send to agent1 only
       sendMessage(
@@ -276,8 +276,8 @@ describe('Agent Communication System', () => {
       let count1 = 0
       let count2 = 0
 
-      agentEventBus.subscribe('agent1', () => count1++)
-      agentEventBus.subscribe('agent1', () => count2++)
+      agentEventBus.subscribe('agent1', () => { count1++ })
+      agentEventBus.subscribe('agent1', () => { count2++ })
 
       sendMessage(
         'sender',
@@ -310,7 +310,7 @@ describe('Agent Communication System', () => {
         'high'
       )
 
-      expect(received?.priority).toBe('high')
+      expect((received as any)?.priority).toBe('high')
     })
 
     it('should filter by minimum priority', () => {
@@ -327,7 +327,7 @@ describe('Agent Communication System', () => {
 
   describe('Error Handling', () => {
     it('should handle handler errors gracefully', () => {
-      const consoleError = jest.spyOn(console, 'error').mockImplementation()
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       agentEventBus.subscribe('agent', () => {
         throw new Error('Handler error')

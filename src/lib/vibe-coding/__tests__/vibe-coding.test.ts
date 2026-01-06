@@ -2,7 +2,7 @@
  * Vibe-Coding Engine Tests
  */
 
-import { describe, it, expect } from 'jest'
+import { describe, it, expect } from 'vitest'
 import type { Message } from '@/types/conversation'
 import { VibeCodingState } from '../types'
 import {

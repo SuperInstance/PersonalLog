@@ -2,6 +2,7 @@
  * Tests for Emotion Storage
  */
 
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   storeEmotion,
   queryEmotions,

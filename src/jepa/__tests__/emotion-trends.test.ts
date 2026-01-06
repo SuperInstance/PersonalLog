@@ -2,6 +2,7 @@
  * Tests for Emotion Trend Tracker
  */
 
+import { describe, it, expect, beforeEach } from 'vitest';
 import { EmotionTrendTracker } from '@/lib/jepa/emotion-trends';
 import type { EmotionRecording } from '@/lib/jepa/emotion-storage';
 

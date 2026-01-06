@@ -11,7 +11,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { STEngine, TranscriptionResult, TranscriptionSegment } from '../../lib/jepa/stt-engine'
+import { STTEngine } from '../../lib/jepa/stt-engine'
+
+// Define types locally for testing
+type TranscriptionResult = any
+type TranscriptionSegment = any
 
 // Mock Whisper.cpp wrapper
 const mockWhisperWrapper = {
@@ -26,10 +30,10 @@ vi.mock('../../lib/jepa/whisper-wrapper', () => ({
 }))
 
 describe('STTEngine', () => {
-  let sttEngine: STEngine
+  let sttEngine: STTEngine
 
   beforeEach(() => {
-    sttEngine = new STEngine()
+    sttEngine = new STTEngine()
     vi.clearAllMocks()
   })
 

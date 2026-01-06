@@ -4,7 +4,7 @@
  * Tests importance scoring, redundancy detection, and compression strategies.
  */
 
-import { describe, it, expect } from '@jest/globals'
+import { describe, it, expect } from 'vitest'
 import { Message } from '@/types/conversation'
 import {
   ContextOptimizer,

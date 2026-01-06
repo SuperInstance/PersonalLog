@@ -2,6 +2,7 @@
  * Auto-Merge Engine Tests
  */
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConflictDetector } from '../conflict-detection';
 import {
   AutoMergeStrategy,
@@ -13,20 +14,20 @@ import {
 } from '../merge-strategies';
 import { AutoMergeEngine } from '../auto-merge';
 import { ChildResult, ConflictResolution } from '../merge-types';
-import { SessionSchema } from '@/lib/types/session';
+import { SessionSchema } from '@/lib/agents/spreader/types';
 
 describe('ConflictDetector', () => {
   const detector = new ConflictDetector();
 
   it('should detect COMPLETED list conflicts', async () => {
     const parent: Partial<SessionSchema> = {
-      COMPLETED: ['task1', 'task2'],
+      completed: ['task1', 'task2'],
     };
     const childResults: ChildResult[] = [
       {
         taskId: 'child1',
         conversationId: 'conv1',
-        schema: { COMPLETED: ['task2', 'task3'] },
+        schema: { completed: ['task2', 'task3'] },
         timestamp: Date.now(),
       },
     ];
@@ -34,14 +35,14 @@ describe('ConflictDetector', () => {
     const conflicts = await detector.detectConflicts(parent, childResults);
 
     expect(conflicts).toHaveLength(1);
-    expect(conflicts[0].location).toBe('COMPLETED');
+    expect(conflicts[0].location).toBe('completed');
     expect(conflicts[0].type).toBe('schema');
     expect(conflicts[0].severity).toBe('warning');
   });
 
   it('should detect DECISIONS contradictions', async () => {
     const parent: Partial<SessionSchema> = {
-      DECISIONS: {
+      decisions: {
         approach: 'method-a',
       },
     };
@@ -50,7 +51,7 @@ describe('ConflictDetector', () => {
         taskId: 'child1',
         conversationId: 'conv1',
         schema: {
-          DECISIONS: {
+          decisions: {
             approach: 'method-b',
           },
         },
@@ -61,22 +62,22 @@ describe('ConflictDetector', () => {
     const conflicts = await detector.detectConflicts(parent, childResults);
 
     expect(conflicts).toHaveLength(1);
-    expect(conflicts[0].location).toBe('DECISIONS.approach');
+    expect(conflicts[0].location).toBe('decisions.approach');
     expect(conflicts[0].type).toBe('contradiction');
     expect(conflicts[0].severity).toBe('critical');
   });
 
   it('should detect NEXT items already in COMPLETED', async () => {
     const parent: Partial<SessionSchema> = {
-      COMPLETED: ['task1'],
-      NEXT: [],
+      completed: ['task1'],
+      next: [],
     };
     const childResults: ChildResult[] = [
       {
         taskId: 'child1',
         conversationId: 'conv1',
         schema: {
-          NEXT: ['task1'],
+          next: ['task1'],
         },
         timestamp: Date.now(),
       },
@@ -85,7 +86,7 @@ describe('ConflictDetector', () => {
     const conflicts = await detector.detectConflicts(parent, childResults);
 
     expect(conflicts).toHaveLength(1);
-    expect(conflicts[0].location).toBe('NEXT');
+    expect(conflicts[0].location).toBe('next');
     expect(conflicts[0].type).toBe('schema');
     expect(conflicts[0].severity).toBe('info');
   });
@@ -122,7 +123,7 @@ describe('ConflictDetector', () => {
         taskId: 'child1',
         conversationId: 'conv1',
         schema: {
-          COMPLETED: ['shared-task'],
+          completed: ['shared-task'],
         },
         timestamp: Date.now(),
       },
@@ -130,7 +131,7 @@ describe('ConflictDetector', () => {
         taskId: 'child2',
         conversationId: 'conv2',
         schema: {
-          COMPLETED: ['shared-task'],
+          completed: ['shared-task'],
         },
         timestamp: Date.now(),
       },
@@ -138,7 +139,7 @@ describe('ConflictDetector', () => {
 
     const conflicts = await detector.detectConflicts(parent, childResults);
 
-    const overlaps = conflicts.filter((c) => c.location === 'COMPLETED' && c.type === 'content');
+    const overlaps = conflicts.filter((c) => c.location === 'completed' && c.type === 'content');
     expect(overlaps.length).toBeGreaterThan(0);
   });
 });
@@ -152,7 +153,7 @@ describe('AutoMergeStrategy', () => {
         id: '1',
         type: 'schema' as const,
         severity: 'info' as const,
-        location: 'NEXT',
+        location: 'next',
         description: 'Info conflict',
         options: ['keep-parent'],
         suggestions: [],
@@ -168,7 +169,7 @@ describe('AutoMergeStrategy', () => {
         id: '1',
         type: 'contradiction' as const,
         severity: 'critical' as const,
-        location: 'DECISIONS.approach',
+        location: 'decisions.approach',
         description: 'Critical conflict',
         options: ['keep-parent'],
         suggestions: [],
@@ -181,16 +182,16 @@ describe('AutoMergeStrategy', () => {
   it('should merge schemas correctly', async () => {
     const parent = {
       schema: {
-        COMPLETED: ['task1'],
-        DECISIONS: { option1: 'value1' },
+        completed: ['task1'],
+        decisions: { option1: 'value1' },
       },
     };
     const child: ChildResult = {
       taskId: 'child1',
       conversationId: 'conv1',
       schema: {
-        COMPLETED: ['task2'],
-        DECISIONS: { option2: 'value2' },
+        completed: ['task2'],
+        decisions: { option2: 'value2' },
       },
       timestamp: Date.now(),
     };
@@ -198,8 +199,8 @@ describe('AutoMergeStrategy', () => {
     const result = await strategy.merge(parent, child, []);
 
     expect(result.success).toBe(true);
-    expect(result.merged.schema.COMPLETED).toEqual(['task1', 'task2']);
-    expect(result.merged.schema.DECISIONS).toEqual({
+    expect(result.merged.schema.completed).toEqual(['task1', 'task2']);
+    expect(result.merged.schema.decisions).toEqual({
       option1: 'value1',
       option2: 'value2',
     });
@@ -212,14 +213,14 @@ describe('KeepLatestStrategy', () => {
   it('should prefer child values in conflicts', async () => {
     const parent = {
       schema: {
-        DECISIONS: { approach: 'parent-value' },
+        decisions: { approach: 'parent-value' },
       },
     };
     const child: ChildResult = {
       taskId: 'child1',
       conversationId: 'conv1',
       schema: {
-        DECISIONS: { approach: 'child-value' },
+        decisions: { approach: 'child-value' },
       },
       timestamp: Date.now(),
     };
@@ -228,7 +229,7 @@ describe('KeepLatestStrategy', () => {
         id: '1',
         type: 'contradiction' as const,
         severity: 'critical' as const,
-        location: 'DECISIONS.approach',
+        location: 'decisions.approach',
         description: 'Conflict',
         options: ['keep-child'],
         suggestions: [],
@@ -240,7 +241,7 @@ describe('KeepLatestStrategy', () => {
     const result = await strategy.merge(parent, child, conflicts);
 
     expect(result.success).toBe(true);
-    expect(result.merged.schema.DECISIONS?.approach).toBe('child-value');
+    expect((result.merged.schema.decisions as Record<string, unknown>)?.approach).toBe('child-value');
   });
 });
 
@@ -259,8 +260,8 @@ describe('KeepAllStrategy', () => {
     const result = await strategy.merge(parent, child, []);
 
     expect(result.success).toBe(true);
-    expect(result.merged.schema).toHaveProperty('_mergeMetadata');
-    expect(Array.isArray(result.merged.schema._mergeMetadata)).toBe(true);
+    expect(result.merged.schema as any).toHaveProperty('_mergeMetadata');
+    expect(Array.isArray((result.merged.schema as any)._mergeMetadata)).toBe(true);
   });
 });
 
@@ -268,11 +269,11 @@ describe('SummarizeStrategy', () => {
   const strategy = new SummarizeStrategy();
 
   it('should generate merge summary', async () => {
-    const parent = { schema: { COMPLETED: [] } };
+    const parent = { schema: { completed: [] } };
     const child: ChildResult = {
       taskId: 'child1',
       conversationId: 'conv1',
-      schema: { COMPLETED: ['task1', 'task2'] },
+      schema: { completed: ['task1', 'task2'] },
       timestamp: Date.now(),
     };
     const conflicts = [
@@ -280,7 +281,7 @@ describe('SummarizeStrategy', () => {
         id: '1',
         type: 'schema' as const,
         severity: 'info' as const,
-        location: 'COMPLETED',
+        location: 'completed',
         description: 'Conflict',
         options: ['keep-one'],
         suggestions: [],
@@ -290,8 +291,8 @@ describe('SummarizeStrategy', () => {
     const result = await strategy.merge(parent, child, conflicts);
 
     expect(result.success).toBe(true);
-    expect(result.merged).toHaveProperty('summary');
-    expect(result.merged.summary).toContain('Merge Summary');
+    expect(result.merged as any).toHaveProperty('summary');
+    expect((result.merged as any).summary).toContain('Merge Summary');
   });
 
   it('should not auto-merge if too many conflicts', () => {
@@ -299,7 +300,7 @@ describe('SummarizeStrategy', () => {
       id: `${i}`,
       type: 'schema' as const,
       severity: 'warning' as const,
-      location: 'COMPLETED',
+      location: 'completed',
       description: `Conflict ${i}`,
       options: ['keep-one'],
       suggestions: [],
@@ -313,7 +314,7 @@ describe('AskUserStrategy', () => {
   const strategy = new AskUserStrategy();
 
   it('should always require user input', () => {
-    const conflicts = [];
+    const conflicts: any[] = [];
     expect(strategy.canAutoMerge(conflicts)).toBe(false);
   });
 
@@ -358,7 +359,7 @@ describe('MergeStrategyRegistry', () => {
   });
 
   it('should select auto-merge strategy for no conflicts', () => {
-    const conflicts = [];
+    const conflicts: any[] = [];
     const strategy = mergeStrategyRegistry.selectStrategy(conflicts);
 
     expect(strategy.name).toBe('auto-merge');
@@ -370,7 +371,7 @@ describe('MergeStrategyRegistry', () => {
         id: '1',
         type: 'contradiction' as const,
         severity: 'critical' as const,
-        location: 'DECISIONS.option',
+        location: 'decisions.option',
         description: 'Critical',
         options: ['ask-user'],
         suggestions: [],
@@ -409,14 +410,14 @@ describe('AutoMergeEngine', () => {
     const parentConversation: any = {
       id: 'conv1',
       schema: {
-        DECISIONS: { approach: 'method-a' },
+        decisions: { approach: 'method-a' },
       },
     };
     const childResult: ChildResult = {
       taskId: 'child1',
       conversationId: 'conv2',
       schema: {
-        DECISIONS: { approach: 'method-b' },
+        decisions: { approach: 'method-b' },
       },
       timestamp: Date.now(),
     };
@@ -431,22 +432,22 @@ describe('AutoMergeEngine', () => {
     const parentConversation: any = {
       id: 'conv1',
       schema: {
-        COMPLETED: ['task1'],
+        completed: ['task1'],
       },
     };
     const childResult: ChildResult = {
       taskId: 'child1',
       conversationId: 'conv2',
       schema: {
-        COMPLETED: ['task2'],
+        completed: ['task2'],
       },
       timestamp: Date.now(),
     };
 
     // Mock the update function
-    const mockUpdate = jest.fn().mockResolvedValue(undefined);
-    jest.doMock('@/lib/db/conversations', () => ({
-      getConversation: jest.fn().mockResolvedValue({
+    const mockUpdate = vi.fn().mockResolvedValue(undefined);
+    vi.doMock('@/lib/db/conversations', () => ({
+      getConversation: vi.fn().mockResolvedValue({
         id: 'conv1',
         schema: {},
         content: [],
@@ -454,7 +455,7 @@ describe('AutoMergeEngine', () => {
       updateConversation: mockUpdate,
     }));
 
-    const result = await engine.mergeChildResult(parentConversation, childResult);
+    const result = await engine.mergeChildResult(parentConversation, parentConversation.schema, childResult);
 
     expect(result.success).toBe(true);
     expect(result.requiredUserInput).toBe(false);

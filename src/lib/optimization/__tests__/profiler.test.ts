@@ -191,7 +191,7 @@ describe('PerformanceProfiler', () => {
       expect(stats).not.toBeNull();
       expect(stats?.avg).toBeGreaterThan(0);
       expect(stats?.min).toBeGreaterThanOrEqual(0);
-      expect(stats?.max).toBeGreaterThanOrEqual(stats.min);
+      expect(stats?.max).toBeGreaterThanOrEqual(stats?.min as number);
       expect(stats?.count).toBe(10);
     });
 
@@ -208,8 +208,8 @@ describe('PerformanceProfiler', () => {
 
       expect(stats).not.toBeNull();
       expect(stats?.p50).toBeGreaterThan(0);
-      expect(stats?.p95).toBeGreaterThan(stats?.p50);
-      expect(stats?.p99).toBeGreaterThanOrEqual(stats?.p95);
+      expect(stats?.p95).toBeGreaterThan(stats?.p50 as number);
+      expect(stats?.p99).toBeGreaterThanOrEqual(stats?.p95 as number);
     });
 
     it('should return null for non-existent operation', () => {
