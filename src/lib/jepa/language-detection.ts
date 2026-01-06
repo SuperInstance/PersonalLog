@@ -43,65 +43,115 @@ const CHARSET_PATTERNS: Array<{
   pattern: RegExp
   languages: string[]
   confidence: number
+  checkExclusively?: boolean // If true, check if ONLY this character set exists
 }> = [
   {
-    // Chinese characters (simplified and traditional)
-    pattern: /[\u4e00-\u9fff\u3400-\u4dbf]/,
-    languages: ['zh'],
-    confidence: 0.85,
-  },
-  {
-    // Japanese characters (Hiragana, Katakana, Kanji)
-    pattern: /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff]/,
+    // Japanese characters (Hiragana, Katakana) - these are exclusive to Japanese
+    pattern: /[\u3040-\u309f\u30a0-\u30ff]/,
     languages: ['ja'],
-    confidence: 0.85,
+    confidence: 0.95,
+    checkExclusively: true, // Hiragana/Katakana = definitely Japanese
   },
   {
     // Korean characters (Hangul)
     pattern: /[\uac00-\ud7af\u1100-\u11ff]/,
     languages: ['ko'],
     confidence: 0.9,
+    checkExclusively: true,
   },
   {
     // Arabic characters
     pattern: /[\u0600-\u06ff\u0750-\u077f]/,
     languages: ['ar', 'fa', 'ur'], // Arabic, Persian, Urdu
     confidence: 0.85,
+    checkExclusively: false,
   },
   {
     // Cyrillic characters (Russian, Ukrainian, Bulgarian, etc.)
     pattern: /[\u0400-\u04ff]/,
     languages: ['ru', 'uk', 'bg', 'sr'],
     confidence: 0.8,
+    checkExclusively: false,
   },
   {
     // Greek characters
     pattern: /[\u0370-\u03ff]/,
     languages: ['el'],
     confidence: 0.9,
+    checkExclusively: true,
   },
   {
     // Hebrew characters
     pattern: /[\u0590-\u05ff]/,
     languages: ['he'],
     confidence: 0.9,
+    checkExclusively: true,
   },
   {
     // Thai characters
     pattern: /[\u0e00-\u0e7f]/,
     languages: ['th'],
     confidence: 0.95,
+    checkExclusively: true,
   },
   {
     // Devanagari script (Hindi, Marathi, Nepali, Sanskrit)
     pattern: /[\u0900-\u097f]/,
     languages: ['hi', 'mr', 'ne'],
     confidence: 0.85,
+    checkExclusively: true,
+  },
+  {
+    // Chinese characters (simplified and traditional)
+    // This must be checked AFTER Japanese, since Japanese also uses Kanji
+    pattern: /[\u4e00-\u9fff\u3400-\u4dbf]/,
+    languages: ['zh'],
+    confidence: 0.85,
+    checkExclusively: false,
   },
 ]
 
 // ============================================================================
-// LANGUAGE KEYWORD PATTERNS
+// CHARACTER TRIGRAM PROFILES
+// ============================================================================
+
+/**
+ * Character trigram profiles for languages that use Latin script
+ * These capture the unique character patterns of each language
+ */
+const LANGUAGE_TRIGRAMS: Record<string, string[]> = {
+  en: [
+    'the', 'and', 'ing', 'ion', 'ent', 'her', 'hat', 'tha', 'ere', 'ati',
+    'ter', 'ate', 'ver', 'est', 'ers', 'sta', 'ste', 'str', 'ure', 'are'
+  ],
+  es: [
+    'que', 'ent', 'ada', 'dos', 'por', 'par', 'con', 'est', 'sta', 'aci',
+    'ció', 'nte', 'ado', 'los', 'las', 'una', 'ión', 'del', 'para', 'sus'
+  ],
+  fr: [
+    'ent', 'que', 'ait', 'ème', 'émé', 'eur', 'eai', 'est', 'ais', 'ème',
+    'men', 'ois', 'tion', 'aux', 'des', 'les', 'ent', 'eme', 'eur', 'aient'
+  ],
+  de: [
+    'ein', 'eine', 'sch', 'chn', 'ich', 'cht', 'die', 'der', 'und', 'che',
+    'ten', 'den', 'nde', 'gen', 'ung', 'nis', 'tei', 'lic', 'aus', 'eis'
+  ],
+  it: [
+    'che', 'per', 'però', 'gli', 'chi', 'qui', 'quo', 'qua', 'zio', 'are',
+    'ere', 'ire', 'nte', 'mento', 'ità', 'tre', 'tro', 'sta', 'ste', 'stri'
+  ],
+  pt: [
+    'que', 'ent', 'ado', 'ada', 'por', 'par', 'con', 'est', 'sta', 'ção',
+    'nte', 'dos', 'ara', 'ento', 'mento', 'res', 'dos', 'as', 'os', 'para'
+  ],
+  nl: [
+    'een', 'het', 'dat', 'sch', 'chr', 'nch', 'ijk', 'hei', 'aar', 'nde',
+    'ing', 'ver', 'van', 'oor', 'cht', 'ber', 'gen', 'den', 'st', 'ten'
+  ],
+}
+
+// ============================================================================
+// LANGUAGE KEYWORD PATTERNS (Enhanced with more words)
 // ============================================================================
 
 const LANGUAGE_KEYWORD_PATTERNS: Array<{
@@ -111,37 +161,90 @@ const LANGUAGE_KEYWORD_PATTERNS: Array<{
 }> = [
   {
     language: 'en',
-    commonWords: ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'I'],
-    confidence: 0.7,
+    commonWords: [
+      'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i',
+      'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at',
+      'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
+      'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what'
+    ],
+    confidence: 0.8,
   },
   {
     language: 'es',
-    commonWords: ['el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se'],
-    confidence: 0.7,
+    commonWords: [
+      'el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se',
+      'no', 'haber', 'con', 'su', 'por', 'para', 'como', 'estar', 'tener', 'le',
+      'lo', 'todo', 'pero', 'más', 'hacer', 'o', 'poder', 'decir', 'este', 'ir',
+      'otro', 'ese', 'si', 'me', 'ya', 'ver', 'porque', 'dar', 'cuando', 'muy'
+    ],
+    confidence: 0.8,
   },
   {
     language: 'fr',
-    commonWords: ['le', 'de', 'et', 'à', 'un', 'il', 'avoir', 'ne', 'je', 'son'],
-    confidence: 0.7,
+    commonWords: [
+      'le', 'de', 'et', 'à', 'un', 'il', 'avoir', 'ne', 'je', 'son',
+      'que', 'se', 'qui', 'dans', 'ce', 'pour', 'pas', 'plus', 'pouvoir', 'par',
+      'sur', 'être', 'avec', 'tout', 'faire', 'son', 'dire', 'elle', 'nous', 'comme',
+      'mais', 'vous', 'ce', 'si', 'leur', 'y', 'voir', 'bien', 'où', 'tu'
+    ],
+    confidence: 0.8,
   },
   {
     language: 'de',
-    commonWords: ['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich'],
-    confidence: 0.7,
+    commonWords: [
+      'der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich',
+      'des', 'auf', 'für', 'ist', 'im', 'dem', 'nicht', 'ein', 'eine', 'als',
+      'auch', 'es', 'an', 'werden', 'aus', 'er', 'hat', 'dass', 'sie', 'nach',
+      'wird', 'von', 'um', 'bei', 'noch', 'über', 'so', 'zum', 'war', 'haben'
+    ],
+    confidence: 0.8,
   },
   {
     language: 'it',
-    commonWords: ['il', 'di', 'che', 'e', 'la', 'un', 'a', 'per', 'in', 'è'],
-    confidence: 0.7,
+    commonWords: [
+      'il', 'di', 'che', 'e', 'la', 'un', 'a', 'per', 'in', 'è',
+      'non', 'essere', 'avere', 'da', 'con', 'su', 'perché', 'come', 'questo', 'lo',
+      'più', 'ma', 'le', 'si', 'tutto', 'nel', 'potere', 'dire', 'fare', 'questo',
+      'altro', 'così', 'me', 'se', 'gia', 'vedere', 'verso', 'quando', 'molto', 'quale'
+    ],
+    confidence: 0.8,
   },
   {
     language: 'pt',
-    commonWords: ['o', 'de', 'a', 'e', 'do', 'da', 'em', 'um', 'para', 'é'],
-    confidence: 0.7,
+    commonWords: [
+      'o', 'de', 'a', 'e', 'do', 'da', 'em', 'um', 'para', 'é',
+      'não', 'ser', 'com', 'se', 'na', 'por', 'que', 'como', 'mas', 'estar',
+      'ter', 'à', 'poder', 'mais', 'fazer', 'esse', 'este', 'ele', 'seu', 'esse',
+      'dos', 'no', 'as', 'ou', 'quando', 'tudo', 'lhe', 'quem', 'nas', 'me'
+    ],
+    confidence: 0.8,
   },
   {
     language: 'ru',
-    commonWords: ['и', 'в', 'не', 'на', 'я', 'быть', 'он', 'с', 'как', 'что'],
+    commonWords: [
+      'и', 'в', 'не', 'на', 'я', 'быть', 'он', 'с', 'как', 'что',
+      'это', 'вы', 'что', 'который', 'для', 'мы', 'она', 'они', 'от', 'себя',
+      'этот', 'тот', 'к', 'но', 'они', 'вы', 'оно', 'кто', 'мочь', 'все',
+      'когда', 'где', 'если', 'этот', 'там', 'потом', 'твой', 'зачем', 'почему', 'кто-то'
+    ],
+    confidence: 0.8,
+  },
+  {
+    language: 'nl',
+    commonWords: [
+      'de', 'van', 'en', 'in', 'een', 'het', 'dat', 'is', 'niet', 'zijn',
+      'er', 'worden', 'op', 'aan', 'met', 'zich', 'te', 'voor', 'uit', 'door',
+      'over', 'onder', 'naar', 'als', 'bij', 'om', 'dan', 'wil', 'me', 'u'
+    ],
+    confidence: 0.7,
+  },
+  {
+    language: 'pl',
+    commonWords: [
+      'w', 'nie', 'i', 'z', 'na', 'do', 'że', 'a', 'się', 'to',
+      'o', 'z', 'jako', 'od', ' Jest', 'być', 'ja', 'ty', 'on',
+      'ona', 'my', 'wy', 'oni', 'ten', 'ta', 'to', 'co', 'jak', 'ale'
+    ],
     confidence: 0.7,
   },
 ]
@@ -255,6 +358,14 @@ export async function detectLanguageFromTranscript(text: string): Promise<Langua
     return charsetResult
   }
 
+  // Try trigram detection for Latin script languages
+  const trigramResult = detectByTrigrams(cleanText)
+  if (trigramResult.confidence > 0.5) {
+    // Combine trigram and keyword results
+    const keywordResult = detectByKeywords(cleanText)
+    return combineDetectionResults(trigramResult, keywordResult)
+  }
+
   // Try keyword detection
   const keywordResult = detectByKeywords(cleanText)
   if (keywordResult.confidence > 0.6) {
@@ -266,16 +377,95 @@ export async function detectLanguageFromTranscript(text: string): Promise<Langua
 }
 
 /**
+ * Detect language by character trigrams (for Latin script languages)
+ */
+function detectByTrigrams(text: string): LanguageDetectionResult {
+  const scores: Array<{ language: string; confidence: number }> = []
+
+  // Extract trigrams from text
+  const trigrams = extractTrigrams(text)
+
+  for (const [language, profile] of Object.entries(LANGUAGE_TRIGRAMS)) {
+    if (!isLanguageSupported(language)) {
+      continue
+    }
+
+    // Calculate similarity with profile
+    const matches = profile.filter(trigram => trigrams.has(trigram)).length
+    const similarity = matches / profile.length
+
+    if (similarity > 0.1) {
+      scores.push({
+        language,
+        confidence: Math.min(0.9, similarity * 1.5),
+      })
+    }
+  }
+
+  // Sort by confidence
+  scores.sort((a, b) => b.confidence - a.confidence)
+
+  if (scores.length === 0) {
+    return {
+      language: 'en',
+      confidence: 0.3,
+      alternatives: [],
+    }
+  }
+
+  const top = scores[0]
+  const alternatives = scores
+    .slice(1, DETECTION_CONFIG.MAX_ALTERNATIVES + 1)
+    .map(s => ({ code: s.language, confidence: s.confidence }))
+
+  return {
+    language: top.language,
+    confidence: top.confidence,
+    alternatives,
+  }
+}
+
+/**
+ * Extract character trigrams from text
+ */
+function extractTrigrams(text: string): Set<string> {
+  const trigrams = new Set<string>()
+  const words = text.split(/\s+/)
+
+  for (const word of words) {
+    if (word.length >= 3) {
+      // Extract all trigrams from the word
+      for (let i = 0; i <= word.length - 3; i++) {
+        trigrams.add(word.substring(i, i + 3))
+      }
+    }
+  }
+
+  return trigrams
+}
+
+/**
  * Detect language by character set
  */
 function detectByCharset(text: string): LanguageDetectionResult {
   const scores: Array<{ language: string; confidence: number }> = []
 
-  for (const { pattern, languages, confidence } of CHARSET_PATTERNS) {
+  for (const { pattern, languages, confidence, checkExclusively } of CHARSET_PATTERNS) {
     const matches = (text.match(pattern) || []).length
 
     if (matches > 0) {
-      const confidenceScore = Math.min(1, confidence + (matches / text.length) * 0.1)
+      // For exclusive scripts (Hiragana, Hangul, etc.), presence alone is strong evidence
+      // For non-exclusive scripts (Chinese characters shared with Japanese), need more evidence
+      let confidenceScore = confidence
+
+      if (checkExclusively) {
+        // Exclusive script: high confidence based on presence
+        confidenceScore = Math.min(1, confidence + (matches / text.length) * 0.15)
+      } else {
+        // Non-exclusive script: need higher match rate
+        const matchRate = matches / text.length
+        confidenceScore = Math.min(1, confidence * matchRate * 1.5)
+      }
 
       for (const lang of languages) {
         if (isLanguageSupported(lang)) {

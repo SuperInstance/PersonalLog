@@ -30,6 +30,7 @@ export class AudioCapture {
   private sourceNode: MediaStreamAudioSourceNode | null = null
   private processorNode: ScriptProcessorNode | null = null
   private workletNode: AudioWorkletNode | null = null
+  private analyserNode: AnalyserNode | null = null
 
   private buffer: AudioBuffer
   private stateManager = getAudioStateManager()
@@ -244,6 +245,11 @@ export class AudioCapture {
     const bufferSize = 4096
 
     try {
+      // Create analyser for visualization
+      this.analyserNode = this.audioContext.createAnalyser()
+      this.analyserNode.fftSize = 2048
+      this.analyserNode.smoothingTimeConstant = 0.8
+
       // Try ScriptProcessorNode (more widely supported)
       this.processorNode = this.audioContext.createScriptProcessor(
         bufferSize,
@@ -255,7 +261,9 @@ export class AudioCapture {
         this.processAudioData(event.inputBuffer)
       }
 
-      this.sourceNode.connect(this.processorNode)
+      // Connect nodes: source -> analyser -> processor -> destination
+      this.sourceNode.connect(this.analyserNode)
+      this.analyserNode.connect(this.processorNode)
       this.processorNode.connect(this.audioContext.destination)
 
     } catch (error) {
@@ -318,6 +326,11 @@ export class AudioCapture {
       this.workletNode = null
     }
 
+    if (this.analyserNode) {
+      this.analyserNode.disconnect()
+      this.analyserNode = null
+    }
+
     if (this.sourceNode) {
       this.sourceNode.disconnect()
       this.sourceNode = null
@@ -361,6 +374,14 @@ export class AudioCapture {
    */
   getAudioLevels() {
     return this.buffer.calculateLevels()
+  }
+
+  /**
+   * Get the analyser node for visualization
+   * Returns null if not currently recording or not initialized
+   */
+  getAnalyser(): AnalyserNode | null {
+    return this.analyserNode
   }
 
   // ==========================================================================

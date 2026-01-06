@@ -5,7 +5,7 @@
  * aggregation, and export capabilities.
  */
 
-import { StorageError } from '@/lib/errors';
+import { StorageError } from '@/lib/errors/types';
 
 const EMOTION_DB_NAME = 'PersonalLogEmotions';
 const EMOTION_DB_VERSION = 1;

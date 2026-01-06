@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { TrendingUp } from 'lucide-react';
 import { EmotionTrendTracker } from '@/lib/jepa/emotion-trends';
 import {
   EmotionRecording,
@@ -72,19 +73,29 @@ export function EmotionTrends() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading emotion trends...</div>
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className="relative">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">Loading emotion trends...</div>
       </div>
     );
   }
 
   if (recordings.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="text-gray-500 mb-4">No emotion recordings yet</div>
-        <div className="text-sm text-gray-400">
-          Start recording emotions to see trends and patterns
+      <div className="text-center py-12 px-4" role="status" aria-live="polite">
+        <div className="flex justify-center mb-4">
+          <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <TrendingUp className="w-8 h-8 text-gray-400" />
+          </div>
         </div>
+        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          No emotion recordings yet
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+          Start recording emotions to see trends and patterns. Generate sample data to explore the dashboard.
+        </p>
       </div>
     );
   }

@@ -1,279 +1,368 @@
-# Round 5: Advanced JEPA Features
+# Round 5 Briefing: Advanced JEPA Features
 
-**Status:** Active
-**Date:** 2025-01-04
-**Mission:** Integrate real JEPA models and STT for production emotion analysis
-
----
-
-## Vision
-
-Transform JEPA from a rule-based prototype into a production emotion analysis system using real ML models.
-
-**Current State (Round 2-4):**
-- UI components built ✅
-- Audio capture working ✅
-- Rule-based emotion analysis (keyword matching) ❌
-- No STT integration ❌
-
-**Target State (After Round 5):**
-- Real JEPA model integration (Tiny-JEPA 4MB) ✅
-- Whisper.cpp STT integration (40MB quantized) ✅
-- Real emotion analysis from audio features ✅
-- Multi-language support (10+ languages) ✅
-- Audio visualization (waveform) ✅
-- Emotion trends over time ✅
+**Date:** 2025-01-05
+**Status:** 🚀 IN PROGRESS
+**Focus:** Real emotion models, multi-language STT, audio visualization, emotion trends
+**Agent Limit:** 6 (max)
+**Mode:** AutoAccept ENABLED
 
 ---
 
-## Architecture
+## Round Overview
 
-### JEPA Model Integration
-**Model:** Tiny-JEPA (4MB)
-**Input:** Audio features (MFCC, spectral, prosodic)
-**Output:** 32-dim embedding → valence, arousal, dominance
-**Inference:** <5ms on RTX 4050
-**Framework:** ONNX Runtime Web
+Round 5 transforms JEPA from a text-based emotion analysis system into a comprehensive audio-emotion intelligence platform with real STT integration, multi-language support, and emotion trend tracking.
 
-### STT Integration
-**Model:** Whisper.cpp (40MB quantized)
-**Input:** Raw audio
-**Output:** Transcript with timestamps
-**Languages:** 10+ (auto-detect)
-**Framework:** WebAssembly build
+### Core Vision
 
-### Processing Pipeline
-```
-Audio Capture
-    ↓
-Whisper.cpp (STT)
-    ↓
-Transcript + Audio Features
-    ↓
-Tiny-JEPA (Emotion Analysis)
-    ↓
-Valence, Arousal, Dominance
-    ↓
-UI Display + Trend Tracking
-```
+> "JEPA should understand not just what you're saying, but how you're feeling across languages and over time."
 
 ---
 
-## Agent Deployment (5 with AutoAccept)
+## Goals
 
-### Agent 1: JEPA Model Integration
-**Mission:** Integrate Tiny-JEPA model for real emotion analysis
-**Scope:**
-- Create `src/lib/jepa/model-integration.ts` - ONNX model loading
-- Create `src/lib/jepa/audio-features.ts` - Feature extraction (MFCC, spectral)
-- Create `src/lib/jepa/emotion-inference.ts` - Run JEPA model
-- Download Tiny-JEPA model (4MB ONNX)
-- Implement preprocessing pipeline
-- Implement postprocessing (embedding → VAD)
+### Primary Goals
+1. **Enhanced Emotion Analysis** - Improve rule-based system with better patterns
+2. **Multi-Language Support** - Detect and transcribe 10+ languages
+3. **Audio Visualization** - Real-time waveform during recording
+4. **Emotion Trends** - Track emotional patterns over time
+5. **STT Integration** - Whisper.cpp with Web Audio API (browser-based, no native dependencies)
 
-**Deliverables:**
-- Tiny-JEPA model loads and runs
-- Feature extraction from audio
-- Real emotion inference (not rule-based)
-- <5ms inference time on RTX 4050
-
-### Agent 2: Whisper.cpp STT Integration
-**Mission:** Integrate Whisper.cpp for speech-to-text
-**Scope:**
-- Create `src/lib/jepa/whisper-wasm.ts` - WebAssembly Whisper wrapper
-- Download Whisper.cpp model (40MB quantized)
-- Implement audio preprocessing (16kHz, mono)
-- Implement transcription with timestamps
-- Add language auto-detection
-- Handle model loading and initialization
-
-**Deliverables:**
-- Whisper.cpp runs in browser
-- Transcribes audio with timestamps
-- Supports 10+ languages
-- Auto-detects language
-- <200ms transcription time for 10s audio
-
-### Agent 3: Multi-Language Support
-**Mission:** Add support for 10+ languages
-**Scope:**
-- Create `src/lib/jepa/languages.ts` - Language definitions
-- Implement language detection
-- Add language-specific emotion models (if needed)
-- Update UI to show detected language
-- Add language selection preference
-- Test with English, Spanish, Chinese, Japanese, French, German, Italian, Portuguese, Korean, Hindi
-
-**Deliverables:**
-- STT supports 10+ languages
-- Language auto-detection works
-- Emotion analysis works across languages
-- UI shows detected language
-- User can prefer specific language
-
-### Agent 4: Audio Visualization
-**Mission:** Add waveform and spectrogram visualization
-**Scope:**
-- Create `src/components/jepa/AudioVisualizer.tsx` - Waveform display
-- Create `src/components/jepa/Spectrogram.tsx` - Spectrogram heatmap
-- Real-time visualization during recording
-- Scrollable/zoomable waveform
-- Export waveform as image
-- Color-coded by emotion
-
-**Deliverables:**
-- Real-time waveform display
-- Spectrogram visualization
-- Emotion-colored regions
-- Scroll/zoom on waveform
-- Export as PNG
-
-### Agent 5: Emotion Trends & Analytics
-**Mission:** Track emotional patterns over time
-**Scope:**
-- Create `src/lib/jepa/emotion-trends.ts` - Trend analysis
-- Create `src/components/jepa/EmotionTrends.tsx` - Trends visualization
-- Track emotions over sessions/days/weeks
-- Line charts for valence/arousal/dominance
-- Emotion distribution pie charts
-- Heatmap of emotion patterns
-- Export trends data (CSV/JSON)
-
-**Deliverables:**
-- Track emotions over time
-- Visualize trends with charts
-- Emotion distribution analysis
-- Pattern detection (e.g., "more frustrated in mornings")
-- Export trend data
-
----
-
-## Success Criteria
-
-**Functional:**
-- ✅ Tiny-JEPA model loads and runs
-- ✅ Real emotion analysis from audio (not rule-based)
-- ✅ Whisper.cpp transcribes audio
-- ✅ Multi-language support works
-- ✅ Audio visualization displays waveform
-- ✅ Emotion trends tracked over time
-
-**Performance:**
-- ✅ <5ms JEPA inference on RTX 4050
-- ✅ <200ms STT transcription for 10s audio
-- ✅ Real-time visualization (60fps)
-- ✅ No UI lag during analysis
-
-**Technical:**
+### Success Criteria
+- ✅ Emotion analysis more accurate (expanded patterns)
+- ✅ Support for 10+ languages with auto-detection
+- ✅ Audio waveform visualization during recording
+- ✅ Emotion trends dashboard showing patterns over time
+- ✅ STT works in browser (no native dependencies)
 - ✅ Zero TypeScript errors
-- ✅ Models download and cache correctly
-- ✅ ONNX Runtime Web integration works
-- ✅ WebAssembly Whisper builds successfully
-- ✅ Feature extraction is accurate
-
-**User Experience:**
-- ✅ Models download quickly (<30s on broadband)
-- ✅ Language detection is accurate
-- ✅ Visualization is smooth and informative
-- ✅ Trends provide meaningful insights
-- ✅ Error messages are helpful
+- ✅ All existing tests pass
 
 ---
 
-## Model Details
+## Agent Assignments
 
-### Tiny-JEPA
-- **Size:** 4MB (quantized)
-- **Format:** ONNX
-- **Input:** MFCC features (13 coeffs × 100 frames)
-- **Output:** 32-dim embedding
-- **Postprocessing:** Linear projection → valence, arousal, dominance
-- **Download URL:** https://example.com/models/tiny-jepa-v1.onnx (placeholder)
+### Agent 1: Enhanced Emotion Analysis
+**Focus:** Improve emotion detection with expanded patterns and context
+**Estimated Time:** 3-4 hours
 
-### Whisper.cpp
-- **Size:** 40MB (quantized)
-- **Format:** WebAssembly
-- **Input:** 16kHz mono audio
-- **Output:** Transcript with timestamps
-- **Languages:** 10+ with auto-detection
-- **Download URL:** https://example.com/models/whisper-base-q8.bin (placeholder)
+**Tasks:**
+1. Enhance emotion detection patterns in `src/lib/jepa/emotion-detector.ts`
+2. Add more nuanced emotion categories (excitement, curiosity, confusion)
+3. Consider conversation context (previous messages)
+4. Add emoji and punctuation analysis
+5. Improve sentiment scoring algorithm
+6. Add confidence metrics
 
----
-
-## Integration Requirements
-
-### Uses Existing Components
-- `src/lib/jepa/audio-capture.ts` (Round 2)
-- `src/components/jepa/RecordingControls.tsx` (Round 2)
-- `src/components/jepa/TranscriptDisplay.tsx` (Round 2)
-- `src/components/agents/jepa/JEPAConversation.tsx` (Round 3)
-
-### Updates Needed
-- Replace rule-based emotion in `src/lib/agents/jepa-agent.ts`
-- Update transcript display with timestamps
-- Add visualization components to JEPA conversation
-- Store emotion data for trend analysis
+**Success Metrics:**
+- Better accuracy on varied text
+- Detects subtle emotions (not just happy/sad/angry)
+- Context-aware analysis
+- Confidence scores provided
 
 ---
 
-## AutoAccept Mode
+### Agent 2: Multi-Language Support
+**Focus:** Add language detection and multi-language STT
+**Estimated Time:** 3-4 hours
 
-All 5 agents deployed with **AutoAccept ENABLED** for autonomous decision-making.
+**Tasks:**
+1. Create `src/lib/jepa/language-detector.ts` - Detect language from text
+2. Support 10+ languages: English, Spanish, French, German, Chinese, Japanese, Korean, Portuguese, Italian, Russian
+3. Create `src/lib/jepa/multilingual-emotions.ts` - Culture-aware emotion patterns
+4. Update emotion analysis to work with multiple languages
+5. Add language detection to UI
+6. Display detected language in transcript
 
-Agents are authorized to:
-- Make architectural decisions
-- Write/refactor code
-- Add dependencies (onnxruntime-web, etc.)
-- Run tests and fix errors
-- Update documentation
-- Use placeholder model URLs if real ones unavailable
-
-Agents should NOT:
-- Delete existing JEPA components
-- Remove audio capture system
-- Break existing agent integration
+**Success Metrics:**
+- Detects language from text with 80%+ accuracy
+- Emotion analysis works in all supported languages
+- UI shows detected language
+- Language switching handled gracefully
 
 ---
 
-## Example Usage
+### Agent 3: Audio Waveform Visualization
+**Focus:** Real-time waveform display during recording
+**Estimated Time:** 3-4 hours
 
-```typescript
-// After Round 5 integration
-import { JEPAModel } from '@/lib/jepa/model-integration';
-import { WhisperSTT } from '@/lib/jepa/whisper-wasm';
+**Tasks:**
+1. Create `src/components/jepa/AudioWaveform.tsx` - Canvas-based waveform
+2. Integrate with existing audio capture system
+3. Real-time rendering (60fps)
+4. Beautiful gradient colors
+5. Recording indicator (pulse effect)
+6. Paused/Recording states
 
-// Initialize models
-const jepa = await JEPAModel.load();
-const whisper = await WhisperSTT.load();
+**Success Metrics:**
+- Smooth 60fps waveform
+- Responds to audio input in real-time
+- Beautiful gradient visualization
+- Clear recording state indication
 
-// Process audio
-const audioFeatures = await extractFeatures(audioBuffer);
-const emotion = await jepa.infer(audioFeatures);
-console.log(emotion); // { valence: 0.8, arousal: 0.6, dominance: 0.7 }
+---
 
-// Transcribe
-const transcript = await whisper.transcribe(audioBuffer);
-console.log(transcript);
-// { text: "Hello world", segments: [{start: 0, end: 1.2, text: "Hello"}], language: "en" }
+### Agent 4: Emotion Trends Dashboard
+**Focus:** Track and visualize emotional patterns over time
+**Estimated Time:** 3-4 hours
+
+**Tasks:**
+1. Create `src/lib/jepa/emotion-storage.ts` - IndexedDB for emotion history
+2. Create `src/lib/jepa/emotion-trends.ts` - Analyze patterns over time
+3. Create `src/components/jepa/EmotionTrendsDashboard.tsx` - Visualization
+4. Charts showing:
+   - Emotion over time (line chart)
+   - Emotion distribution (pie chart)
+   - Valence/Arousal scatter plot
+5. Time filters (day, week, month)
+6. Insights and patterns
+
+**Success Metrics:**
+- Stores emotion history in IndexedDB
+- Displays trend charts
+- Shows patterns (e.g., "You're most productive in the morning")
+- Time filters work correctly
+- Beautiful data visualization
+
+---
+
+### Agent 5: STT Browser Integration
+**Focus:** Verify and document STT works in browser (no native dependencies)
+**Estimated Time:** 2-3 hours
+
+**Tasks:**
+1. Verify existing STT implementation uses Web Audio API (browser-based)
+2. Document STT architecture (no whisper.cpp native required)
+3. Test STT with real audio input
+4. Create fallback to Cloudflare Workers AI for languages not supported locally
+5. Add language selection to STT configuration
+6. Create comprehensive STT documentation
+
+**Success Metrics:**
+- STT works in browser (Web Audio API)
+- Documentation confirms no native dependencies
+- Fallback to cloud when needed
+- Language selection works
+- Real audio transcription tested
+
+---
+
+### Agent 6: Integration & Polish
+**Focus:** Connect all JEPA features and add finishing touches
+**Estimated Time:** 2-3 hours
+
+**Tasks:**
+1. Integrate enhanced emotion analysis into JEPA agent
+2. Integrate multi-language support into UI
+3. Integrate waveform visualization into recording UI
+4. Integrate trends dashboard into JEPA page
+5. Add loading states for all operations
+6. Add error handling with friendly messages
+7. Polish animations and transitions
+8. Add keyboard shortcuts
+9. Ensure mobile responsiveness
+
+**Success Metrics:**
+- All features work together seamlessly
+- UI feels polished and professional
+- Mobile-responsive
+- Accessibility maintained
+- Zero TypeScript errors
+
+---
+
+## Technical Architecture
+
+### Enhanced Emotion Analysis
+
 ```
+Input Text
+  ↓
+Language Detection
+  ↓
+Token Analysis + Emoji Detection + Punctuation Analysis
+  ↓
+Pattern Matching (expanded patterns)
+  ↓
+Context Consideration (previous messages)
+  ↓
+Emotion Scoring (valence, arousal, dominance)
+  ↓
+Confidence Calculation
+  ↓
+Output: Emotion with confidence
+```
+
+### Multi-Language Support
+
+```
+Text Input
+  ↓
+Language Detection (character patterns, common words)
+  ↓
+Select Language-Specific Patterns:
+  - English: "great", "happy", "love"
+  - Spanish: "genial", "feliz", "amor"
+  - French: "génial", "heureux", "amour"
+  ↓
+Emotion Analysis (using language-specific patterns)
+  ↓
+Output: Emotion + Detected Language
+```
+
+### Audio Waveform
+
+```
+Audio Input (Web Audio API)
+  ↓
+Analyzer Node (FFT)
+  ↓
+Time Domain Data
+  ↓
+Canvas Rendering (60fps)
+  ↓
+Gradient Waveform
+  ↓
+Display to User
+```
+
+### Emotion Trends
+
+```
+Every Emotion Analysis
+  ↓
+Store to IndexedDB (timestamp + emotion + context)
+  ↓
+On Dashboard Load:
+  ↓
+Query Emotions (with time filter)
+  ↓
+Analyze Patterns:
+  - Average valence by time of day
+  - Emotion distribution
+  - Trends over time
+  ↓
+Generate Charts
+  ↓
+Display Insights
+```
+
+---
+
+## File Structure
+
+```
+src/
+├── lib/
+│   └── jepa/
+│       ├── emotion-detector.ts       # ENHANCE: Better patterns
+│       ├── language-detector.ts      # NEW: Language detection
+│       ├── multilingual-emotions.ts  # NEW: Multi-language patterns
+│       ├── emotion-storage.ts        # NEW: IndexedDB storage
+│       ├── emotion-trends.ts         # NEW: Trend analysis
+│       ├── audio-capture.ts          # EXISTING: Web Audio API
+│       └── stt-engine.ts             # EXISTING: Browser-based STT
+├── components/
+│   └── jepa/
+│       ├── AudioWaveform.tsx         # NEW: Waveform visualization
+│       ├── EmotionTrendsDashboard.tsx # NEW: Trends visualization
+│       └── [existing components]
+└── app/
+    └── jepa/
+        └── page.tsx                  # UPDATE: Add trends tab
+```
+
+---
+
+## Dependencies
+
+### Existing Dependencies (No New Dependencies Required)
+- `src/lib/jepa/audio-capture.ts` - Web Audio API
+- `src/lib/jepa/stt-engine.ts` - Browser-based STT
+- `zustand` - State management
+- Existing chart libraries (if any)
+
+### No Native Dependencies
+- All STT runs in browser via Web Audio API
+- No whisper.cpp native compilation required
+- Cloudflare Workers AI for cloud fallback
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+- Enhanced emotion detection patterns
+- Language detection accuracy
+- Emotion storage to IndexedDB
+- Trend analysis calculations
+
+### Integration Tests
+- Complete emotion analysis pipeline
+- Multi-language emotion detection
+- Waveform visualization with audio
+- Trends dashboard with real data
+
+### Manual Testing
+- Record audio and see waveform
+- Speak in different languages
+- View emotion trends over time
+- Verify STT accuracy
+
+---
+
+## Success Metrics
+
+### Quantitative
+- ✅ 6 agents deployed
+- ✅ 0 TypeScript errors
+- ✅ 10+ languages supported
+- ✅ Emotion detection accuracy improved
+- ✅ 60fps waveform rendering
+- ✅ IndexedDB storage working
+
+### Qualitative
+- ✅ Emotion analysis feels more accurate
+- ✅ Multi-language support works seamlessly
+- ✅ Waveform visualization is beautiful
+- ✅ Trends provide valuable insights
+- ✅ STT works without native dependencies
 
 ---
 
 ## Timeline
 
-**Agent Execution:** Parallel deployment of all 5 agents
-**Integration:** After agents complete, integrate with existing JEPA system
-**Testing:** Verify model loading, emotion accuracy, transcription quality
-**Documentation:** Model usage guide, performance benchmarks
+**Estimated Total Time:** 18-22 hours (6 agents × 3 hours average)
+
+**Agent 1:** 3-4 hours (Enhanced Emotion Analysis)
+**Agent 2:** 3-4 hours (Multi-Language Support)
+**Agent 3:** 3-4 hours (Audio Waveform)
+**Agent 4:** 3-4 hours (Emotion Trends)
+**Agent 5:** 2-3 hours (STT Verification)
+**Agent 6:** 2-3 hours (Integration & Polish)
 
 ---
 
-**Round 5 Status:** 🟢 ACTIVE
-**Next:** Deploy 5 agents with AutoAccept
-**Goal:** Real JEPA models + STT integration
+## Next Actions
+
+1. ✅ Create briefing document (this file)
+2. ⏳ Deploy Agent 1 (Enhanced Emotion Analysis)
+3. ⏳ Deploy Agent 2 (Multi-Language Support)
+4. ⏳ Deploy Agent 3 (Audio Waveform)
+5. ⏳ Deploy Agent 4 (Emotion Trends)
+6. ⏳ Deploy Agent 5 (STT Verification)
+7. ⏳ Deploy Agent 6 (Integration & Polish)
+8. ⏳ Verify all features work
+9. ⏳ Update documentation
+10. ⏳ Commit changes
 
 ---
 
-*"Transforming JEPA from a prototype into a production emotion analysis system with real ML models."*
+**Briefing Status:** ✅ COMPLETE
+**Ready for Agent Deployment:** YES
+**AutoAccept Mode:** ENABLED
 
-**End of Round 5 Briefing**
+---
+
+*Round 5 Briefing - Advanced JEPA Features*
+*Created: 2025-01-05*
+*Orchestrator: Claude Sonnet 4.5*
+*Method: BMAD*

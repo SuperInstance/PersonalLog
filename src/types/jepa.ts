@@ -34,9 +34,34 @@ export interface JEPA_TranscriptSegment {
 
 export interface SegmentMetadata {
   isInterjection?: boolean
-  emotionDetected?: string
+  emotionDetected?: EmotionType
   keywords?: string[]
+  emotionConfidence?: number // 0-1
+  secondaryEmotions?: EmotionType[]
 }
+
+/**
+ * Comprehensive emotion type for text-based emotion detection
+ */
+export type EmotionType =
+  | 'happy'
+  | 'excited'
+  | 'joyful'
+  | 'content'
+  | 'calm'
+  | 'grateful'
+  | 'proud'
+  | 'relieved'
+  | 'curious'
+  | 'surprised'
+  | 'confused'
+  | 'sad'
+  | 'disappointed'
+  | 'worried'
+  | 'angry'
+  | 'frustrated'
+  | 'irritated'
+  | 'neutral'
 
 export interface JEPA_TranscriptMetadata {
   totalSpeakers: number
