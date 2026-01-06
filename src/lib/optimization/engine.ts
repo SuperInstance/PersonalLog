@@ -167,7 +167,8 @@ export class OptimizationEngine {
     // Generate candidates
     const candidates: OptimizationCandidate[] = [];
 
-    for (const rule of this.rules.values()) {
+    const rulesArray = Array.from(this.rules.values());
+    for (const rule of rulesArray) {
       if (strategy.shouldSuggest(rule, context)) {
         const candidate = strategy.generateCandidate(rule, context);
         candidates.push(candidate);
@@ -665,7 +666,8 @@ export class OptimizationEngine {
   private emitEvent(event: OptimizationEvent): void {
     const listeners = this.eventListeners.get(event.type);
     if (listeners) {
-      for (const listener of listeners) {
+      const listenersArray = Array.from(listeners);
+      for (const listener of listenersArray) {
         try {
           listener(event);
         } catch (error) {

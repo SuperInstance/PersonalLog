@@ -1,0 +1,53 @@
+// This is a temporary fix for the Note model. Use this content to replace the Note model section in prisma/schema.prisma.
+
+// ============================================
+// NOTES SYSTEM
+// ============================================
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   // Markdown content
+  description String?
+  tags        String?  // JSON array of tags
+
+  // Organization
+  folder      String?  // "research", "ideas", "projects", "transcripts"
+  order       Int      @default(0) // Manual ordering
+
+  // Metadata
+  projectId   String?  // Link to project (optional)
+  isPinned    Boolean  @default(false)
+  wordCount   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project?  @relation(fields: [projectId], references: [id])
+  files       NoteFile[]
+}
+
+model NoteFile {
+  id          String   @id @default(cuid())
+  noteId      String
+
+  // File Content
+  name        String
+  type        String   // "markdown", "image", "pdf", "audio", "video", "other"
+  filePath    String   // Storage path or URL
+  fileSize    Int?
+  mimeType   String?
+
+  // Source
+  sourceType  String   // "manual", "asr_transcript", "paste", "import"
+  sourceUrl   String?  // If imported from URL
+
+  // Audio Metadata (for ASR transcripts)
+  audioDuration   Float?
+  transcriptionText String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  note        Note  @relation(fields: [noteId], references: [id], onDelete: Cascade)
+}

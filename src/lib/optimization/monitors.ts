@@ -514,7 +514,8 @@ export class MonitorRegistry {
   start(): void {
     if (this.active) return;
 
-    for (const monitor of this.monitors.values()) {
+    const monitorsArray = Array.from(this.monitors.values());
+    for (const monitor of monitorsArray) {
       monitor.start();
     }
 
@@ -527,7 +528,8 @@ export class MonitorRegistry {
   stop(): void {
     if (!this.active) return;
 
-    for (const monitor of this.monitors.values()) {
+    const monitorsArray = Array.from(this.monitors.values());
+    for (const monitor of monitorsArray) {
       monitor.stop();
     }
 
@@ -554,7 +556,8 @@ export class MonitorRegistry {
   getAllReadings(): Record<OptimizationTarget, MetricReading> {
     const readings: Record<string, MetricReading> = {};
 
-    for (const [metric, monitor] of this.monitors) {
+    const monitorsArray = Array.from(this.monitors.entries());
+    for (const [metric, monitor] of monitorsArray) {
       readings[metric] = monitor.getCurrentReading();
     }
 

@@ -390,7 +390,8 @@ export class ExperimentManager {
    * Get active experiment for optimization
    */
   getActiveExperiment(optimizationId: string): Experiment | undefined {
-    for (const experiment of this.experiments.values()) {
+    const experimentsArray = Array.from(this.experiments.values());
+    for (const experiment of experimentsArray) {
       if (
         experiment.optimizationId === optimizationId &&
         experiment.status === 'running'

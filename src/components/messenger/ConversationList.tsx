@@ -12,11 +12,14 @@
  * - Uses VirtualList for 50+ conversations (windowed rendering)
  */
 
-import { useState, useMemo, memo, useCallback } from 'react'
+import { useState, useMemo, memo, useCallback, useEffect } from 'react'
 import { Search, Pin, MoreVertical } from 'lucide-react'
 import type { Conversation } from '@/types/conversation'
 import { getAuthorDisplayName } from '@/lib/utils'
 import { VirtualList } from '@/components/ui/VirtualList'
+import { AgentSection } from '@/components/agents'
+import { getHardwareInfo } from '@/lib/hardware'
+import type { HardwareProfile } from '@/lib/hardware'
 
 interface ConversationListProps {
   conversations: Conversation[]
@@ -24,6 +27,7 @@ interface ConversationListProps {
   onSelectConversation: (conversation: Conversation) => void
   onUpdateConversation: (conversation: Conversation) => void
   collapsed?: boolean
+  onActivateAgent?: (agentId: string) => void
 }
 
 export default function ConversationList({
@@ -32,9 +36,33 @@ export default function ConversationList({
   onSelectConversation,
   onUpdateConversation,
   collapsed = false,
+  onActivateAgent,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showPinnedOnly, setShowPinnedOnly] = useState(false)
+  const [hardwareProfile, setHardwareProfile] = useState<HardwareProfile | null>(null)
+  const [activeAgentIds, setActiveAgentIds] = useState<string[]>([])
+
+  // Initialize agents and load hardware profile
+  useEffect(() => {
+    const initAgents = async () => {
+      try {
+        // Register preset agents (lazy load to avoid circular dependency)
+        const { registerPresetAgents } = await import('@/lib/agents')
+        registerPresetAgents()
+
+        // Get hardware info
+        const hwResult = await getHardwareInfo()
+        if (hwResult.success && hwResult.profile) {
+          setHardwareProfile(hwResult.profile)
+        }
+      } catch (error) {
+        console.error('Failed to initialize agents:', error)
+      }
+    }
+
+    initAgents()
+  }, [])
 
   // Separate pinned and regular conversations (memoized)
   const { pinnedConversations, regularConversations } = useMemo(() => ({
@@ -216,8 +244,20 @@ export default function ConversationList({
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        {/* Pinned Conversations - always show directly (usually few) */}
+      <div className="flex-1 overflow-y-auto">
+        {/* AI Agents Section */}
+        {!collapsed && onActivateAgent && (
+          <AgentSection
+            hardwareProfile={hardwareProfile}
+            onActivateAgent={onActivateAgent}
+            collapsed={collapsed}
+            activeAgentIds={activeAgentIds}
+          />
+        )}
+
+        {/* Conversations Section */}
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          {/* Pinned Conversations - always show directly (usually few) */}
         {filteredPinned.length > 0 && (
           <div className="mb-4 flex-shrink-0">
             <h3 className="px-1 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider" id="pinned-heading">
@@ -274,6 +314,7 @@ export default function ConversationList({
               )}
             </>
           )}
+        </div>
         </div>
       </div>
     </div>

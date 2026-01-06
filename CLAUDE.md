@@ -1,525 +1,233 @@
-# PersonalLog - Production Deployment Guide
+# PersonalLog - Production Orchestration Hub
 
-## 🎯 CURRENT PHASE: PRODUCTION DEPLOYMENT & LAUNCH
-
-> "Building a user-owned AI workflow platform with transparent, sustainable economics"
+> "Building production-ready AI workflow software with systematic autonomous iteration"
 
 ---
 
-## Mission
+## Current Status: 🟢 ACTIVE ORCHESTRATION
 
-**PersonalLog.AI** - A user-owned AI personal log and workflow organizer that:
-- Runs on user's infrastructure (Cloudflare/local devices)
-- Keeps data sovereignty with the user
-- Provides convenient workflow orchestration as a service
-- Monetizes through convenience and ad removal (not data)
-
-### Core Philosophy
-
-**We Are Not:**
-- ❌ A data collector or reseller
-- ❌ An AI provider (users bring their own)
-- ❌ A platform that locks in user data
-- ❌ A middleman taking margins on AI services
-
-**We Are:**
-- ✅ A frontend interface and workflow organizer
-- ✅ A convenience layer for setting up Cloudflare/local AI
-- ✅ A UX polish and productivity enhancer
-- ✅ A transparent platform where users own everything
+**Mode:** Production Deployment with Multi-Agent Coordination
+**Goal:** Ship PersonalLog.AI with JEPA-enhanced transcripts
+**Method:** BMAD (Backlog → Milestones → Agents → Delivery)
+**Agent Limit:** 6 per round (max)
+**Round Frequency:** Spawn next round only after current round completes
 
 ---
 
-## Business Model
+## BMAD Orchestration Method
 
-### Web Version (PersonalLog.AI)
+Our customized framework for systematic development:
 
-**Free MVP - Ad-Supported:**
-- Quick sign-up with email
-- Full access to all features
-- **2 ad banners** (header + sidebar)
-- Encouraged to link Cloudflare account for:
-  - Better performance
-  - Unlimited storage
-  - Reduced to 1 ad banner
+### **B - Backlog Management**
+- Organize work into clear, prioritized backlogs
+- Break large features into small, deliverable chunks
+- Estimate complexity before assigning to agents
+- Always maintain 3+ rounds of work ready to assign
 
-**Bring Your Own Cloudflare (BYOC):**
-- User connects their Cloudflare account
-- We provide setup wizard and configuration
-- User pays Cloudflare directly ( Workers KV, R2, D1, etc.)
-- User pays AI providers directly (OpenAI, Anthropic, etc.)
-- We charge **NOTHING** for infrastructure or AI usage
-- User gets full data sovereignty and export capability
+### **M - Milestones & Metrics**
+- Define clear milestones for each round
+- Set measurable success criteria
+- Track progress quantitatively (files changed, errors fixed, etc.)
+- Celebrate achievements when milestones are hit
 
-**Ad Removal - Premium:**
-- $4/month or $35/year (web)
-- Removes both ad banners completely
-- Pure convenience fee for UI and workflow organization
-- No data tracking or targeting (ads are context-based only)
+### **A - Agents & Assignments**
+- Deploy up to 6 specialized agents per round (not more)
+- Give agents focused, achievable scopes
+- **ALWAYS use AutoAccept mode** for autonomous decision-making
+- Monitor closely but trust agents to implement
+- Each agent has clear deliverables and success criteria
 
-### Desktop/Mobile Apps
-
-**Same Features, Plus:**
-- Native device capabilities (camera, microphone, files)
-- Local AI model support (Ollama, LM Studio, etc.)
-- Offline mode with sync when online
-- Background processing and notifications
-
-**Pricing:**
-- Same $4/month or $35/year
-- Removes ads across all platforms
-- Syncs subscription via user account
-- Running on user's device + their Cloudflare = FREE for us
-
-### Usage Over Free Tiers
-
-**Transparency:**
-- Free tiers clearly documented during setup
-- Usage monitoring dashboard included
-- When approaching limits: clear options shown
-- User pays overage directly to Cloudflare/AI providers
-- We take **ZERO** margin or markup on usage
-
-**Examples:**
-- Cloudflare Workers: 100k requests/day free
-- Cloudflare R2: 10GB storage free
-- OpenAI API: Pay-as-you-go (user's account)
-- Local models: 100% free (user's hardware)
+### **D - Delivery & Documentation**
+- Verify all agent work before marking round complete
+- Create summary documents for each round
+- Update progress trackers
+- Commit all changes before spawning next round
+- Reflect on what worked well and what didn't
 
 ---
 
-## Regulatory Protection
+## Critical Architecture Principles
 
-### Our Position
+### 🎯 System-Agnostic Design (Foundation of MVP)
 
-**PersonalLog is a:**
-- Frontend display interface (like a dashboard)
-- Workflow organizer (like a productivity tool)
-- Configuration helper (like a setup wizard)
-- Convenience service (like a premium UI/UX layer)
+**PRINCIPLE:** PersonalLog must work across the entire hardware spectrum, from low-end laptops to high-end workstations. Feature availability adjusts automatically based on hardware capabilities.
 
-**We Do NOT:**
-- Process, store, or transmit user data (except to their own Cloudflare)
-- Provide AI services ourselves (users bring their own)
-- Access or analyze user content beyond local display
-- Sell data or insights to third parties
-- Act as a data controller or processor (user owns their data)
+**Hardware Spectrum:**
 
-**Legal Theory:**
-- Similar to: Google Drive, Dropbox, Notion (frontend + storage)
-- NOT similar to: OpenAI, ChatGPT (AI service provider)
-- User provides their own AI models and APIs
-- We just organize the workflow and display results
-- Ads are for service monetization, not data monetization
+**Tier 1: Low-End (No GPU, <8GB RAM)**
+- Feature: Basic AI chat through APIs only
+- JEPA: DISABLED (not enough resources)
+- Local Models: DISABLED
+- Experience: Fully functional, API-dependent
 
-### Compliance Notes
+**Tier 2: Mid-Range (RTX 4050, 8-16GB RAM)**
+- Feature: Full-featured with local models
+- JEPA: ENABLED (Tiny-JEPA only)
+- Local Models: ENABLED (small/medium models)
+- Experience: Complete feature set, good performance
 
-- **GDPR:** User owns data, we're just a display tool
-- **CCPA:** No data sales, user data never touches our servers
-- **AI Regulation:** We don't provide AI services
-- **Data Sovereignty:** User's Cloudflare account = user's data
-- **Ad Compliance:** Context-based ads only, no tracking/targeting
+**Tier 3: High-End (RTX 5090, 32GB+ RAM)**
+- Feature: Maximum features, multimodal JEPA
+- JEPA: ENABLED (all models including multimodal)
+- Local Models: ENABLED (all model sizes)
+- Experience: Pro-grade capabilities, parallel processing
 
----
-
-## Architecture
-
-### Web Version (PersonalLog.AI)
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                   PersonalLog.AI (Web)                      │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌───────────────────┐  │
-│  │  Messenger  │  │  Knowledge  │  │  Workflow Orch.   │  │
-│  │  Interface  │  │  Browser   │  │  & Automation      │  │
-│  └──────┬──────┘  └──────┬──────┘  └─────────┬─────────┘  │
-│         │                │                    │             │
-│         └────────────────┴────────────────────┘             │
-│                          │                                  │
-│                          ▼                                  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │         Next.js App (Cloudflare Pages)              │  │
-│  │  • Auth (Clerk/NextAuth)  • Billing (Stripe)        │  │
-│  │  • Cloudflare OAuth      • Ad Integration           │  │
-│  └──────────────────────┬───────────────────────────────┘  │
-│                         │                                  │
-│  ┌──────────────────────┴──────────────────────────────┐  │
-│  ▼                      ▼                      ▼         │  │
-│  ┌─────────┐      ┌──────────┐          ┌──────────┐  │  │
-│  │ User's  │      │ User's   │          │ User's   │  │  │
-│  │Cloudflare│     │ AI APIs  │          │  Google  │  │  │
-│  │ Account │      │(10+ providers)       │   Docs   │  │  │
-│  └─────────┘      └──────────┘          └──────────┘  │  │
-│  Workers/KV/R2    OpenAI/Anthropic/      Docs Export  │  │
-│                   Local Models                         │  │
-└──────────────────────────────────────────────────────────┘
-```
-
-### Desktop/Mobile Apps
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│              PersonalLog (Desktop/Mobile)                   │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │          Electron/React Native App                   │  │
-│  │  • Messenger UI  • Knowledge Browser  • Settings     │  │
-│  └──────────────────┬───────────────────────────────────┘  │
-│                     │                                        │
-│  ┌──────────────────┼───────────────────────────────────┐  │
-│  ▼                  ▼                  ▼                   │
-│  ┌─────────┐    ┌──────────┐     ┌────────────┐        │  │
-│  │  Local  │    │ User's   │     │  User's    │        │  │
-│  │   AI    │    │  Cloudflare│   │  Google    │        │  │
-│  │(Ollama, │    │ Account  │     │   Docs     │        │  │
-│  │ LM Stu) │    │ (Sync)   │     │ (Export)   │        │  │
-│  └─────────┘    └──────────┘     └────────────┘        │  │
-│                                                      │  │
-│  Capabilities: Camera, Mic, Files, Background,    │  │
-│                Notifications, Local Storage        │  │
-└──────────────────────────────────────────────────────────┘
-```
-
----
-
-## Feature Set
-
-### Core Features (All Versions)
-
-**Messaging & Workflow:**
-- ✅ Messenger-style AI conversation interface
-- ✅ Multiple AI providers (10+ supported)
-- ✅ AI Contact system with personality tuning
-- ✅ Context files per conversation
-- ✅ Message search and filtering
-- ✅ Conversation archival and export
-- ✅ Workflow automation and shortcuts
-
-**Knowledge Management:**
-- ✅ Knowledge base with vector search
-- ✅ File upload and indexing (PDF, DOCX, TXT, MD)
-- ✅ Checkpoint system for version control
-- ✅ LoRA training data export
-- ✅ Background sync (desktop/mobile)
-- ✅ Knowledge browser UI
-- ✅ Google Docs export (print-ready compilation)
-
-**Intelligence & Analytics:**
-- ✅ Usage analytics (local-only, privacy-first)
-- ✅ A/B testing for UX improvements
-- ✅ Auto-optimization of performance
-- ✅ Personalization and preference learning
-- ✅ Hardware detection and benchmarking
-- ✅ Feature flags and gradual rollout
-
-### Web-Specific Features
-
-**Quick Start MVP:**
-- Email/password signup (30 seconds)
-- Instant access with sample AI contacts
-- Pre-configured workflows and templates
-- Tutorial and onboarding flow
-- 2 ad banners (non-intrusive, context-based)
-- Limited storage ( encourages Cloudflare link )
-
-**Cloudflare Integration:**
-- One-click OAuth connection
-- Auto-provisioning of Workers, KV, R2, D1
-- Configuration wizard for AI APIs
-- Setup guides for popular providers
-- Usage monitoring dashboard
-- Cost estimator and alerts
-
-**Premium Features:**
-- Ad removal (clean UI)
-- Priority support
-- Early access to features
-- Custom themes and branding
-- Advanced analytics
-
-### Desktop/Mobile-Specific Features
-
-**Native Capabilities:**
-- Camera integration (image analysis, OCR)
-- Microphone (voice input, transcription)
-- File system access (drag-drop, direct editing)
-- Background processing (sync, indexing)
-- Push notifications (updates, reminders)
-- Offline mode (local AI + sync when online)
-
-**Local AI Support:**
-- Ollama integration (100+ local models)
-- LM Studio support
-- Custom model endpoints
-- Hardware acceleration (GPU, NPU)
-- Hybrid mode (local + cloud AI)
-
----
-
-## Integration Guide
-
-### Google Docs Connector
-
-**Purpose:** Allow users familiar with Google Docs to export compiled work for printing, sharing, or publishing.
-
-**Features:**
-- Export conversation to Google Doc
-- Format with headings, styles, code blocks
-- Include metadata (date, participants, tags)
-- Batch export multiple conversations
-- Auto-sync on completion
-- Template selection (article, report, letter)
-- Print-ready formatting
+**Tier 4: Extreme (Jetson Thor, DGX Station, etc.)**
+- Feature: Research/professional grade
+- JEPA: ENABLED (multiple models simultaneously)
+- Local Models: ENABLED (maximum scale)
+- Experience: Enterprise/research capabilities
 
 **Implementation:**
 ```typescript
-// Google Docs API integration
-interface GoogleDocsExport {
-  conversationId: string
-  format: 'article' | 'report' | 'letter' | 'custom'
-  template?: string
-  includeMetadata: boolean
-  includeTimestamps: boolean
-  autoSync: boolean
-}
+// Hardware detection runs on app startup
+const capabilities = await detectHardwareCapabilities();
 
-// Export function
-export async function exportToGoogleDocs(
-  config: GoogleDocsExport
-): Promise<string> {
-  // 1. Format conversation content
-  // 2. Apply template styling
-  // 3. Create Google Doc via API
-  // 4. Return document URL
-  // 5. User can edit, share, or print
+// Feature flags adjust automatically
+if (capabilities.hardwareScore < 30) {
+  // Low-end: API-only mode
+  enableFeature('api_mode');
+  disableFeature('jepa.transcription');
+  disableFeature('ai.local_models');
+} else if (capabilities.hardwareScore < 60) {
+  // Mid-range: Local models + basic JEPA
+  enableFeature('ai.local_models');
+  enableFeature('jepa.transcription', { model: 'tiny-jepa' });
+} else {
+  // High-end: Everything enabled
+  enableFeature('ai.local_models', { maxSize: 'large' });
+  enableFeature('jepa.transcription', { model: 'jepa-large' });
+  enableFeature('jepa.multimodal');
 }
 ```
 
+### ☁️ Cloudflare Integration (Web Version Foundation)
+
+**PRINCIPLE:** The web version runs on USER'S Cloudflare account, not ours. We provide the UI and orchestration; user provides the infrastructure (free tier).
+
 **User Flow:**
-1. User clicks "Export to Google Docs"
-2. OAuth popup (one-time Google account connection)
-3. Select format/template
-4. Preview and confirm
-5. Doc created in user's Google Drive
-6. Link provided to open/edit/share
+```
+1. User visits PersonalLog.AI
+   ↓
+2. Click "Login with Cloudflare" (OAuth)
+   ↓
+3. First-time users:
+   - "Connect your Cloudflare account to use PersonalLog"
+   - Guided signup: Create Cloudflare account (free tier)
+   - "We use YOUR Cloudflare, not ours. Your data, your control."
+   ↓
+4. Authorize PersonalLog app (OAuth scope)
+   ↓
+5. PersonalLog deploys Workers to user's account (one-click)
+   - Chat handler runs on user's Workers
+   - Data stored in user's R2/D1
+   - User pays Cloudflare directly (if exceeding free tier)
+   ↓
+6. PersonalLog is just the UI/orchestration layer
+   - Zero infrastructure costs for us
+   - Zero data storage costs for us
+   - Zero API costs for us
+```
+
+**Business Model Implications:**
+- **Free Tier Users:** Pay nothing (Cloudflare free tier sufficient)
+- **Power Users:** Pay Cloudflare directly for additional resources
+- **Our Revenue:** Banner ads (free) or nominal fee (ad-free + extras)
+
+**Our Role:**
+- Provide beautiful, functional UI
+- Provide orchestration and routing logic
+- Guide users to Cloudflare signup
+- Deploy Workers to user's account automatically
+- Handle updates and maintenance
+- NEVER touch user's data
+
+**Moat:**
+- Custom Cloudflare integration (competitors can't easily replicate)
+- Seamless desktop → web → mobile sync via user's Cloudflare
+- "Your Cloudflare account" brand association
+- Zero-infrastructure-cost model (hard to compete with)
+
+### 🔒 Privacy-First Data Handling
+
+**PRINCIPLE:** User's data stays on user's infrastructure. We never see, touch, or store user conversations.
+
+**Storage Hierarchy:**
+```
+Tier 1: Local (Desktop App)
+- IndexedDB for conversations
+- Local model storage (GGUF files)
+- User's computer, user's control
+
+Tier 2: User's Cloudflare (Web Version)
+- User's R2 bucket for storage
+- User's D1 database for metadata
+- User's Workers for processing
+- User pays Cloudflare, not us
+
+Tier 3: Our Servers
+- NOTHING! Zero data storage
+- We just provide UI and orchestration
+- User brings their own infrastructure
+```
+
+### 🌐 Ecosystem Foundation
+
+**PRINCIPLE:** Build the foundation once, deploy to infinite domains. One tech stack, many specialized products.
+
+**Current Products (Planned):**
+- PersonalLog.AI (general productivity) ← MVP
+- StudyLog.AI (students, researchers)
+- BusinessLog.AI (professionals, enterprise)
+- ActiveLog.AI (fitness, health)
+- PlayerLog.AI (gaming, esports)
+- RealLog.AI (content creators, streaming)
+- FishingLog.AI (niche example)
+- ... infinite Log.AI products possible
+
+**Shared Technology:**
+- Same AI models (JEPA, Whisper, Phi-3, etc.)
+- Same Cloudflare integration
+- Same sync architecture
+- Same authentication (Cloudflare OAuth)
+- Same core features (chat, search, analytics)
+
+**Differentiation:**
+- Branding (name, logo, colors)
+- UI Theme (domain-specific)
+- Specialized Features (citations, meetings, workouts)
+- Target Audience (students, professionals, gamers)
+- Domain-Specific Data (papers, contracts, exercises)
+
+**Foundation Requirements (MUST BUILD NOW):**
+1. ✅ Hardware detection and adaptive feature flags
+2. ✅ Modular architecture (easy to rebrand/retheme)
+3. ✅ Cloudflare Workers integration architecture
+4. ✅ Cross-platform sync (desktop → web → mobile)
+5. ✅ Plugin system for domain-specific features
 
 ---
 
-## Deployment Strategy
+## Current Project Status
 
-### Phase 1: Complete Type Safety ✅ (CURRENT)
+### ✅ Completed
+- **TypeScript Safety:** 0 errors (100% error-free codebase)
+- **Test Infrastructure:** All test files updated and passing
+- **Core Features:** Messenger, Knowledge, Analytics, Optimization
+- **Architecture:** Complete system with intelligence features
+- **Business Model:** Mass-adoption ecosystem strategy documented
 
-**Status:** 88 errors remaining (27% of original 331)
+### 🎯 In Progress
+- **JEPA Integration:** Subtext transcription as beta research feature
+- **System-Agnostic Architecture:** Hardware detection + feature flags
+- **Cloudflare Integration:** Web version with user's Workers
+- **Production Polish:** Packaging for deployment
 
-**Action:**
-- Deploy specialized agents to fix remaining errors
-- Achieve 100% error-free codebase
-- Estimated: 2 more cycles (4-6 hours)
-
-**Completion Criteria:**
-- ✅ Zero TypeScript errors
-- ✅ Zero ESLint warnings
-- ✅ All tests passing
-- ✅ Build succeeds in <30s
-
-### Phase 2: Production Packaging ⏳
-
-**Web Version (PersonalLog.AI):**
-1. Configure for Cloudflare Pages deployment
-2. Set up environment variables and secrets
-3. Create production build pipeline
-4. Deploy to staging.personalloG.AI
-5. Test all features end-to-end
-6. Deploy to personalLog.AI
-
-**Desktop App:**
-1. Configure Electron build
-2. Code signing for Windows/Mac/Linux
-3. Auto-update mechanism
-4. Package installers (.exe, .dmg, .AppImage)
-5. Deploy to GitHub Releases
-6. Create download page on PersonalLog.AI
-
-**Mobile Apps:**
-1. React Native configuration
-2. iOS build (TestFlight → App Store)
-3. Android build (Play Store)
-4. App store assets and screenshots
-5. Privacy policy and terms
-
-### Phase 3: Cloudflare Integration ⏳
-
-**Setup Wizard:**
-1. Cloudflare OAuth integration
-2. Auto-provisioning scripts
-   - Create Workers
-   - Create KV namespace
-   - Create R2 bucket
-   - Create D1 database
-3. Configuration templates
-4. Setup guide and documentation
-5. Troubleshooting and FAQ
-
-**Testing:**
-1. Test with fresh Cloudflare account
-2. Verify auto-provisioning
-3. Test all features end-to-end
-4. Load testing and performance
-5. Cost validation and estimates
-
-### Phase 4: Ad Integration ⏳
-
-**Ad Provider Selection:**
-- Google AdSense (contextual ads)
-- Carbon Ads (tech audience)
-- EthicalAds (developer tools)
-- Self-serve (direct sponsorships)
-
-**Implementation:**
-- Header banner (728x90 or responsive)
-- Sidebar banner (300x250 or responsive)
-- Respect user's ad preferences
-- No tracking or targeting
-- Context-based only
-
-**Premium Toggle:**
-- Stripe subscription ($4/mo, $35/yr)
-- Ad removal on payment success
-- Subscription management
-- Cancel anytime
-
-### Phase 5: Google Docs Integration ⏳
-
-**Implementation:**
-1. Google Cloud project setup
-2. OAuth credentials
-3. Docs API integration
-4. Export templates
-5. Testing and QA
-6. Documentation
-
----
-
-## Production Checklist
-
-### Code Quality
-- [ ] Zero TypeScript errors (88 remaining → 0)
-- [ ] Zero ESLint warnings
-- [ ] All tests passing (>90% coverage)
-- [ ] Build time <30s
-- [ ] Bundle size <500KB gzipped
-
-### Security
-- [ ] No vulnerabilities (npm audit)
-- [ ] Environment variables secured
-- [ ] API keys not in client code
-- [ ] CORS configured properly
-- [ ] Rate limiting implemented
-
-### Performance
-- [ ] Lighthouse score >90 (all categories)
-- [ ] First Contentful Paint <2s
-- [ ] Time to Interactive <3s
-- [ ] Cache hit rate >75%
-- [ ] API response <500ms (p95)
-
-### User Experience
-- [ ] Onboarding flow complete
-- [ ] Tutorial and help docs
-- [ ] Error messages clear and helpful
-- [ ] Loading states and skeletons
-- [ ] Mobile responsive
-
-### Business Features
-- [ ] Cloudflare OAuth integration
-- [ ] Auto-provisioning scripts
-- [ ] Ad integration (contextual)
-- [ ] Stripe subscription (ad removal)
-- [ ] Google Docs export
-- [ ] Usage dashboard
-- [ ] Cost estimator
-
-### Legal & Compliance
-- [ ] Privacy policy (no data collection)
-- [ ] Terms of service (user data ownership)
-- [ ] GDPR compliance (user owns data)
-- [ ] CCPA compliance (no data sales)
-- [ ] Cookie policy (minimal cookies)
-- [ ] Ad disclosure
-
-### Deployment
-- [ ] Domain configured (personalLog.AI)
-- [ ] SSL certificates
-- [ ] CDN configured (Cloudflare)
-- [ ] Backup strategy
-- [ ] Error tracking (Sentry)
-- [ ] Analytics (privacy-first)
-- [ ] Uptime monitoring
-
-### Documentation
-- [ ] User guide
-- [ ] API documentation
-- [ ] Setup guides (Cloudflare, AI providers)
-- [ ] Troubleshooting FAQ
-- [ ] Video tutorials
-- [ ] Changelog
-
----
-
-## Priority Tasks (This Session)
-
-### Immediate (Next 2 Hours)
-1. **Complete TypeScript Audit** - Fix remaining 88 errors
-   - Cycle 4: Fix ~70 errors
-   - Cycle 5: Fix final ~18 errors
-   - Goal: 100% error-free codebase
-
-2. **Verify Production Readiness**
-   - Run full test suite
-   - Check all features work
-   - Performance benchmarks
-   - Security audit
-
-### Short-Term (Next 24 Hours)
-3. **Package for Deployment**
-   - Configure Cloudflare Pages build
-   - Create production build pipeline
-   - Set up staging environment
-   - Deploy to staging.personalLog.AI
-
-4. **Cloudflare Integration**
-   - Set up OAuth app
-   - Create auto-provisioning scripts
-   - Build setup wizard
-   - Test end-to-end
-
-### Medium-Term (Next Week)
-5. **Ad Integration**
-   - Select ad provider
-   - Implement ad components
-   - Configure placement
-   - Test with real ads
-
-6. **Google Docs Connector**
-   - Set up Google Cloud project
-   - Configure OAuth
-   - Implement export
-   - Create templates
-
-### Long-Term (Next Month)
-7. **Desktop App**
-   - Configure Electron build
-   - Code signing
-   - Package installers
-   - Deploy to GitHub Releases
-
-8. **Mobile Apps**
-   - React Native setup
-   - iOS build (TestFlight)
-   - Android build (Play Store)
+### 📋 Next Up
+- **Documentation:** User guides, API docs, deployment guides
+- **Desktop App:** Electron packaging with JEPA
+- **Web Version:** Cloudflare Workers integration
+- **Mobile Apps:** React Native with JEPA hybrid
 
 ---
 
@@ -527,159 +235,255 @@ export async function exportToGoogleDocs(
 
 | Category | Location |
 |----------|----------|
-| Source Code | `src/` (app, components, lib, types) |
-| Tests | `tests/`, `src/**/*.test.ts` |
-| Documentation | `docs/` |
-| Configuration | `*.config.js`, `tsconfig.json` |
-| Deployment | `vercel.json`, `next.config.ts` |
-| Audit Reports | `docs/AUDIT_*.md` |
-| Progress Tracker | `docs/AUDIT_PROGRESS.md` |
+| **Orchestration Hub** | `CLAUDE.md` (this file) |
+| **Roadmaps** | `.agents/ROADMAPS/` |
+| **Round Briefings** | `.agents/round-N/briefing.md` |
+| **Round Reflections** | `.agents/round-N/reflection.md` |
+| **Agent Tasks** | `.agents/round-N/agent-{N}-tasks.md` |
+| **Progress Tracker** | `.agents/WORK_STATUS.md` |
+| **Source Code** | `src/` |
+| **Tests** | `tests/`, `src/**/*.test.ts` |
 
 ---
 
-## Development Workflow
+## Orchestration Workflow
 
-### While Fixing Errors
+### Per Round (BMAD Cycle)
+
 ```bash
-# 1. Check current error count
-npm run type-check 2>&1 | grep "Found N errors"
+# 1. BACKLOG: Review and prioritize tasks
+#    - Check existing roadmaps
+#    - Create/update round briefings
+#    - Break work into agent-sized chunks
 
-# 2. Deploy specialized agents
-# (Orchestrator handles this)
+# 2. MILESTONES: Define success criteria
+#    - Set clear objectives for round
+#    - Define measurable outcomes
+#    - Estimate round completion time
 
-# 3. Verify fixes
-npm run type-check
+# 3. AGENTS: Deploy up to 6 specialized agents
+#    Agent 1: Task A (focused scope)
+#    Agent 2: Task B (focused scope)
+#    Agent 3: Task C (focused scope)
+#    ...
+#    (Monitor agents in real-time)
 
-# 4. Run tests
-npm test
+# 4. DELIVERY: Verify and document
+#    - Wait for ALL agents to complete
+#    - Review all agent outputs
+#    - Verify builds pass
+#    - Create reflection document
+#    - Commit changes
+#    - Update progress trackers
 
-# 5. Build
+# 5. PLAN NEXT ROUND
+#    - Review what's left
+#    - Create briefings for next round
+#    - Adjust strategy based on learnings
+#    - Spawn next round
+```
+
+### Agent Constraints
+
+**Maximum Agents:** 6 per round
+**Maximum Scope:** Focused, achievable tasks (2-4 hours each)
+**Mode:** AutoAccept ENABLED (autonomous decision-making) - ALWAYS USE
+**Monitoring:** Orchestrator checks progress every 5-10 minutes
+**Completion:** ALL agents must finish before next round
+
+**IMPORTANT:** All agents MUST be spawned with `run_in_background=false` and AutoAccept mode enabled. This allows agents to make autonomous decisions about implementation while the orchestrator monitors their progress.
+
+### Success Criteria
+
+**Round is successful when:**
+- ✅ All agents completed their assigned tasks
+- ✅ Build passes (or specific tests pass)
+- ✅ Changes committed to git
+- ✅ Reflection document created
+- ✅ Progress tracker updated
+- ✅ Next round briefings ready
+
+**Round is retried when:**
+- ❌ Agent crashes or produces errors
+- ❌ Build fails after agent changes
+- ❌ Tests fail due to agent changes
+- ❌ Deliverables don't meet quality standards
+
+---
+
+## Current Roadmaps
+
+### 🎯 Active: JEPA Integration (Round 1)
+**Location:** `.agents/roadmaps/JEPA_INTEGRATION.md`
+**Status:** Planning phase
+**Goal:** Add JEPA subtext transcription as beta research feature
+
+### 📋 Planned: Production Deployment
+**Location:** `.agents/roadmaps/PRODUCTION_DEPLOYMENT.md`
+**Status:** Not started
+**Goal:** Package and deploy PersonalLog.AI
+
+### 🔮 Planned: Mobile Apps
+**Location:** `.agents/roadmaps/MOBILE_APPS.md`
+**Status:** Not started
+**Goal:** React Native apps for iOS/Android
+
+---
+
+## Agent Deployment Template
+
+### When Creating a Round:
+
+1. **Create Round Directory:**
+   ```bash
+   mkdir -p .agents/round-{N}
+   ```
+
+2. **Create Briefing Document:**
+   ```bash
+   # .agents/round-{N}/briefing.md
+   # - Round overview
+   # - Success criteria
+   # - Agent assignments
+   # - Timeline
+   ```
+
+3. **Deploy Agents (max 6) - CRITICAL: ALWAYS use AutoAccept mode:**
+   ```bash
+   # Agent 1: Focus on X
+   # - Use Task tool with AutoAccept enabled
+   # - Set run_in_background=false for sequential execution
+   # - OR set run_in_background=true for parallel execution
+   #
+   # Agent 2: Focus on Y
+   # ... up to 6 agents
+   #
+   # REMEMBER: AutoAccept MUST be enabled for ALL agents
+   ```
+
+4. **Monitor and Wait:**
+   - Check agent outputs periodically
+   - Assist if agents get stuck
+   - Document progress
+
+5. **When All Complete:**
+   - Verify all work
+   - Create reflection
+   - Commit changes
+   - Spawn next round
+
+---
+
+## Quality Standards
+
+**All agent work must:**
+- ✅ Pass TypeScript strict mode (0 errors)
+- ✅ Pass ESLint (0 warnings)
+- ✅ Pass tests (100% of relevant tests)
+- ✅ Be properly documented
+- ✅ Handle edge cases
+- ✅ Include error handling
+- ✅ Follow existing code patterns
+
+**Zero compromise on quality.**
+
+---
+
+## Quick Reference
+
+### Spawn a New Round:
+```bash
+# 1. Create briefing
+cat > .agents/round-{N}/briefing.md << 'EOF'
+# Round N Briefing
+## Goal: ...
+## Success Criteria: ...
+## Agent Assignments: ...
+EOF
+
+# 2. Update progress tracker
+# Edit .agents/WORK_STATUS.md
+
+# 3. Deploy agents (CRITICAL: ALWAYS use AutoAccept mode)
+# Use Task tool with AutoAccept enabled for ALL agents
+# Up to 6 agents with focused scopes
+# Example:
+# Agent 1: <focused task>
+# Agent 2: <focused task>
+# ...
+
+# 4. Wait for completion
+# Monitor with TaskOutput tool
+
+# 5. Verify and commit
 npm run build
-
-# 6. Commit progress
+npm test
 git add .
-git commit -m "audit: Fix N errors (X → Y remaining)"
+git commit -m "round-N: ..."
 ```
 
-### Pre-Deployment
+### Check Agent Progress:
 ```bash
-# 1. Full test suite
-npm test
+# List active agents
+ls -la .agents/round-*/
 
-# 2. Type check
-npm run type-check
+# Check specific agent output
+cat .agents/tasks/{agent-id}.output
 
-# 3. Build
-npm run build
-
-# 4. Lighthouse audit
-npx lighthouse http://localhost:3000 --view
-
-# 5. Security audit
-npm audit
-
-# 6. Deploy to staging
-npm run deploy:staging
+# Monitor in real-time
+tail -f .agents/tasks/*.output
 ```
 
-### Production Deployment
+### Round Completion Checklist:
+- [ ] All agents completed
+- [ ] Build passes
+- [ ] Tests pass
+- [ ] Reflection written
+- [ ] Changes committed
+- [ ] Progress updated
+- [ ] Next round planned
+
+---
+
+## Orchestrator Commands
+
+### Continue Workflow
 ```bash
-# 1. Tag release
-git tag v1.0.0
+# 1. Plan next round (create briefings)
+# 2. Deploy agents (max 6)
+# 3. Monitor progress
+# 4. Verify completion
+# 5. Commit and spawn next round
+```
 
-# 2. Push to GitHub
-git push origin main --tags
+### View Status
+```bash
+# Overall status
+cat .agents/WORK_STATUS.md
 
-# 3. Deploy to Cloudflare Pages (auto)
-# Or manual: npm run deploy:production
+# Current round
+cat .agents/round-{CURRENT}/briefing.md
 
-# 4. Verify
-curl https://personalLog.AI
+# Roadmaps
+ls -la .agents/roadmaps/
+```
 
-# 5. Monitor
-# Check error tracking, analytics, uptime
+### Force Actions (Emergency Only)
+```bash
+# Skip to next round (use sparingly)
+echo "FORCE_NEXT_ROUND=true" > .agents/SKIP_ROUND
+
+# Pause orchestration
+echo "PAUSED=true" > .agents/PAUSE
 ```
 
 ---
 
-## Success Metrics
-
-### Code Quality
-- **Type Errors:** 0 (from 88)
-- **Test Coverage:** >90%
-- **Build Time:** <30s
-- **Bundle Size:** <500KB
-
-### Performance
-- **Lighthouse:** >90 (all categories)
-- **Uptime:** >99.9%
-- **API Response:** <500ms (p95)
-- **Cache Hit:** >75%
-
-### Business
-- **Sign-up Conversion:** >20%
-- **Cloudflare Link Rate:** >40%
-- **Premium Conversion:** >5%
-- **User Satisfaction:** >4.0/5.0
-
-### User Experience
-- **Time to First Message:** <3s
-- **Setup Completion:** >80%
-- **Error Rate:** <0.1%
-- **Support Tickets:** <1% of users
+**Status:** 🟢 ACTIVE - Round 1: JEPA Integration Planning
+**Last Updated:** 2025-01-04
+**Orchestrator:** Claude Sonnet 4.5
+**Method:** BMAD (Backlog → Milestones → Agents → Delivery)
 
 ---
 
-## Important Principles
-
-### For Development
-- **ALWAYS** maintain zero type errors
-- **ALWAYS** test before committing
-- **NEVER** break existing features
-- **ALWAYS** document changes
-- **ALWAYS** think about production deployment
-
-### For Business
-- **ALWAYS** be transparent about costs
-- **NEVER** take margin on user's AI usage
-- **ALWAYS** respect user data ownership
-- **NEVER** lock in user data
-- **ALWAYS** provide clear export options
-
-### For Users
-- **ALWAYS** prioritize their privacy
-- **NEVER** surprise them with costs
-- **ALWAYS** be honest about limitations
-- **NEVER** track or target ads
-- **ALWAYS** provide value for money
-
----
-
-## Vision
-
-**PersonalLog.AI** is not just another AI tool. It's a paradigm shift:
-
-- **User-owned infrastructure:** Your Cloudflare, your AI models, your data
-- **Transparent economics:** You pay for what you use, not what we guess
-- **No lock-in:** Export everything, leave anytime
-- **Sustainable model:** Convenience fee, not data rent
-
-We're building the tool **we wish existed**: a personal AI workflow that respects user autonomy, provides honest pricing, and gets out of the way.
-
----
-
-**Status:** 🟢 PRODUCTION DEPLOYMENT ACTIVE
-**Phase:** Type Safety Completion → Packaging → Launch
-**Goal:** Launch PersonalLog.AI MVP with ad-supported free tier
-**Timeline:** Complete type safety (2 cycles) → Deploy to staging → Launch
-
----
-
-*Last Updated: 2025-01-04*
-*Mode: PRODUCTION DEPLOYMENT*
-*Errors Remaining: 88 (27% of original 331)*
-*Next Milestone: Zero Type Errors → Production Build*
-
----
-
-**Let's ship PersonalLog.AI and show the world how user-owned AI should work.**
+*"We build production software systematically, one focused round at a time. Quality over speed, but never compromise on delivery."*

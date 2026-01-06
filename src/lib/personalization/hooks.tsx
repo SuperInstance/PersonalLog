@@ -86,6 +86,16 @@ export function usePersonalization(userId: string = 'default') {
     return model.getLearningState()
   }, [model])
 
+  // Get the preferences model (for advanced usage)
+  const getPreferences = useCallback(() => {
+    return model.getPreferences()
+  }, [model])
+
+  // Get interaction patterns
+  const getPatterns = useCallback(() => {
+    return model.getPatterns()
+  }, [model])
+
   return {
     get,
     set,
@@ -95,6 +105,8 @@ export function usePersonalization(userId: string = 'default') {
     recordAction,
     toggleLearning,
     getLearningState,
+    getPreferences,
+    getPatterns,
     adapter: adapterRef.current,
   }
 }

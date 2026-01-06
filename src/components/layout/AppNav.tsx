@@ -16,6 +16,7 @@ import {
   Sparkles,
   Menu,
   X,
+  Mic,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -44,6 +45,12 @@ const navItems: NavItem[] = [
     label: 'Knowledge',
     icon: Brain,
     description: 'Browse and edit knowledge base',
+  },
+  {
+    href: '/jepa',
+    label: 'JEPA',
+    icon: Mic,
+    description: 'Audio transcription (Beta)',
   },
   {
     href: '/setup',

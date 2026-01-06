@@ -66,6 +66,13 @@ export interface MessageMetadata {
   selectedForAI?: boolean
   editHistory?: MessageEdit[]
   reaction?: string
+  // Agent-specific fields
+  isAgentMessage?: boolean
+  agentId?: string
+  agentResponse?: {
+    type: 'background' | 'foreground'
+    metadata?: Record<string, unknown>
+  }
 }
 
 export interface MessageEdit {

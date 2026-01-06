@@ -25,6 +25,30 @@ export {
   getDetector
 } from './detector';
 
+// JEPA scoring and capabilities
+export {
+  calculateJEPAScore,
+  getJEPARequirements,
+} from './scoring';
+
+export type {
+  HardwareTier,
+  JEPACapabilities,
+  HardwareScoreResult,
+} from './scoring';
+
+// Capability evaluation
+export {
+  evaluateCapabilities,
+  getFeaturesByCategory,
+  getOptimizedFeatureSet,
+} from './capabilities';
+
+export type {
+  FeatureAvailability,
+  CapabilityAssessment,
+} from './capabilities';
+
 // TypeScript types
 export type {
   CPUInfo,

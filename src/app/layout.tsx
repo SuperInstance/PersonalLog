@@ -25,6 +25,8 @@ import { OfflineIndicator } from "@/components/mobile/OfflineIndicator";
 import { PWAInstallPrompt } from "@/components/mobile/InstallPrompt";
 import "./globals.css";
 
+export const dynamic = 'force-dynamic'
+
 const inter = Inter({ subsets: ["latin"] });
 
 // Site configuration

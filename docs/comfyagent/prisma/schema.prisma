@@ -1,0 +1,362 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+
+  // Design Theme & Palette
+  theme       String?  // e.g., "cyberpunk", "fantasy", "minimalist"
+  primaryColor String?  // Hex code
+  secondaryColor String?  // Hex code
+  accentColor   String?  // Hex code
+  colorPalette  String?  // JSON array of hex codes
+
+  // Design Filters & Style
+  artStyle    String?  // e.g., "photorealistic", "anime", "oil painting"
+  mood        String?  // e.g., "dark", "uplifting", "mysterious"
+  composition String?  // e.g., "centered", "rule of thirds", "dynamic"
+  lighting    String?  // e.g., "natural", "dramatic", "flat"
+
+  // Project Context
+  projectType String?  // "video_game", "book_art", "brand", "personal"
+  targetAudience String? // "adults", "children", "teens"
+  medium      String?  // "digital", "print", "social_media"
+
+  // Project Personality (AI Agent)
+  personalitySummary String? // AI-generated summary of project's unique characteristics
+  personalityTraits   String? // JSON array of learned traits
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workflows        Workflow[]
+  chatMessages     ChatMessage[]
+  generatedAssets  GeneratedAsset[]
+  projectMemories  ProjectMemory[]
+  creativeElements  CreativeElement[]
+  crossProjectRefsAsSource  CrossProjectReference[] @relation("SourceProject")
+  crossProjectRefsAsTarget  CrossProjectReference[] @relation("TargetProject")
+  notes            Note[]
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  workflowJson String
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  prompts     Prompt[]
+}
+
+model Prompt {
+  id         String   @id @default(cuid())
+  workflowId String
+  text       String
+  type       String   @default("text2img")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model GeneratedAsset {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  filePath    String
+  promptId    String?
+  parameters  String?
+  cost        Float?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  projectId   String
+  role        String   // "user" or "assistant"
+  content     String
+  workflowSnapshot String?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ModelSuggestion {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "checkpoint", "lora", "embeddings"
+  description String
+  downloadUrl String?
+  fileSize    String?
+  recommended Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+// ============================================
+// USER MEMORY SYSTEM (Human-Editable)
+// ============================================
+
+model UserMemory {
+  id          String   @id @default(cuid())
+
+  // Cross-Project Patterns (Human-Editable)
+  category    String   // "style", "technique", "preference", "workflow"
+  key         String   // e.g., "preferred_model", "color_scheme"
+  value       String   // e.g., "SDXL", "warm_colors"
+
+  // Metadata
+  confidence  Float    @default(0.5) // How strongly the pattern is established
+  source      String?  // "user_explicit", "ai_learned", "observation"
+  lastUsed    DateTime @default(now())
+
+  // Usage Tracking
+  useCount    Int      @default(0)
+  successRate Float?    // Success rate when this pattern is used
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ============================================
+// PROJECT-SPECIFIC MEMORY
+// ============================================
+
+model ProjectMemory {
+  id          String   @id @default(cuid())
+  projectId   String
+
+  // Learning Sources
+  sourceType  String   // "conversation", "iteration", "feedback", "ai_analysis"
+  sourceId    String?  // ID of conversation/workflow/asset that generated this memory
+
+  // Content
+  category    String   // "successful_prompt", "user_preference", "effective_technique"
+  title       String
+  description String
+  content     String   // JSON or text details
+  tags        String?  // JSON array of tags for retrieval
+
+  // AI Analysis
+  importance  Float    @default(0.5)
+  confidence  Float    @default(0.5)
+
+  // Feedback Loop
+  userRating  Float?    // 1-5 rating from user
+  useCount    Int      @default(0)
+  lastUsed    DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// CREATIVE ELEMENTS (Cross-Referenced Assets)
+// ============================================
+
+model CreativeElement {
+  id          String   @id @default(cuid())
+  projectId   String
+
+  // Element Identity
+  name        String
+  type        String   // "character", "environment", "object", "style", "technique"
+  category    String?
+
+  // Visual Description
+  description String
+  visualTags  String?  // JSON array of visual descriptors
+  prompt      String?  // The prompt that generated this element
+
+  // Cross-Reference Metadata
+  styleTags   String?  // JSON array of style descriptors
+  moodTags    String?  // JSON array of mood descriptors
+  techniqueTags String? // JSON array of technique descriptors
+
+  // Embedding for RAG (stored as JSON for simplicity)
+  embedding   String?  // JSON array of float values
+
+  // Usage Tracking
+  reuseCount  Int      @default(0)
+  successProjects String? // JSON array of project IDs where this was used successfully
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// CROSS-PROJECT REFERENCES
+// ============================================
+
+model CrossProjectReference {
+  id          String   @id @default(cuid())
+
+  sourceProjectId String
+  targetProjectId String
+
+  // Reference Type
+  referenceType String // "style_influence", "technique_adoption", "element_reuse"
+  strength      Float  @default(0.5) // How strong this reference is
+
+  // Description
+  description   String
+  context       String? // Why this reference exists
+
+  // Usage
+  useCount      Int      @default(0)
+  lastUsed      DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sourceProject Project  @relation("SourceProject", fields: [sourceProjectId], references: [id], onDelete: Cascade)
+  targetProject Project  @relation("TargetProject", fields: [targetProjectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// NOTES SYSTEM
+// ============================================
+// This is a temporary fix for the Note model. Use this content to replace the Note model section in prisma/schema.prisma.
+
+// ============================================
+// NOTES SYSTEM
+// ============================================
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   // Markdown content
+  description String?
+  tags        String?  // JSON array of tags
+
+  // Organization
+  folder      String?  // "research", "ideas", "projects", "transcripts"
+  order       Int      @default(0) // Manual ordering
+
+  // Metadata
+  projectId   String?  // Link to project (optional)
+  isPinned    Boolean  @default(false)
+  wordCount   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project?  @relation(fields: [projectId], references: [id])
+  files       NoteFile[]
+}
+
+model NoteFile {
+  id          String   @id @default(cuid())
+  noteId      String
+
+  // File Content
+  name        String
+  type        String   // "markdown", "image", "pdf", "audio", "video", "other"
+  filePath    String   // Storage path or URL
+  fileSize    Int?
+  mimeType   String?
+
+  // Source
+  sourceType  String   // "manual", "asr_transcript", "paste", "import"
+  sourceUrl   String?  // If imported from URL
+
+  // Audio Metadata (for ASR transcripts)
+  audioDuration   Float?
+  transcriptionText String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  note        Note  @relation(fields: [noteId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// API KEY AUTHENTICATION SYSTEM
+// ============================================
+
+enum APIKeyType {
+  BASIC
+  PREMIUM
+  ENTERPRISE
+  ADMIN
+}
+
+enum APIKeyPermission {
+  READ
+  WRITE
+  DELETE
+  ADMIN
+  UPLOAD
+  TRANSCRIBE
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  userId    String?
+
+  // API Key Information
+  name      String
+  keyHash   String   // Securely hashed API key
+  keyPrefix String   // First 8 characters for identification (e.g., "sk_live")
+
+  // Type and Permissions
+  type      APIKeyType
+  permissions String   // JSON array of permissions (e.g., ["READ", "WRITE"])
+
+  // Rate Limiting
+  rateLimit Int      @default(100) // Requests per minute
+
+  // Lifecycle
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+  expiresAt DateTime?
+
+  // Metadata
+  metadata  String?   // JSON object with additional metadata
+
+  // Relations
+  // Future: Add apiKeyLogs relation for audit trail
+}

@@ -17,11 +17,15 @@ import ConversationList from '@/components/messenger/ConversationList'
 import ChatArea from '@/components/messenger/ChatArea'
 import AIContactsPanel from '@/components/ai-contacts/AIContactsPanel'
 import { MobileBottomNav } from '@/components/mobile/MobileBottomNav'
+import { AgentActivationModal } from '@/components/agents'
 import { createConversation, listConversations } from '@/lib/storage/conversation-store'
 import { initializeDefaultAgents } from '@/lib/storage/ai-contact-store'
+import { agentRegistry } from '@/lib/agents'
+import { getHardwareInfo } from '@/lib/hardware'
 import { useSwipeGesture } from '@/lib/mobile'
 import { useMobileDetection } from '@/lib/mobile'
 import type { Conversation } from '@/types/conversation'
+import type { AgentDefinition } from '@/lib/agents'
 
 export default function MessengerPage() {
   const router = useRouter()
@@ -32,6 +36,11 @@ export default function MessengerPage() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showConversationList, setShowConversationList] = useState(false)
+
+  // Agent activation state
+  const [agentModalOpen, setAgentModalOpen] = useState(false)
+  const [selectedAgent, setSelectedAgent] = useState<AgentDefinition | null>(null)
+  const [hardwareProfile, setHardwareProfile] = useState<any>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const device = useMobileDetection()
@@ -73,6 +82,13 @@ export default function MessengerPage() {
   useEffect(() => {
     loadConversations()
     initializeDefaultAgents()
+
+    // Load hardware profile for agents
+    getHardwareInfo().then(result => {
+      if (result.success && result.profile) {
+        setHardwareProfile(result.profile)
+      }
+    })
   }, [loadConversations])
 
   // Fixed: Added loadConversation to dependencies
@@ -122,6 +138,32 @@ export default function MessengerPage() {
       setSelectedConversation(updated)
     }
   }, [selectedConversation?.id])
+
+  // Agent activation handler
+  const handleActivateAgent = useCallback((agentId: string) => {
+    const agent = agentRegistry.getAgent(agentId)
+    if (!agent || !hardwareProfile) return
+
+    setSelectedAgent(agent)
+    setAgentModalOpen(true)
+  }, [hardwareProfile])
+
+  const handleAgentModalClose = useCallback(() => {
+    setAgentModalOpen(false)
+    setSelectedAgent(null)
+  }, [])
+
+  const handleConfirmAgentActivation = useCallback(() => {
+    if (!selectedAgent) return
+
+    // Activate the agent in the registry
+    agentRegistry.activateAgent(selectedAgent.id)
+
+    // Create a new conversation with the agent
+    // For now, just close the modal - agent activation logic will be handled separately
+    console.log('Activated agent:', selectedAgent.id)
+    handleAgentModalClose()
+  }, [selectedAgent, handleAgentModalClose])
 
   return (
     <>
@@ -186,6 +228,7 @@ export default function MessengerPage() {
             onSelectConversation={handleSelectConversation}
             onUpdateConversation={handleUpdateConversation}
             collapsed={sidebarCollapsed}
+            onActivateAgent={handleActivateAgent}
           />
         </div>
 
@@ -223,6 +266,18 @@ export default function MessengerPage() {
 
     {/* Mobile bottom navigation */}
     <MobileBottomNav />
+
+    {/* Agent Activation Modal */}
+    {selectedAgent && hardwareProfile && (
+      <AgentActivationModal
+        agent={selectedAgent}
+        hardwareProfile={hardwareProfile}
+        availability={agentRegistry.checkAvailability(selectedAgent.id, hardwareProfile)}
+        isOpen={agentModalOpen}
+        onClose={handleAgentModalClose}
+        onActivate={handleConfirmAgentActivation}
+      />
+    )}
   </>
   )
 }

@@ -61,6 +61,19 @@ export { MetricsTracker } from './metrics';
 // Statistical analyzer
 export { StatisticalAnalyzer } from './statistics';
 
+// Multi-armed bandit
+export {
+  MultiArmedBandit,
+  compareBanditAlgorithms,
+  recommendBanditAlgorithm,
+} from './multi-armed-bandit';
+export type {
+  BanditAlgorithm,
+  BanditConfig,
+  BanditArm,
+  BanditSelection,
+} from './multi-armed-bandit';
+
 // React hooks
 export {
   useVariant,

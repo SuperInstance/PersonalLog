@@ -63,6 +63,19 @@ export type {
   ContextualRecommendation,
 } from './predictions'
 
+export {
+  AccuracyTracker,
+  ABTestFramework,
+  AccuracyReporter,
+} from './accuracy'
+
+export type {
+  PredictionRecord,
+  AccuracyMetrics,
+  ConfidenceBucket,
+  ABDTestResult,
+} from './accuracy'
+
 export type {
   TimePatterns,
   TaskPatterns,
