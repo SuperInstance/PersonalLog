@@ -1003,7 +1003,7 @@ export class PermissionManagementAPI {
       // For now, auto-grant for testing
       const result = await permissionManager.requestPermissions(pluginId, [permission]);
       return {
-        granted: result.granted.includes(permission),
+        granted: result.allGranted,
       };
     } catch (error) {
       return {

@@ -1,0 +1,39 @@
+{
+  "id": "examples.hello-world",
+  "name": "Hello World",
+  "description": "A simple plugin that says hello and demonstrates basic plugin features",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "author": {
+    "name": "PersonalLog Team",
+    "email": "team@personallog.ai"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/personallog/plugins",
+  "type": ["ui"],
+  "keywords": ["hello", "world", "demo", "example", "tutorial"],
+  "categories": ["utilities", "examples"],
+  "icon": "👋",
+  "permissions": [
+    "messages:write"
+  ],
+  "settingsSchema": {
+    "greeting": {
+      "type": "string",
+      "label": "Greeting Message",
+      "description": "The greeting message to display",
+      "default": "Hello, World!",
+      "required": false
+    },
+    "showTimestamp": {
+      "type": "boolean",
+      "label": "Show Timestamp",
+      "description": "Include timestamp in greeting",
+      "default": true
+    }
+  },
+  "defaultSettings": {
+    "greeting": "Hello, World!",
+    "showTimestamp": true
+  }
+}

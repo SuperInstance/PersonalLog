@@ -111,22 +111,31 @@ private activePlugins: Map<PluginId, any> = new Map(); // Plugin instances
 
     try {
       // Request permissions
-      const { granted, denied } = await this.permissionManager.requestPermissions(
+      const { allGranted, results } = await this.permissionManager.requestPermissions(
         pluginId,
         manifest.permissions
       );
 
-      if (denied.length > 0) {
-        // Check if denied permissions include required ones
+      if (!allGranted) {
+        // Check which permissions were denied
+        const denied = Object.entries(results)
+          .filter(([_, result]) => !result.granted)
+          .map(([perm, _]) => perm);
+
         // For now, we'll allow activation even if some permissions are denied
         // The plugin will get permission errors when trying to use those features
+        console.warn(`Plugin ${pluginId} denied permissions:`, denied);
       }
 
-      // Grant permissions
-      this.permissionManager.grantPermissions(pluginId, granted);
+      // Permissions are already granted by the requestPermissions method
 
       // Get plugin settings
       const settings = await this.registry.getPluginSettings(pluginId);
+
+      // Extract granted permissions from results
+      const granted = Object.entries(results)
+        .filter(([_, result]) => result.granted)
+        .map(([perm, _]) => perm as Permission);
 
       // Create plugin context
       const context = createPluginContext(

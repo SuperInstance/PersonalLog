@@ -1,0 +1,51 @@
+{
+  "id": "examples.quick-note",
+  "name": "Quick Note",
+  "description": "Quickly capture and organize notes from conversations",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "author": {
+    "name": "PersonalLog Team",
+    "email": "team@personallog.ai"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/personallog/plugins",
+  "type": ["ui", "automation"],
+  "keywords": ["notes", "quick-capture", "organization", "productivity"],
+  "categories": ["productivity"],
+  "icon": "📝",
+  "permissions": [
+    "messages:read",
+    "storage:write"
+  ],
+  "settingsSchema": {
+    "autoCapture": {
+      "type": "boolean",
+      "label": "Auto-Capture Notes",
+      "description": "Automatically capture messages marked as notes",
+      "default": true
+    },
+    "noteMarker": {
+      "type": "string",
+      "label": "Note Marker",
+      "description": "Text that marks a message as a note",
+      "default": "/note",
+      "required": false
+    },
+    "maxNotes": {
+      "type": "number",
+      "label": "Maximum Notes",
+      "description": "Maximum number of notes to store",
+      "default": 100,
+      "constraints": {
+        "min": 10,
+        "max": 1000
+      }
+    }
+  },
+  "defaultSettings": {
+    "autoCapture": true,
+    "noteMarker": "/note",
+    "maxNotes": 100
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@personallog/example-plugin-2",
+  "version": "1.0.0",
+  "description": "Quick Note example plugin for PersonalLog",
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "personallog",
+    "plugin",
+    "example",
+    "notes",
+    "productivity"
+  ],
+  "author": "PersonalLog Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}

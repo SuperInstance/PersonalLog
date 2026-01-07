@@ -1,10 +1,23 @@
 /**
  * Plugin API Tests
  *
- * Tests for all implemented plugin API functions.
+ * Comprehensive tests for all plugin API functions including:
+ * - API surface creation
+ * - Conversations API
+ * - Messages API
+ * - Knowledge API
+ * - Analytics API
+ * - Settings API
+ * - Commands API
+ * - UI API
+ * - Data API
+ * - Plugin management API
+ * - Permission management API
+ * - Marketplace API
+ * - Storage, events, and logger APIs
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   createPluginAPI,
   createPluginContext,
@@ -32,6 +45,7 @@ vi.mock('../registry', () => ({
     deletePluginSettings: vi.fn(),
     isPluginInstalled: vi.fn(),
     searchPlugins: vi.fn(),
+    getAllRuntimeStates: vi.fn(),
   })),
 }));
 
@@ -51,8 +65,8 @@ vi.mock('../permissions', () => ({
     grantPermissions: vi.fn(),
     revokePermission: vi.fn(),
     requestPermissions: vi.fn(async () => ({
-      granted: [Permission.READ_CONVERSATIONS],
-      denied: [],
+      allGranted: true,
+      results: {},
     })),
   })),
 }));
@@ -64,6 +78,16 @@ describe('Plugin API', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    // Clean up localStorage after each test
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.startsWith('plugin_')) {
+        localStorage.removeItem(key);
+      }
+    });
   });
 
   describe('createPluginAPI', () => {
@@ -421,6 +445,408 @@ describe('Plugin API', () => {
       consoleInfoSpy.mockRestore();
       consoleWarnSpy.mockRestore();
       consoleErrorSpy.mockRestore();
+    });
+
+    it('should include plugin ID in log messages', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+      api.logger.info('test message');
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        `[Plugin:${mockPluginId}]`,
+        'test message'
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should log multiple arguments', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+      const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+      api.logger.info('test', { data: 'value' }, ['array']);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        `[Plugin:${mockPluginId}]`,
+        'test',
+        { data: 'value' },
+        ['array']
+      );
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  // ========================================================================
+  // ADDITIONAL API TESTS
+  // ========================================================================
+
+  describe('Data API', () => {
+    it('should register data source', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      api.data.registerSource({
+        id: 'test-source',
+        name: 'Test Source',
+        type: 'api',
+        fetch: 'return fetch();',
+      });
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('should validate data source ID', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+
+      expect(() => api.data.registerSource({} as any)).toThrow('Data source ID is required');
+    });
+
+    it('should validate data source fetch function', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+
+      expect(() =>
+        api.data.registerSource({ id: 'test' } as any)
+      ).toThrow('Data source fetch function is required');
+    });
+
+    it('should register transformer', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      api.data.registerTransformer({
+        id: 'test-transformer',
+        name: 'Test Transformer',
+        inputSchema: {},
+        outputSchema: {},
+        transform: 'return data;',
+      });
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('should register validator', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      api.data.registerValidator({
+        id: 'test-validator',
+        name: 'Test Validator',
+        schema: {},
+        validate: 'return true;',
+      });
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('UI API', () => {
+    it('should register UI component', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      api.ui.registerComponent({
+        id: 'test-component',
+        name: 'Test Component',
+        category: 'message',
+        render: 'return <div />;',
+      });
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('should register view', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      api.ui.registerView({
+        id: 'test-view',
+        name: 'Test View',
+        path: '/test',
+        render: 'return <div />;',
+      });
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('should register toolbar button', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      api.ui.registerToolbarButton({
+        id: 'test-button',
+        label: 'Test Button',
+        position: 'primary',
+        onClick: 'return true;',
+      });
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('should register sidebar item', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      api.ui.registerSidebarItem({
+        id: 'test-item',
+        label: 'Test Item',
+        path: '/test',
+      });
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle storage errors gracefully', async () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+
+      // Mock localStorage.setItem to throw error
+      const originalSetItem = localStorage.setItem;
+      localStorage.setItem = vi.fn(() => {
+        throw new Error('Storage quota exceeded');
+      });
+
+      await expect(api.storage.set('key', 'value')).rejects.toThrow();
+
+      localStorage.setItem = originalSetItem;
+    });
+
+    it('should handle invalid JSON in storage', async () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+
+      // Store invalid JSON
+      localStorage.setItem(`plugin_${mockPluginId}_key`, 'invalid json{');
+
+      const value = await api.storage.get('key');
+      // Should return raw value as string
+      expect(value).toBe('invalid json{');
+    });
+
+    it('should handle permission errors in API calls', async () => {
+      const permissionManager = getPermissionManager();
+      vi.mocked(permissionManager).hasPermission.mockReturnValue(false);
+
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+
+      await expect(api.conversations.list()).rejects.toThrow('Permission denied');
+    });
+  });
+
+  describe('API Version', () => {
+    it('should expose API version', () => {
+      const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
+
+      expect(api.version).toBeDefined();
+      expect(typeof api.version).toBe('string');
+    });
+  });
+
+  describe('Plugin Context', () => {
+    it('should create isolated context for each plugin', () => {
+      const context1 = createPluginContext('plugin1' as any, '1.0.0', [], {});
+      const context2 = createPluginContext('plugin2' as any, '2.0.0', [Permission.READ_SETTINGS], {});
+
+      expect(context1.pluginId).toBe('plugin1' as any);
+      expect(context2.pluginId).toBe('plugin2' as any);
+      expect(context1.version).toBe('1.0.0');
+      expect(context2.version).toBe('2.0.0');
+      expect(context1.permissions).toEqual([]);
+      expect(context2.permissions).toEqual([Permission.READ_SETTINGS]);
+    });
+
+    it('should provide independent storage for each plugin', async () => {
+      const context1 = createPluginContext('plugin1' as any, '1.0.0', [], {});
+      const context2 = createPluginContext('plugin2' as any, '1.0.0', [], {});
+
+      await context1.storage.set('key', 'value1');
+      await context2.storage.set('key', 'value2');
+
+      const value1 = await context1.storage.get('key');
+      const value2 = await context2.storage.get('key');
+
+      expect(value1).toBe('value1');
+      expect(value2).toBe('value2');
+    });
+
+    it('should provide independent event buses for each plugin', () => {
+      const context1 = createPluginContext('plugin1' as any, '1.0.0', [], {});
+      const context2 = createPluginContext('plugin2' as any, '1.0.0', [], {});
+
+      const handler1 = vi.fn();
+      const handler2 = vi.fn();
+
+      context1.events.on('test', handler1);
+      context2.events.on('test', handler2);
+
+      context1.events.emit('test');
+      context2.events.emit('test');
+
+      expect(handler1).toHaveBeenCalledTimes(1);
+      expect(handler2).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Plugin Management API - Additional Tests', () => {
+    it('should get plugin details with runtime state', async () => {
+      const registry = getPluginRegistry();
+      const mockManifest = {
+        id: mockPluginId,
+        name: 'Test Plugin',
+        version: '1.0.0',
+        description: 'Test',
+        minAppVersion: '1.0.0',
+        author: { name: 'Test' },
+        license: 'MIT',
+        type: [],
+        keywords: [],
+        categories: [],
+        permissions: [],
+      };
+      const mockState = {
+        id: mockPluginId,
+        state: 'active' as any,
+        enabled: true,
+        settings: {},
+        grantedPermissions: [],
+        stats: {
+          activationCount: 1,
+          executionCount: 0,
+          errorCount: 0,
+          cpuTime: 0,
+          peakMemoryMB: 0,
+          networkRequests: 0,
+          storageUsedMB: 0,
+          avgExecutionTime: 0,
+        },
+        errors: [],
+        installedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      vi.mocked(registry.getManifest).mockResolvedValue(mockManifest as any);
+      vi.mocked(registry.getRuntimeState).mockResolvedValue(mockState);
+
+      const api = getPluginManagementAPI();
+      const details = await api.getPluginDetails(mockPluginId);
+
+      expect(details).toBeDefined();
+      expect(details?.id).toBe(mockPluginId);
+    });
+
+    it('should return null for non-existent plugin details', async () => {
+      const registry = getPluginRegistry();
+      vi.mocked(registry.getManifest).mockResolvedValue(null);
+      vi.mocked(registry.getRuntimeState).mockResolvedValue(null);
+
+      const api = getPluginManagementAPI();
+      const details = await api.getPluginDetails('nonexistent' as any);
+
+      expect(details).toBeNull();
+    });
+
+    it('should filter plugins by state', async () => {
+      const registry = getPluginRegistry();
+      const manifests = [
+        { id: 'plugin1' as any, name: 'Plugin 1', state: 'active' },
+        { id: 'plugin2' as any, name: 'Plugin 2', state: 'inactive' },
+      ];
+
+      vi.mocked(registry.getAllManifests).mockResolvedValue(manifests as any);
+      vi.mocked(registry.getAllRuntimeStates).mockResolvedValue([
+        {
+          id: 'plugin1' as any,
+          state: 'active' as any,
+          enabled: true,
+          settings: {},
+          grantedPermissions: [],
+          stats: { totalActivations: 0, totalActiveTime: 0 },
+          errors: [],
+          lastActivated: null,
+        } as any,
+        {
+          id: 'plugin2' as any,
+          state: 'inactive' as any,
+          enabled: false,
+          settings: {},
+          grantedPermissions: [],
+          stats: { totalActivations: 0, totalActiveTime: 0 },
+          errors: [],
+          lastActivated: null,
+        } as any,
+      ]);
+
+      const api = getPluginManagementAPI();
+      const activePlugins = await api.getPluginList({ state: 'active' });
+
+      expect(activePlugins).toHaveLength(1);
+      expect(activePlugins[0].id).toBe('plugin1' as any);
+    });
+  });
+
+  describe('Permission Management API - Additional Tests', () => {
+    it('should handle permission grant errors', async () => {
+      const permissionManager = getPermissionManager();
+      vi.mocked(permissionManager.grantPermissions).mockImplementation(() => {
+        throw new Error('Grant failed');
+      });
+
+      const api = getPermissionManagementAPI();
+      const result = await api.grantPluginPermission(mockPluginId, Permission.READ_CONVERSATIONS);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Failed to grant permission');
+    });
+
+    it('should validate permission before checking', async () => {
+      const api = getPermissionManagementAPI();
+
+      await expect(
+        api.checkPluginPermission('' as PluginId, Permission.READ_CONVERSATIONS)
+      ).rejects.toThrow('Plugin ID is required');
+    });
+  });
+
+  describe('Marketplace API - Additional Tests', () => {
+    it('should get marketplace plugins without filters', async () => {
+      const api = getMarketplaceAPI();
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const plugins = await api.getMarketplacePlugins();
+
+      expect(plugins).toBeDefined();
+      expect(Array.isArray(plugins)).toBe(true);
+      consoleSpy.mockRestore();
+    });
+
+    it('should get plugin reviews', async () => {
+      const api = getMarketplaceAPI();
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const reviews = await api.getPluginReviews(mockPluginId);
+
+      expect(reviews).toBeDefined();
+      expect(Array.isArray(reviews)).toBe(true);
+      consoleSpy.mockRestore();
+    });
+
+    it('should validate review text', async () => {
+      const api = getMarketplaceAPI();
+
+      const result = await api.submitPluginReview(mockPluginId, {
+        rating: 5,
+        text: 'Great plugin!',
+      });
+
+      expect(result.success).toBe(true);
     });
   });
 });

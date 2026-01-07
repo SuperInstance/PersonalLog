@@ -26,6 +26,7 @@
   "exclude": [
     "node_modules",
     "docs/**",
+    "examples/**",
     // Legacy test files that need API updates (non-blocking)
     "src/jepa/__tests__/export.test.ts",
     "src/jepa/__tests__/markdown-formatter.test.ts",
