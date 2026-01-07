@@ -1,289 +1,43 @@
 /**
  * JEPA Transcript Formatter
  *
- * Converts JEPA transcript data into formatted markdown with timestamps,
- * speaker labels, and proper formatting.
+ * Utilities for formatting and manipulating transcript data for display.
+ * Handles confidence visualization, word-level timing, and text formatting.
  */
 
-import {
-  JEPA_Transcript,
-  JEPA_TranscriptSegment,
-  MarkdownFormatOptions,
-  FormattedTranscript,
-  SpeakerType,
-} from '@/types/jepa'
+import type { JEPA_Transcript, JEPA_TranscriptSegment, SpeakerType } from '@/types/jepa'
+import type { TranscriptSegment } from './stt-types'
+import { getSpeakerDisplayName, getSpeakerColor } from './speaker-detection'
 
-// ============================================================================
-// DEFAULT OPTIONS
-// ============================================================================
+// Re-export speaker functions for convenience
+export { getSpeakerDisplayName, getSpeakerColor } from './speaker-detection'
 
-const DEFAULT_FORMAT_OPTIONS: MarkdownFormatOptions = {
-  includeTimestamps: true,
-  includeSpeakerNames: true,
-  includeMetadata: true,
-  includeAudioLinks: false,
-  timestampFormat: 'hh:mm:ss',
-  separator: 'line',
-  includeConfidence: false,
-}
-
-// ============================================================================
-// TIMESTAMP FORMATTING
-// ============================================================================
+// Re-export markdown functions with alias for compatibility
+export {
+  formatTranscriptToMarkdown as transcriptToMarkdown,
+  generateTranscriptFilename,
+} from './markdown-formatter'
 
 /**
- * Format seconds into HH:MM:SS format
- */
-export function formatTimestamp(seconds: number, format: 'hh:mm:ss' | 'hh:mm' | 'seconds' = 'hh:mm:ss'): string {
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
-
-  const pad = (num: number) => num.toString().padStart(2, '0')
-
-  switch (format) {
-    case 'hh:mm:ss':
-      return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`
-    case 'hh:mm':
-      return `${pad(hours)}:${pad(minutes)}`
-    case 'seconds':
-      return seconds.toFixed(1)
-  }
-}
-
-/**
- * Format ISO date string into readable format
- */
-export function formatDate(isoDate: string): string {
-  const date = new Date(isoDate)
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-// ============================================================================
-// SPEAKER DISPLAY NAMES
-// ============================================================================
-
-/**
- * Get display name for a speaker
- */
-export function getSpeakerDisplayName(speaker: SpeakerType): string {
-  const speakerNames: Record<SpeakerType, string> = {
-    'user': 'User',
-    'assistant': 'Claude',
-    'system': 'System',
-    'unknown': 'Unknown',
-  }
-
-  // If it's a custom speaker ID from diarization, return it capitalized
-  if (!speakerNames[speaker as SpeakerType]) {
-    return speaker.charAt(0).toUpperCase() + speaker.slice(1)
-  }
-
-  return speakerNames[speaker as SpeakerType] || speaker
-}
-
-/**
- * Get color class for a speaker
- */
-export function getSpeakerColor(speaker: SpeakerType): string {
-  const colors: Record<SpeakerType, string> = {
-    'user': 'text-blue-600 dark:text-blue-400',
-    'assistant': 'text-purple-600 dark:text-purple-400',
-    'system': 'text-gray-600 dark:text-gray-400',
-    'unknown': 'text-gray-500 dark:text-gray-500',
-  }
-
-  return colors[speaker as SpeakerType] || 'text-gray-600 dark:text-gray-400'
-}
-
-// ============================================================================
-// MARKDOWN GENERATION
-// ============================================================================
-
-/**
- * Convert a single segment to markdown format
- */
-function segmentToMarkdown(
-  segment: JEPA_TranscriptSegment,
-  options: MarkdownFormatOptions
-): string {
-  const lines: string[] = []
-
-  // Speaker header with timestamp
-  if (options.includeSpeakerNames || options.includeTimestamps) {
-    const speakerName = options.includeSpeakerNames
-      ? getSpeakerDisplayName(segment.speaker)
-      : ''
-
-    const timestamp = options.includeTimestamps
-      ? formatTimestamp(segment.startTime, options.timestampFormat)
-      : ''
-
-    // Format: ## [timestamp] Speaker
-    const header = `## [${timestamp}] ${speakerName}`.trim()
-    lines.push(header)
-  }
-
-  // Segment text
-  lines.push(segment.text)
-
-  // Optional confidence
-  if (options.includeConfidence && segment.confidence !== undefined) {
-    const confidencePercent = Math.round(segment.confidence * 100)
-    lines.push(`_Confidence: ${confidencePercent}%_`)
-  }
-
-  // Separator
-  if (options.separator === 'line') {
-    lines.push('---')
-  } else if (options.separator === 'dash') {
-    lines.push('')
-  }
-
-  return lines.join('\n')
-}
-
-/**
- * Convert transcript metadata to markdown
- */
-function metadataToMarkdown(transcript: JEPA_Transcript): string {
-  const lines: string[] = []
-
-  lines.push('# Transcript Metadata')
-  lines.push('')
-  lines.push(`- **Session ID:** ${transcript.sessionId}`)
-  lines.push(`- **Date:** ${formatDate(transcript.startedAt)}`)
-  lines.push(`- **Duration:** ${formatTimestamp(transcript.duration)}`)
-  lines.push(`- **Language:** ${transcript.metadata.language}`)
-  lines.push(`- **Speakers:** ${transcript.metadata.totalSpeakers}`)
-
-  if (transcript.metadata.audioKept && transcript.metadata.audioUrl) {
-    lines.push(`- **Audio:** [Download Audio](${transcript.metadata.audioUrl})`)
-  }
-
-  lines.push('')
-
-  // Speaker breakdown
-  if (transcript.metadata.speakers.length > 0) {
-    lines.push('## Speakers')
-    lines.push('')
-
-    transcript.metadata.speakers.forEach(speaker => {
-      const name = getSpeakerDisplayName(speaker.id)
-      const time = formatTimestamp(speaker.speakingTime)
-      lines.push(`- **${name}:** ${speaker.segmentCount} segments, ${time} speaking time`)
-    })
-
-    lines.push('')
-  }
-
-  return lines.join('\n')
-}
-
-/**
- * Convert full transcript to markdown
- */
-export function transcriptToMarkdown(
-  transcript: JEPA_Transcript,
-  options: Partial<MarkdownFormatOptions> = {}
-): FormattedTranscript {
-  const opts = { ...DEFAULT_FORMAT_OPTIONS, ...options }
-  const lines: string[] = []
-
-  // Title
-  lines.push(`# Transcript - ${new Date(transcript.startedAt).toLocaleDateString()}`)
-  lines.push('')
-
-  // Metadata section
-  if (opts.includeMetadata) {
-    lines.push(metadataToMarkdown(transcript))
-  }
-
-  // Transcript segments
-  lines.push('## Transcript')
-  lines.push('')
-
-  transcript.segments.forEach((segment, index) => {
-    // Add separator between segments (except first)
-    if (index > 0 && opts.separator !== 'none') {
-      lines.push('')
-    }
-
-    lines.push(segmentToMarkdown(segment, opts))
-  })
-
-  // Calculate statistics
-  const totalWords = transcript.segments.reduce(
-    (sum, seg) => sum + seg.text.split(/\s+/).length,
-    0
-  )
-
-  const totalCharacters = transcript.segments.reduce(
-    (sum, seg) => sum + seg.text.length,
-    0
-  )
-
-  const estimatedReadingTime = Math.ceil(totalWords / 200) // 200 words per minute
-
-  const speakers = Array.from(
-    new Set(transcript.segments.map(seg => seg.speaker))
-  )
-
-  return {
-    markdown: lines.join('\n'),
-    metadata: {
-      totalSegments: transcript.segments.length,
-      totalWords,
-      totalCharacters: totalCharacters,
-      estimatedReadingTime,
-      speakers,
-      dateRange: {
-        start: transcript.startedAt,
-        end: transcript.endedAt || transcript.startedAt,
-      },
-    },
-  }
-}
-
-// ============================================================================
-// PLAIN TEXT GENERATION
-// ============================================================================
-
-/**
- * Convert transcript to plain text (no markdown formatting)
+ * Convert transcript to plain text (for compatibility)
+ * This is a simplified version that strips markdown
  */
 export function transcriptToPlainText(
   transcript: JEPA_Transcript,
-  options: Partial<MarkdownFormatOptions> = {}
+  options: Partial<any> = {}
 ): string {
-  const { markdown } = transcriptToMarkdown(transcript, options)
-
-  // Remove markdown formatting
-  return markdown
-    .replace(/^#+\s/gm, '') // Remove headers
-    .replace(/\*\*/g, '') // Remove bold
-    .replace(/\*/g, '') // Remove italic
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
-    .replace(/^---$/gm, '') // Remove separators
-    .replace(/\n{3,}/g, '\n\n') // Collapse multiple newlines
+  // Join all segment texts with newlines
+  return transcript.segments
+    .map(seg => `${getSpeakerDisplayName(seg.speaker)}: ${seg.text}`)
+    .join('\n\n')
 }
 
-// ============================================================================
-// EXPORT HELPERS
-// ============================================================================
-
 /**
- * Download transcript as a file
+ * Download transcript as a file (for compatibility)
  */
 export function downloadTranscript(
   transcript: JEPA_Transcript,
-  format: 'markdown' | 'txt' | 'json',
+  format: 'markdown' | 'txt' | 'json' = 'markdown',
   filename?: string
 ): void {
   let content: string
@@ -291,8 +45,8 @@ export function downloadTranscript(
 
   switch (format) {
     case 'markdown':
-      const { markdown } = transcriptToMarkdown(transcript)
-      content = markdown
+      // Use plain text for now - markdown formatter can be integrated later
+      content = transcriptToPlainText(transcript)
       mimeType = 'text/markdown'
       break
     case 'txt':
@@ -312,7 +66,7 @@ export function downloadTranscript(
   link.href = url
   link.download =
     filename ||
-    `transcript_${new Date(transcript.startedAt).toISOString().split('T')[0]}.${format}`
+    `transcript_${new Date(transcript.startedAt).toISOString().split('T')[0]}.${format === 'markdown' ? 'md' : format}`
 
   document.body.appendChild(link)
   link.click()
@@ -321,7 +75,7 @@ export function downloadTranscript(
 }
 
 /**
- * Copy transcript to clipboard
+ * Copy transcript to clipboard (for compatibility)
  */
 export async function copyTranscriptToClipboard(
   transcript: JEPA_Transcript,
@@ -330,7 +84,7 @@ export async function copyTranscriptToClipboard(
   try {
     const content =
       format === 'markdown'
-        ? transcriptToMarkdown(transcript).markdown
+        ? transcriptToPlainText(transcript)
         : transcriptToPlainText(transcript)
 
     await navigator.clipboard.writeText(content)
@@ -339,4 +93,431 @@ export async function copyTranscriptToClipboard(
     console.error('Failed to copy transcript to clipboard:', error)
     return false
   }
+}
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface FormattedWord {
+  word: string
+  confidence: number
+  startTime?: number // milliseconds
+  endTime?: number // milliseconds
+  isPunctuation: boolean
+}
+
+export interface FormattedSegment {
+  id: string
+  words: FormattedWord[]
+  speaker: SpeakerType
+  startTime: number // milliseconds
+  endTime: number // milliseconds
+  confidence: number // 0-1
+  isInterim: boolean
+}
+
+export interface ConfidenceLevel {
+  level: 'high' | 'medium' | 'low'
+  color: string
+  bgColor: string
+  threshold: number
+}
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+export const CONFIDENCE_LEVELS: Record<string, ConfidenceLevel> = {
+  high: {
+    level: 'high',
+    color: 'text-green-700 dark:text-green-400',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
+    threshold: 0.9,
+  },
+  medium: {
+    level: 'medium',
+    color: 'text-yellow-700 dark:text-yellow-400',
+    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+    threshold: 0.7,
+  },
+  low: {
+    level: 'low',
+    color: 'text-red-700 dark:text-red-400',
+    bgColor: 'bg-red-100 dark:bg-red-900/30',
+    threshold: 0.0,
+  },
+}
+
+export const PUNCTUATION_REGEX = /[.,!?;:，！？；：、""''（）【】《》]/g
+
+// ============================================================================
+// CONFIDENCE VISUALIZATION
+// ============================================================================
+
+/**
+ * Get confidence level for a given confidence score
+ */
+export function getConfidenceLevel(confidence: number): ConfidenceLevel {
+  if (confidence >= 0.9) return CONFIDENCE_LEVELS.high
+  if (confidence >= 0.7) return CONFIDENCE_LEVELS.medium
+  return CONFIDENCE_LEVELS.low
+}
+
+/**
+ * Get color classes for confidence score
+ */
+export function getConfidenceColorClasses(confidence: number): {
+  text: string
+  bg: string
+  border: string
+} {
+  const level = getConfidenceLevel(confidence)
+  return {
+    text: level.color,
+    bg: level.bgColor,
+    border: level.level === 'low' ? 'border-red-300 dark:border-red-700' : '',
+  }
+}
+
+/**
+ * Format confidence score as percentage
+ */
+export function formatConfidence(confidence: number): string {
+  return `${Math.round(confidence * 100)}%`
+}
+
+// ============================================================================
+// TEXT FORMATTING
+// ============================================================================
+
+/**
+ * Split text into words with punctuation
+ */
+export function parseWords(text: string): string[] {
+  return text.split(/(\s+)/).filter(word => word.trim().length > 0)
+}
+
+/**
+ * Check if a word is punctuation
+ */
+export function isPunctuation(word: string): boolean {
+  return PUNCTUATION_REGEX.test(word)
+}
+
+/**
+ * Format transcript segment into words with confidence
+ */
+export function formatSegmentWords(
+  segment: JEPA_TranscriptSegment | TranscriptSegment,
+  defaultConfidence: number = 1.0
+): FormattedWord[] {
+  const words = parseWords(segment.text)
+  const segmentConfidence = segment.confidence ?? defaultConfidence
+
+  return words.map(word => ({
+    word,
+    confidence: isPunctuation(word) ? 1.0 : segmentConfidence,
+    startTime: segment.startTime,
+    endTime: segment.endTime,
+    isPunctuation: isPunctuation(word),
+  }))
+}
+
+/**
+ * Format transcript for real-time display
+ */
+export function formatTranscriptForDisplay(
+  transcript: JEPA_Transcript | null,
+  interimText?: string
+): {
+  finalizedSegments: FormattedSegment[]
+  interimSegment: FormattedSegment | null
+} {
+  const finalizedSegments: FormattedSegment[] = []
+  let interimSegment: FormattedSegment | null = null
+
+  if (!transcript) {
+    // Create interim segment from text
+    if (interimText) {
+      interimSegment = {
+        id: `interim_${Date.now()}`,
+        words: parseWords(interimText).map(word => ({
+          word,
+          confidence: 0.5,
+          isPunctuation: isPunctuation(word),
+        })),
+        speaker: 'user',
+        startTime: 0,
+        endTime: 0,
+        confidence: 0.5,
+        isInterim: true,
+      }
+    }
+    return { finalizedSegments, interimSegment }
+  }
+
+  // Format finalized segments
+  finalizedSegments.push(
+    ...transcript.segments.map(segment => ({
+      id: segment.id,
+      words: formatSegmentWords(segment),
+      speaker: segment.speaker,
+      startTime: segment.startTime * 1000, // Convert to milliseconds
+      endTime: segment.endTime * 1000,
+      confidence: segment.confidence,
+      isInterim: false,
+    }))
+  )
+
+  // Add interim segment if provided
+  if (interimText) {
+    interimSegment = {
+      id: `interim_${Date.now()}`,
+      words: parseWords(interimText).map(word => ({
+        word,
+        confidence: 0.5,
+        isPunctuation: isPunctuation(word),
+      })),
+      speaker: transcript.segments.length > 0
+        ? transcript.segments[transcript.segments.length - 1].speaker
+        : 'user',
+      startTime: 0,
+      endTime: 0,
+      confidence: 0.5,
+      isInterim: true,
+    }
+  }
+
+  return { finalizedSegments, interimSegment }
+}
+
+// ============================================================================
+// TEXT EDITING
+// ============================================================================
+
+/**
+ * Parse edited text back into words
+ */
+export function parseEditedText(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Merge edits with original transcript
+ */
+export function mergeEditWithTranscript(
+  segmentId: string,
+  editedText: string,
+  originalTranscript: JEPA_Transcript
+): JEPA_Transcript {
+  const segmentIndex = originalTranscript.segments.findIndex(s => s.id === segmentId)
+
+  if (segmentIndex === -1) {
+    return originalTranscript
+  }
+
+  const updatedSegments = [...originalTranscript.segments]
+  updatedSegments[segmentIndex] = {
+    ...updatedSegments[segmentIndex],
+    text: editedText,
+    metadata: {
+      ...updatedSegments[segmentIndex].metadata,
+      isEdited: true,
+      editedAt: new Date().toISOString(),
+    },
+  }
+
+  return {
+    ...originalTranscript,
+    segments: updatedSegments,
+  }
+}
+
+/**
+ * Check if transcript has been edited
+ */
+export function hasEdits(transcript: JEPA_Transcript): boolean {
+  return transcript.segments.some(seg => seg.metadata?.isEdited === true)
+}
+
+// ============================================================================
+// TIMESTAMP FORMATTING
+// ============================================================================
+
+/**
+ * Format milliseconds to HH:MM:SS
+ */
+export function formatTimestamp(milliseconds: number): string {
+  const totalSeconds = Math.floor(milliseconds / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+/**
+ * Format milliseconds to duration string (e.g., "5:23")
+ */
+export function formatDuration(milliseconds: number): string {
+  const totalSeconds = Math.floor(milliseconds / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+/**
+ * Format milliseconds to compact duration (e.g., "5m 23s")
+ */
+export function formatCompactDuration(milliseconds: number): string {
+  const totalSeconds = Math.floor(milliseconds / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`
+  }
+  return `${seconds}s`
+}
+
+// ============================================================================
+// LANGUAGE DETECTION
+// ============================================================================
+
+/**
+ * Detect if text contains CJK characters
+ */
+export function isCJKText(text: string): boolean {
+  const cjkRegex = /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]/
+  return cjkRegex.test(text)
+}
+
+/**
+ * Detect if text is RTL (right-to-left)
+ */
+export function isRTLText(text: string): boolean {
+  const rtlRegex = /[\u0591-\u07ff\ufb1d-\ufdff]/
+  return rtlRegex.test(text)
+}
+
+/**
+ * Get text direction from content
+ */
+export function getTextDirection(text: string): 'ltr' | 'rtl' {
+  return isRTLText(text) ? 'rtl' : 'ltr'
+}
+
+// ============================================================================
+// EXPORT HELPERS
+// ============================================================================
+
+/**
+ * Calculate transcript statistics
+ */
+export function calculateTranscriptStats(transcript: JEPA_Transcript): {
+  wordCount: number
+  characterCount: number
+  segmentCount: number
+  duration: number
+  averageConfidence: number
+  lowConfidenceSegments: number
+} {
+  const wordCount = transcript.segments.reduce(
+    (sum, seg) => sum + seg.text.split(/\s+/).length,
+    0
+  )
+
+  const characterCount = transcript.segments.reduce(
+    (sum, seg) => sum + seg.text.length,
+    0
+  )
+
+  const totalConfidence = transcript.segments.reduce(
+    (sum, seg) => sum + (seg.confidence ?? 1.0),
+    0
+  )
+
+  const lowConfidenceSegments = transcript.segments.filter(
+    seg => (seg.confidence ?? 1.0) < 0.7
+  ).length
+
+  return {
+    wordCount,
+    characterCount,
+    segmentCount: transcript.segments.length,
+    duration: transcript.duration,
+    averageConfidence: totalConfidence / transcript.segments.length,
+    lowConfidenceSegments,
+  }
+}
+
+/**
+ * Search transcript for text
+ */
+export function searchTranscript(
+  transcript: JEPA_Transcript,
+  query: string
+): Array<{
+  segment: JEPA_TranscriptSegment
+  matches: Array<{ start: number; end: number; text: string }>
+}> {
+  if (!query.trim()) return []
+
+  const results: Array<{
+    segment: JEPA_TranscriptSegment
+    matches: Array<{ start: number; end: number; text: string }>
+  }> = []
+
+  const regex = new RegExp(query, 'gi')
+
+  transcript.segments.forEach(segment => {
+    const matches: Array<{ start: number; end: number; text: string }> = []
+    let match
+
+    while ((match = regex.exec(segment.text)) !== null) {
+      matches.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        text: match[0],
+      })
+    }
+
+    if (matches.length > 0) {
+      results.push({ segment, matches })
+    }
+  })
+
+  return results
+}
+
+/**
+ * Get speaker breakdown from transcript
+ */
+export function getSpeakerBreakdown(
+  transcript: JEPA_Transcript
+): Map<SpeakerType, { segmentCount: number; wordCount: number; duration: number }> {
+  const breakdown = new Map<
+    SpeakerType,
+    { segmentCount: number; wordCount: number; duration: number }
+  >()
+
+  transcript.segments.forEach(segment => {
+    const current = breakdown.get(segment.speaker) || {
+      segmentCount: 0,
+      wordCount: 0,
+      duration: 0,
+    }
+
+    breakdown.set(segment.speaker, {
+      segmentCount: current.segmentCount + 1,
+      wordCount: current.wordCount + segment.text.split(/\s+/).length,
+      duration: current.duration + (segment.endTime - segment.startTime),
+    })
+  })
+
+  return breakdown
 }

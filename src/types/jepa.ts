@@ -38,6 +38,8 @@ export interface SegmentMetadata {
   keywords?: string[]
   emotionConfidence?: number // 0-1
   secondaryEmotions?: EmotionType[]
+  isEdited?: boolean
+  editedAt?: string
 }
 
 /**
