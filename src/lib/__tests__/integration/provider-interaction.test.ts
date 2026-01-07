@@ -124,7 +124,7 @@ describe('Provider Interactions', () => {
     });
 
     it('should export analytics data', async () => {
-      const { exportAnalyticsData } = await import('../../analytics/storage');
+      const { exportAnalyticsData } = await import('../../analytics/queries');
 
       const data = await exportAnalyticsData();
 

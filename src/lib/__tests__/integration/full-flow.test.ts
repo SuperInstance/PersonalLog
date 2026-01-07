@@ -54,7 +54,7 @@ describe('Complete User Flow', () => {
       expect(result.success).toBe(true);
 
       // Should work without any existing data
-      const { exportAnalyticsData } = await import('../../analytics/storage');
+      const { exportAnalyticsData } = await import('../../analytics/queries');
       const data = await exportAnalyticsData();
 
       expect(data.events.length).toBe(0);
@@ -285,7 +285,7 @@ describe('Complete User Flow', () => {
       trackEvent('event2', { type: 'event2' });
 
       // Export
-      const { exportAnalyticsData } = await import('../../analytics/storage');
+      const { exportAnalyticsData } = await import('../../analytics/queries');
       const { getPersonalizationLearner } = await import('../../personalization');
 
       const analyticsData = await exportAnalyticsData();
@@ -310,7 +310,7 @@ describe('Complete User Flow', () => {
       trackEvent('test', { type: 'test' });
 
       // Delete
-      const { clearAnalyticsData } = await import('../../analytics/storage');
+      const { clearAnalyticsData } = await import('../../analytics/collector');
       await clearAnalyticsData();
 
       const { getPersonalizationLearner } = await import('../../personalization');
@@ -456,7 +456,7 @@ describe('Complete User Flow', () => {
       expect(Array.isArray(activeExperiments)).toBe(true);
 
       // Step 9: Export data
-      const { exportAnalyticsData } = await import('../../analytics/storage');
+      const { exportAnalyticsData } = await import('../../analytics/queries');
       const exportData = await exportAnalyticsData();
       expect(exportData).toBeDefined();
 

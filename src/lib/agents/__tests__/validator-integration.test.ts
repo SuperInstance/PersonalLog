@@ -67,15 +67,31 @@ describe('Validator Integration with Feature Flags', () => {
 
   beforeEach(() => {
     mockHardwareProfile = {
+      timestamp: Date.now(),
       cpu: {
         cores: 8,
-        model: 'Test CPU',
+        concurrency: 8,
         architecture: 'x64',
-        frequency: 3.0,
+        simd: {
+          supported: true,
+          type: 'wasm',
+        },
+        wasm: {
+          supported: true,
+          simd: true,
+          threads: true,
+          bulkMemory: true,
+          exceptions: true,
+        },
       },
       memory: {
         totalGB: 16,
-        availableGB: 8,
+        hasMemoryAPI: true,
+        jsHeap: {
+          limit: 16 * 1024 * 1024 * 1024,
+          used: 8 * 1024 * 1024 * 1024,
+          total: 12 * 1024 * 1024 * 1024,
+        },
       },
       gpu: {
         available: true,
@@ -83,30 +99,54 @@ describe('Validator Integration with Feature Flags', () => {
         vendor: 'NVIDIA',
         vramMB: 8192,
         webgpu: { supported: true },
-        webgl: { supported: true },
+        webgl: { supported: true, version: 2 },
       },
       network: {
         downlinkMbps: 100,
         effectiveType: '4g',
         rtt: 50,
+        hasNetworkAPI: true,
+        online: true,
       },
       storage: {
         quota: {
           quota: 1000 * 1024 * 1024 * 1024, // 1TB
           usage: 100 * 1024 * 1024 * 1024, // 100GB
+          usagePercentage: 10,
         },
-        indexedDB: { supported: true },
+        indexedDB: { supported: true, available: true },
+      },
+      display: {
+        width: 1920,
+        height: 1080,
+        pixelRatio: 1,
+        colorDepth: 24,
+        orientation: 'landscape',
+      },
+      browser: {
+        userAgent: 'Mozilla/5.0',
+        browser: 'Chrome',
+        version: '120',
+        os: 'Windows',
+        platform: 'Win32',
+        touchSupport: false,
       },
       features: {
         webWorkers: true,
         serviceWorker: true,
         webrtc: true,
+        webassembly: true,
         websockets: true,
         geolocation: true,
         notifications: true,
         fullscreen: true,
-        webassembly: true,
+        pip: true,
+        webBluetooth: true,
+        webusb: true,
+        fileSystemAccess: true,
       },
+      performanceScore: 75,
+      performanceClass: 'high',
     };
 
     vi.clearAllMocks();

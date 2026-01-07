@@ -12,7 +12,7 @@ import {
   getPermissionManagementAPI,
   getMarketplaceAPI,
 } from '../api';
-import { Permission } from '../types';
+import { Permission, PluginId } from '../types';
 import { getPluginRegistry } from '../registry';
 import { getPluginManager } from '../manager';
 import { getPermissionManager } from '../permissions';
@@ -220,7 +220,7 @@ describe('Plugin API', () => {
     it('should validate plugin ID for installation', async () => {
       const api = getPluginManagementAPI();
 
-      const result = await api.installPlugin('');
+      const result = await api.installPlugin('' as PluginId);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Plugin ID is required');
     });
@@ -228,7 +228,7 @@ describe('Plugin API', () => {
     it('should validate plugin ID for uninstallation', async () => {
       const api = getPluginManagementAPI();
 
-      const result = await api.uninstallPlugin('');
+      const result = await api.uninstallPlugin('' as PluginId);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Plugin ID is required');
     });
