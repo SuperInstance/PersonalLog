@@ -2,6 +2,7 @@
  * Backup Dashboard
  *
  * Comprehensive UI for managing backups, scheduling, and restoration.
+ * Enhanced with RecoveryWizard, BackupList, and BackupPreview components.
  */
 
 'use client'
@@ -29,6 +30,9 @@ import {
   BackupSchedule,
   formatBytes
 } from '@/lib/backup'
+import { RecoveryWizard } from '@/components/settings/RecoveryWizard'
+import { BackupList } from '@/components/settings/BackupList'
+import { BackupPreview } from '@/components/settings/BackupPreview'
 
 export default function BackupDashboard() {
   // State
@@ -36,6 +40,7 @@ export default function BackupDashboard() {
   const [statistics, setStatistics] = useState<BackupStatistics | null>(null)
   const [schedules, setSchedules] = useState<BackupSchedule[]>([])
   const [selectedBackup, setSelectedBackup] = useState<Backup | null>(null)
+  const [previewBackup, setPreviewBackup] = useState<Backup | null>(null)
   const [isCreatingBackup, setIsCreatingBackup] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
   const [activeTab, setActiveTab] = useState<'backups' | 'schedules' | 'upload'>('backups')
@@ -44,6 +49,7 @@ export default function BackupDashboard() {
   const [restorePreview, setRestorePreview] = useState<RestorePreview | null>(null)
   const [progress, setProgress] = useState<BackupProgress | RestoreProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showRecoveryWizard, setShowRecoveryWizard] = useState(false)
 
   // Load data
   useEffect(() => {
@@ -358,102 +364,41 @@ export default function BackupDashboard() {
       {activeTab === 'backups' && (
         <div>
           {/* Create Backup Buttons */}
-          <div className="mb-6 flex space-x-4">
+          <div className="mb-6 flex flex-wrap gap-4">
             <button
               onClick={() => handleCreateBackup('full')}
               disabled={isCreatingBackup}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 font-medium shadow-sm"
             >
               {isCreatingBackup ? 'Creating...' : 'Create Full Backup'}
             </button>
             <button
               onClick={() => handleCreateBackup('incremental')}
               disabled={isCreatingBackup}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+              className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 font-medium shadow-sm"
             >
               {isCreatingBackup ? 'Creating...' : 'Create Incremental Backup'}
             </button>
+            <button
+              onClick={() => setShowRecoveryWizard(true)}
+              className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 font-medium shadow-sm"
+            >
+              Recovery Wizard
+            </button>
           </div>
 
-          {/* Backups List */}
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Size
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {backups.map((backup) => (
-                    <tr key={backup.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{backup.name}</div>
-                        {backup.description && (
-                          <div className="text-sm text-gray-500">{backup.description}</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(backup.timestamp).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          backup.type === 'full' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                        }`}>
-                          {backup.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatBytes(backup.compressedSize)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => handleRestoreBackup(backup.id)}
-                          disabled={isRestoring}
-                          className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
-                        >
-                          Restore
-                        </button>
-                        <button
-                          onClick={() => handleDownloadBackup(backup.id)}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          Download
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBackup(backup.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {backups.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                        No backups yet. Create your first backup above.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* Enhanced Backup List */}
+          <BackupList
+            backups={backups}
+            onRestore={(backup) => {
+              setSelectedBackup(backup)
+              handleRestoreBackup(backup.id)
+            }}
+            onDownload={(backup) => handleDownloadBackup(backup.id)}
+            onDelete={(backup) => handleDeleteBackup(backup.id)}
+            onPreview={(backup) => setPreviewBackup(backup)}
+            selectedBackupId={selectedBackup?.id}
+          />
         </div>
       )}
 
@@ -573,64 +518,36 @@ export default function BackupDashboard() {
         </div>
       )}
 
-      {/* Restore Preview Modal */}
-      {showRestorePreview && restorePreview && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4">
-            <h2 className="text-2xl font-bold mb-4">Confirm Restore</h2>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <strong>Backup:</strong> {restorePreview.backupName}
-              </div>
-              <div>
-                <strong>Date:</strong> {new Date(restorePreview.backupDate).toLocaleString()}
-              </div>
-              <div>
-                <strong>Size:</strong> {formatBytes(restorePreview.backupSize)}
-              </div>
-              <div>
-                <strong>Type:</strong> {restorePreview.backupType}
-              </div>
-
-              <div className="mt-4">
-                <strong>Items to restore:</strong>
-                <ul className="list-disc list-inside mt-2 text-sm">
-                  <li>{restorePreview.itemsToRestore.conversations} conversations</li>
-                  <li>{restorePreview.itemsToRestore.messages} messages</li>
-                  <li>{restorePreview.itemsToRestore.knowledge} knowledge entries</li>
-                  <li>{restorePreview.itemsToRestore.settings} settings</li>
-                  <li>{restorePreview.itemsToRestore.analytics} analytics events</li>
-                  <li>{restorePreview.itemsToRestore.personalization} personalization items</li>
-                </ul>
-              </div>
-
-              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-                <strong>Warning:</strong> This will overwrite your current data.
-                {restorePreview.preRestoreBackup && (
-                  <span> A pre-restore backup will be created automatically.</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex space-x-4">
-              <button
-                onClick={handleConfirmRestore}
-                disabled={isRestoring}
-                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-              >
-                {isRestoring ? 'Restoring...' : 'Confirm Restore'}
-              </button>
-              <button
-                onClick={() => setShowRestorePreview(false)}
-                className="px-6 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Backup Preview Modal */}
+      {previewBackup && (
+        <BackupPreview
+          backup={previewBackup}
+          onClose={() => setPreviewBackup(null)}
+          onRestore={() => {
+            setPreviewBackup(null)
+            setShowRecoveryWizard(true)
+          }}
+          onDownload={() => {
+            handleDownloadBackup(previewBackup.id)
+            setPreviewBackup(null)
+          }}
+        />
       )}
+
+      {/* Recovery Wizard */}
+      <RecoveryWizard
+        backups={backups}
+        isOpen={showRecoveryWizard}
+        onComplete={(result) => {
+          setShowRecoveryWizard(false)
+          loadData()
+          // Show success message
+          if (result.success) {
+            alert(`Restore completed successfully! Restored ${Object.values(result.itemsRestored).reduce((a, b) => a + b, 0)} items.`)
+          }
+        }}
+        onCancel={() => setShowRecoveryWizard(false)}
+      />
     </div>
   )
 }
