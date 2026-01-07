@@ -265,7 +265,7 @@ export default function MarketplacePage() {
                 query={searchQuery}
                 onQueryChange={handleSearchChange}
                 placeholder="Search for agents..."
-                recentSearches={recentSearches}
+                searchHistory={recentSearches.map(q => ({ query: q, timestamp: Date.now(), resultCount: 0 }))}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-lg"
               />
             </div>

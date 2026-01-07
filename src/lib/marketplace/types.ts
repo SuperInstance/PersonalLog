@@ -113,10 +113,70 @@ export interface AgentRating {
   helpful?: number;
   /** Whether current user marked as helpful */
   userMarkedHelpful?: boolean;
+  /** Whether review has been reported */
+  reported?: boolean;
+  /** Edit history */
+  editHistory?: ReviewEdit[];
+  /** Plugin version at time of review */
+  pluginVersion?: string;
   /** Creation timestamp */
   createdAt: number;
   /** Last update timestamp */
   updatedAt: number;
+}
+
+/**
+ * Review edit history entry
+ */
+export interface ReviewEdit {
+  /** When edit was made */
+  timestamp: number;
+  /** Previous rating value */
+  previousRating: number;
+  /** Previous review title */
+  previousTitle?: string;
+  /** Previous review text */
+  previousText?: string;
+}
+
+/**
+ * Review helpful vote
+ */
+export interface ReviewVote {
+  /** Unique vote ID */
+  id: string;
+  /** Review ID */
+  reviewId: string;
+  /** User ID who voted */
+  userId: string;
+  /** Vote timestamp */
+  createdAt: number;
+}
+
+/**
+ * Review report for moderation
+ */
+export interface ReviewReport {
+  /** Unique report ID */
+  id: string;
+  /** Review ID being reported */
+  reviewId: string;
+  /** User ID reporting */
+  userId: string;
+  /** Report reason */
+  reason: 'spam' | 'offensive' | 'inappropriate' | 'fake' | 'other';
+  /** Additional details */
+  details?: string;
+  /** Report status */
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+  /** When report was created */
+  createdAt: number;
+  /** When report was reviewed */
+  reviewedAt?: number;
+  /** User ID who reviewed */
+  reviewedBy?: string;
+  /** Action taken */
+  action?: 'keep' | 'remove' | 'edit' | 'ban-user';
 }
 
 /**

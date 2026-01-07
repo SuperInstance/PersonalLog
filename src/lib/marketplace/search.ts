@@ -1,7 +1,18 @@
 /**
  * Agent Marketplace Search and Filtering
  *
- * Search, filter, and sort marketplace agents.
+ * Advanced search, filter, and sort functionality for marketplace agents.
+ * Features:
+ * - Full-text search with relevance scoring
+ * - Advanced filtering (category, tags, permissions, ratings)
+ * - Multiple sort options (relevance, rating, installs, updated)
+ * - Search suggestions and autocomplete
+ * - Search history
+ * - Saved searches
+ * - Cached results for performance
+ * - Pagination support
+ *
+ * @module lib/marketplace/search
  */
 
 import type { MarketplaceAgent, SearchFilters, SearchResult } from './types';
@@ -501,4 +512,555 @@ function calculateRelevance(agent: MarketplaceAgent, query: string): number {
 
   // Normalize to 0-1
   return Math.min(score, 1);
+}
+
+// ============================================================================
+// SEARCH SUGGESTIONS & AUTOCOMPLETE
+// ============================================================================
+
+/**
+ * Search suggestion type
+ */
+export interface SearchSuggestion {
+  /** Suggestion text */
+  text: string;
+  /** Suggestion type */
+  type: 'name' | 'tag' | 'category' | 'author';
+  /** Matching plugin IDs (if applicable) */
+  pluginIds?: string[];
+}
+
+/**
+ * Get search suggestions for autocomplete
+ *
+ * @param partialQuery - Partial search query
+ * @param limit - Maximum number of suggestions to return
+ * @returns Promise resolving to search suggestions
+ * @throws {StorageError} If retrieval fails
+ *
+ * @example
+ * ```typescript
+ * const suggestions = await getSearchSuggestions('res', 5);
+ * suggestions.forEach(s => {
+ *   console.log(`${s.text} (${s.type})`);
+ * });
+ * ```
+ */
+export async function getSearchSuggestions(
+  partialQuery: string,
+  limit = 5
+): Promise<SearchSuggestion[]> {
+  if (!partialQuery || partialQuery.length < 2) {
+    return [];
+  }
+
+  const all = await loadAllMarketplaceAgents();
+  const lowerQuery = partialQuery.toLowerCase();
+  const suggestions: SearchSuggestion[] = [];
+
+  // Find matching plugin names
+  const nameMatches = all.filter((agent) => agent.name.toLowerCase().includes(lowerQuery));
+  for (const agent of nameMatches.slice(0, 2)) {
+    suggestions.push({
+      text: agent.name,
+      type: 'name',
+      pluginIds: [agent.id],
+    });
+  }
+
+  // Find matching tags
+  const tagSet = new Set<string>();
+  for (const agent of all) {
+    for (const tag of agent.marketplace.tags) {
+      if (tag.toLowerCase().includes(lowerQuery)) {
+        tagSet.add(tag);
+      }
+    }
+  }
+  for (const tag of Array.from(tagSet).slice(0, 2)) {
+    suggestions.push({
+      text: tag,
+      type: 'tag',
+    });
+  }
+
+  // Find matching categories
+  for (const category of Object.values(AgentCategory)) {
+    if (category.toLowerCase().includes(lowerQuery)) {
+      suggestions.push({
+        text: category,
+        type: 'category',
+      });
+      break;
+    }
+  }
+
+  // Find matching authors
+  const authorSet = new Set<string>();
+  for (const agent of all) {
+    if (agent.marketplace.author.toLowerCase().includes(lowerQuery)) {
+      authorSet.add(agent.marketplace.author);
+    }
+  }
+  for (const author of Array.from(authorSet).slice(0, 1)) {
+    suggestions.push({
+      text: author,
+      type: 'author',
+    });
+  }
+
+  return suggestions.slice(0, limit);
+}
+
+// ============================================================================
+// SEARCH HISTORY
+// ============================================================================
+
+/**
+ * Search history entry
+ */
+export interface SearchHistoryEntry {
+  /** Query text */
+  query: string;
+  /** Timestamp */
+  timestamp: number;
+  /** Result count */
+  resultCount: number;
+  /** Filters applied */
+  filters?: SearchFilters;
+}
+
+const MAX_HISTORY_ENTRIES = 20;
+let searchHistory: SearchHistoryEntry[] = [];
+
+/**
+ * Get search history
+ *
+ * @returns Search history entries (most recent first)
+ *
+ * @example
+ * ```typescript
+ * const history = getSearchHistory();
+ * history.forEach(entry => {
+ *   console.log(`${entry.query} (${entry.resultCount} results)`);
+ * });
+ * ```
+ */
+export function getSearchHistory(): SearchHistoryEntry[] {
+  return [...searchHistory].sort((a, b) => b.timestamp - a.timestamp);
+}
+
+/**
+ * Add entry to search history
+ *
+ * @param query - Search query
+ * @param resultCount - Number of results
+ * @param filters - Filters applied
+ *
+ * @example
+ * ```typescript
+ * addToSearchHistory('research', 15, { category: AgentCategory.KNOWLEDGE });
+ * ```
+ */
+export function addToSearchHistory(
+  query: string,
+  resultCount: number,
+  filters?: SearchFilters
+): void {
+  // Remove existing entry with same query
+  searchHistory = searchHistory.filter((entry) => entry.query !== query);
+
+  // Add new entry at the beginning
+  searchHistory.unshift({
+    query,
+    timestamp: Date.now(),
+    resultCount,
+    filters,
+  });
+
+  // Keep only the most recent entries
+  searchHistory = searchHistory.slice(0, MAX_HISTORY_ENTRIES);
+
+  // Persist to localStorage
+  try {
+    localStorage.setItem('marketplace-search-history', JSON.stringify(searchHistory));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
+ * Clear search history
+ *
+ * @example
+ * ```typescript
+ * clearSearchHistory();
+ * ```
+ */
+export function clearSearchHistory(): void {
+  searchHistory = [];
+  try {
+    localStorage.removeItem('marketplace-search-history');
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
+ * Load search history from localStorage
+ */
+export function loadSearchHistory(): void {
+  try {
+    const stored = localStorage.getItem('marketplace-search-history');
+    if (stored) {
+      searchHistory = JSON.parse(stored);
+    }
+  } catch {
+    // Ignore errors
+  }
+}
+
+// Load history on module init
+loadSearchHistory();
+
+// ============================================================================
+// SAVED SEARCHES
+// ============================================================================
+
+/**
+ * Saved search
+ */
+export interface SavedSearch {
+  /** Unique ID */
+  id: string;
+  /** Name for the saved search */
+  name: string;
+  /** Query */
+  query: string;
+  /** Filters */
+  filters?: SearchFilters;
+  /** Created timestamp */
+  createdAt: number;
+}
+
+let savedSearches: SavedSearch[] = [];
+
+/**
+ * Get all saved searches
+ *
+ * @returns Saved searches
+ *
+ * @example
+ * ```typescript
+ * const saved = getSavedSearches();
+ * saved.forEach(s => {
+ *   console.log(`${s.name}: ${s.query}`);
+ * });
+ * ```
+ */
+export function getSavedSearches(): SavedSearch[] {
+  return [...savedSearches];
+}
+
+/**
+ * Save a search
+ *
+ * @param name - Name for the saved search
+ * @param query - Search query
+ * @param filters - Filters to save
+ * @returns Created saved search
+ *
+ * @example
+ * ```typescript
+ * const saved = saveSearch('My Research Plugins', 'research', {
+ *   category: AgentCategory.KNOWLEDGE,
+ *   minRating: 4
+ * });
+ * ```
+ */
+export function saveSearch(name: string, query: string, filters?: SearchFilters): SavedSearch {
+  const saved: SavedSearch = {
+    id: `saved-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    name,
+    query,
+    filters,
+    createdAt: Date.now(),
+  };
+
+  savedSearches.push(saved);
+
+  // Persist to localStorage
+  try {
+    localStorage.setItem('marketplace-saved-searches', JSON.stringify(savedSearches));
+  } catch {
+    // Ignore storage errors
+  }
+
+  return saved;
+}
+
+/**
+ * Delete a saved search
+ *
+ * @param id - Saved search ID
+ *
+ * @example
+ * ```typescript
+ * deleteSavedSearch('saved-1234567890-abc123');
+ * ```
+ */
+export function deleteSavedSearch(id: string): void {
+  savedSearches = savedSearches.filter((s) => s.id !== id);
+
+  // Persist to localStorage
+  try {
+    localStorage.setItem('marketplace-saved-searches', JSON.stringify(savedSearches));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
+ * Load saved searches from localStorage
+ */
+export function loadSavedSearches(): void {
+  try {
+    const stored = localStorage.getItem('marketplace-saved-searches');
+    if (stored) {
+      savedSearches = JSON.parse(stored);
+    }
+  } catch {
+    // Ignore errors
+  }
+}
+
+// Load saved searches on module init
+loadSavedSearches();
+
+// ============================================================================
+// SEARCH CACHE
+// ============================================================================
+
+/**
+ * Cached search result
+ */
+interface CachedSearch {
+  /** Query */
+  query: string;
+  /** Filters */
+  filters?: SearchFilters;
+  /** Results */
+  results: SearchResult[];
+  /** Timestamp */
+  timestamp: number;
+}
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const searchCache = new Map<string, CachedSearch>();
+
+/**
+ * Generate cache key
+ */
+function getCacheKey(query: string, filters?: SearchFilters): string {
+  return JSON.stringify({ query, filters });
+}
+
+/**
+ * Get cached results if available and not expired
+ *
+ * @param query - Search query
+ * @param filters - Search filters
+ * @returns Cached results or null
+ */
+export function getCachedResults(query: string, filters?: SearchFilters): SearchResult[] | null {
+  const key = getCacheKey(query, filters);
+  const cached = searchCache.get(key);
+
+  if (!cached) {
+    return null;
+  }
+
+  // Check if expired
+  if (Date.now() - cached.timestamp > CACHE_TTL) {
+    searchCache.delete(key);
+    return null;
+  }
+
+  return cached.results;
+}
+
+/**
+ * Cache search results
+ *
+ * @param query - Search query
+ * @param filters - Search filters
+ * @param results - Results to cache
+ */
+export function cacheResults(query: string, filters: SearchFilters | undefined, results: SearchResult[]): void {
+  const key = getCacheKey(query, filters);
+
+  // Clean old entries
+  for (const [cacheKey, cached] of searchCache.entries()) {
+    if (Date.now() - cached.timestamp > CACHE_TTL) {
+      searchCache.delete(cacheKey);
+    }
+  }
+
+  // Add new entry
+  searchCache.set(key, {
+    query,
+    filters,
+    results,
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Clear search cache
+ *
+ * @example
+ * ```typescript
+ * clearSearchCache();
+ * ```
+ */
+export function clearSearchCache(): void {
+  searchCache.clear();
+}
+
+// ============================================================================
+// PAGINATION
+// ============================================================================
+
+/**
+ * Paginated search result
+ */
+export interface PaginatedResult<T> {
+  /** Results for current page */
+  results: T[];
+  /** Current page number (1-indexed) */
+  page: number;
+  /** Page size */
+  pageSize: number;
+  /** Total number of results */
+  totalResults: number;
+  /** Total number of pages */
+  totalPages: number;
+  /** Whether there's a next page */
+  hasNext: boolean;
+  /** Whether there's a previous page */
+  hasPrevious: boolean;
+}
+
+/**
+ * Paginate search results
+ *
+ * @param results - All search results
+ * @param page - Page number (1-indexed)
+ * @param pageSize - Number of results per page
+ * @returns Paginated results
+ *
+ * @example
+ * ```typescript
+ * const paginated = paginateResults(searchResults, 2, 10);
+ * console.log(`Page ${paginated.page} of ${paginated.totalPages}`);
+ * ```
+ */
+export function paginateResults<T>(
+  results: T[],
+  page: number,
+  pageSize: number
+): PaginatedResult<T> {
+  const totalResults = results.length;
+  const totalPages = Math.ceil(totalResults / pageSize);
+
+  // Clamp page number
+  const clampedPage = Math.max(1, Math.min(page, totalPages));
+
+  const start = (clampedPage - 1) * pageSize;
+  const end = start + pageSize;
+  const paginatedResults = results.slice(start, end);
+
+  return {
+    results: paginatedResults,
+    page: clampedPage,
+    pageSize,
+    totalResults,
+    totalPages,
+    hasNext: clampedPage < totalPages,
+    hasPrevious: clampedPage > 1,
+  };
+}
+
+// ============================================================================
+// ENHANCED SEARCH WITH CACHE
+// ============================================================================
+
+/**
+ * Search agents with caching
+ *
+ * @param query - Search query string
+ * @param filters - Optional filters to apply
+ * @param useCache - Whether to use cache (default: true)
+ * @returns Promise resolving to matching agents with relevance scores
+ * @throws {StorageError} If search fails
+ *
+ * @example
+ * ```typescript
+ * const results = await searchAgentsWithCache('research', {
+ *   category: AgentCategory.KNOWLEDGE,
+ *   minRating: 4
+ * });
+ * ```
+ */
+export async function searchAgentsWithCache(
+  query: string,
+  filters?: SearchFilters,
+  useCache = true
+): Promise<SearchResult[]> {
+  // Check cache first
+  if (useCache) {
+    const cached = getCachedResults(query, filters);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  // Perform search
+  const results = await searchAgents(query, filters);
+
+  // Cache results
+  if (useCache) {
+    cacheResults(query, filters, results);
+  }
+
+  return results;
+}
+
+/**
+ * Search agents with pagination
+ *
+ * @param query - Search query string
+ * @param page - Page number (1-indexed)
+ * @param pageSize - Number of results per page
+ * @param filters - Optional filters to apply
+ * @returns Promise resolving to paginated results
+ * @throws {StorageError} If search fails
+ *
+ * @example
+ * ```typescript
+ * const paginated = await searchAgentsPaginated('research', 1, 10, {
+ *   category: AgentCategory.KNOWLEDGE
+ * });
+ * console.log(`Found ${paginated.totalResults} results`);
+ * ```
+ */
+export async function searchAgentsPaginated(
+  query: string,
+  page: number,
+  pageSize: number,
+  filters?: SearchFilters
+): Promise<PaginatedResult<SearchResult>> {
+  const allResults = await searchAgentsWithCache(query, filters);
+
+  return paginateResults(allResults, page, pageSize);
 }

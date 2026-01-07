@@ -115,7 +115,36 @@ import {
   getTrendingAgents as getTrendingAgentsSearch,
   getAllTags,
   getAllAuthors,
+  getSearchSuggestions as getSearchSuggestionsUtil,
+  getSearchHistory,
+  addToSearchHistory,
+  clearSearchHistory,
+  loadSearchHistory,
+  getSavedSearches,
+  saveSearch as saveSearchUtil,
+  deleteSavedSearch,
+  loadSavedSearches,
+  getCachedResults,
+  cacheResults,
+  clearSearchCache,
+  paginateResults,
+  searchAgentsWithCache,
+  searchAgentsPaginated,
 } from './search';
+
+// Discovery functions (for internal use)
+import {
+  getTrendingPlugins,
+  getNewPlugins,
+  getTopRatedPlugins,
+  getEditorsPicks,
+  getSimilarPlugins,
+  getRecommendedPlugins,
+  getPopularByCategory,
+  getCategoryStats,
+  getSearchSuggestions as getDiscoverySuggestions,
+  getPersonalizedFeed,
+} from './discovery';
 
 // Types
 export type {
@@ -217,7 +246,50 @@ export {
   getAllTags,
   getAllAuthors,
   advancedSearch,
+  getSearchSuggestions as getSearchSuggestionsUtil,
+  getSearchHistory,
+  addToSearchHistory,
+  clearSearchHistory,
+  loadSearchHistory,
+  getSavedSearches,
+  saveSearch as saveSearchUtil,
+  deleteSavedSearch,
+  loadSavedSearches,
+  getCachedResults,
+  cacheResults,
+  clearSearchCache,
+  paginateResults,
+  searchAgentsWithCache,
+  searchAgentsPaginated,
 } from './search';
+
+// Discovery
+export {
+  getTrendingPlugins,
+  getNewPlugins,
+  getTopRatedPlugins,
+  getEditorsPicks,
+  getSimilarPlugins,
+  getRecommendedPlugins,
+  getPopularByCategory,
+  getCategoryStats,
+  getSearchSuggestions as getDiscoverySuggestions,
+  getPersonalizedFeed,
+} from './discovery';
+
+// Additional types
+export type {
+  SearchSuggestion,
+  SearchHistoryEntry,
+  SavedSearch,
+  PaginatedResult,
+} from './search';
+
+export type {
+  TrendingOptions,
+  DiscoveryResult,
+  PluginSimilarity,
+} from './discovery';
 
 // Versions
 export {

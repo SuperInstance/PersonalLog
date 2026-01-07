@@ -5,7 +5,7 @@
  * Separate store from user agents for clear separation.
  */
 
-import type { MarketplaceAgent, AgentRating } from './types';
+import type { MarketplaceAgent, AgentRating, ReviewVote, ReviewReport } from './types';
 import type { AgentCategory } from '@/lib/agents/types';
 import { StorageError, NotFoundError, ValidationError } from '@/lib/errors';
 
@@ -13,6 +13,8 @@ const DB_NAME = 'PersonalLogMessenger';
 const DB_VERSION = 1;
 const STORE_MARKETPLACE_AGENTS = 'marketplace-agents';
 const STORE_AGENT_RATINGS = 'agent-ratings';
+const STORE_REVIEW_VOTES = 'review-votes';
+const STORE_REVIEW_REPORTS = 'review-reports';
 
 let db: IDBDatabase | null = null;
 
@@ -61,6 +63,22 @@ async function getDB(): Promise<IDBDatabase> {
         ratingStore.createIndex('agentId', 'agentId', { unique: false });
         ratingStore.createIndex('userId', 'userId', { unique: false });
         ratingStore.createIndex('agentId_userId', ['agentId', 'userId'], { unique: true });
+      }
+
+      // Create review votes store if it doesn't exist
+      if (!database.objectStoreNames.contains(STORE_REVIEW_VOTES)) {
+        const voteStore = database.createObjectStore(STORE_REVIEW_VOTES, { keyPath: 'id' });
+        voteStore.createIndex('reviewId', 'reviewId', { unique: false });
+        voteStore.createIndex('userId', 'userId', { unique: false });
+        voteStore.createIndex('reviewId_userId', ['reviewId', 'userId'], { unique: true });
+      }
+
+      // Create review reports store if it doesn't exist
+      if (!database.objectStoreNames.contains(STORE_REVIEW_REPORTS)) {
+        const reportStore = database.createObjectStore(STORE_REVIEW_REPORTS, { keyPath: 'id' });
+        reportStore.createIndex('reviewId', 'reviewId', { unique: false });
+        reportStore.createIndex('status', 'status', { unique: false });
+        reportStore.createIndex('createdAt', 'createdAt', { unique: false });
       }
     };
   });
@@ -550,6 +568,283 @@ export async function loadAllRatings(): Promise<AgentRating[]> {
         new StorageError('Failed to load all ratings', {
           technicalDetails: request.error?.message,
           cause: request.error || undefined,
+        })
+      );
+  });
+}
+
+/**
+ * Get all ratings for all agents (helper for reviews system)
+ *
+ * @returns Promise resolving to array of all ratings
+ * @throws {StorageError} If database operation fails
+ */
+export async function getReviewsForAgent(_agentId: string): Promise<AgentRating[]> {
+  return loadAllRatings();
+}
+
+// ============================================================================
+// REVIEW VOTES STORAGE
+// ============================================================================
+
+/**
+ * Save a review vote
+ *
+ * @param vote - Vote to save
+ * @returns Promise resolving to saved vote
+ * @throws {StorageError} If database operation fails
+ */
+export async function saveReviewVote(vote: ReviewVote): Promise<ReviewVote> {
+  const database = await getDB();
+
+  // Generate ID if not provided
+  const voteToSave = {
+    ...vote,
+    id: vote.id || `vote-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+  };
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_REVIEW_VOTES], 'readwrite');
+    const store = transaction.objectStore(STORE_REVIEW_VOTES);
+    const request = store.put(voteToSave);
+
+    request.onsuccess = () => resolve(voteToSave);
+    request.onerror = () =>
+      reject(
+        new StorageError(`Failed to save review vote: ${voteToSave.id}`, {
+          technicalDetails: request.error?.message,
+          cause: request.error || undefined,
+        })
+      );
+  });
+}
+
+/**
+ * Get a review vote
+ *
+ * @param reviewId - Review ID
+ * @param userId - User ID
+ * @returns Promise resolving to vote or null if not found
+ * @throws {StorageError} If database operation fails
+ */
+export async function getReviewVote(reviewId: string, userId: string): Promise<ReviewVote | null> {
+  const database = await getDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_REVIEW_VOTES], 'readonly');
+    const index = transaction.objectStore(STORE_REVIEW_VOTES).index('reviewId_userId');
+    const request = index.get([reviewId, userId]);
+
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () =>
+      reject(
+        new StorageError(`Failed to load review vote: ${reviewId}`, {
+          technicalDetails: request.error?.message,
+          cause: request.error || undefined,
+        })
+      );
+  });
+}
+
+/**
+ * Delete a review vote
+ *
+ * @param reviewId - Review ID
+ * @param userId - User ID
+ * @returns Promise that resolves when deletion is complete
+ * @throws {StorageError} If database operation fails
+ */
+export async function deleteReviewVote(reviewId: string, userId: string): Promise<void> {
+  const database = await getDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_REVIEW_VOTES], 'readwrite');
+    const index = transaction.objectStore(STORE_REVIEW_VOTES).index('reviewId_userId');
+    const request = index.openCursor(IDBKeyRange.only([reviewId, userId]));
+
+    request.onsuccess = (event) => {
+      const cursor = (event.target as IDBRequest).result;
+      if (cursor) {
+        cursor.delete();
+        resolve();
+      } else {
+        resolve();
+      }
+    };
+
+    request.onerror = () =>
+      reject(
+        new StorageError(`Failed to delete review vote: ${reviewId}`, {
+          technicalDetails: request.error?.message,
+          cause: request.error || undefined,
+        })
+      );
+  });
+}
+
+/**
+ * Get all votes for a review
+ *
+ * @param reviewId - Review ID
+ * @returns Promise resolving to array of votes
+ * @throws {StorageError} If database operation fails
+ */
+export async function getVotesForReview(reviewId: string): Promise<ReviewVote[]> {
+  const database = await getDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_REVIEW_VOTES], 'readonly');
+    const index = transaction.objectStore(STORE_REVIEW_VOTES).index('reviewId');
+    const request = index.getAll(reviewId);
+
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () =>
+      reject(
+        new StorageError(`Failed to load votes for review: ${reviewId}`, {
+          technicalDetails: request.error?.message,
+          cause: request.error || undefined,
+        })
+      );
+  });
+}
+
+// ============================================================================
+// REVIEW REPORTS STORAGE
+// ============================================================================
+
+/**
+ * Save a review report
+ *
+ * @param report - Report to save
+ * @returns Promise resolving to saved report
+ * @throws {StorageError} If database operation fails
+ */
+export async function saveReviewReport(report: ReviewReport): Promise<ReviewReport> {
+  const database = await getDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_REVIEW_REPORTS], 'readwrite');
+    const store = transaction.objectStore(STORE_REVIEW_REPORTS);
+    const request = store.put(report);
+
+    request.onsuccess = () => resolve(report);
+    request.onerror = () =>
+      reject(
+        new StorageError(`Failed to save review report: ${report.id}`, {
+          technicalDetails: request.error?.message,
+          cause: request.error || undefined,
+        })
+      );
+  });
+}
+
+/**
+ * Get reports for a review
+ *
+ * @param reviewId - Review ID
+ * @returns Promise resolving to array of reports
+ * @throws {StorageError} If database operation fails
+ */
+export async function getReviewReports(reviewId: string): Promise<ReviewReport[]> {
+  const database = await getDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_REVIEW_REPORTS], 'readonly');
+    const index = transaction.objectStore(STORE_REVIEW_REPORTS).index('reviewId');
+    const request = index.getAll(reviewId);
+
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () =>
+      reject(
+        new StorageError(`Failed to load reports for review: ${reviewId}`, {
+          technicalDetails: request.error?.message,
+          cause: request.error || undefined,
+        })
+      );
+  });
+}
+
+/**
+ * Get all pending reports
+ *
+ * @returns Promise resolving to array of pending reports
+ * @throws {StorageError} If database operation fails
+ */
+export async function getPendingReports(): Promise<ReviewReport[]> {
+  const database = await getDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_REVIEW_REPORTS], 'readonly');
+    const index = transaction.objectStore(STORE_REVIEW_REPORTS).index('status');
+    const request = index.getAll('pending');
+
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () =>
+      reject(
+        new StorageError('Failed to load pending reports', {
+          technicalDetails: request.error?.message,
+          cause: request.error || undefined,
+        })
+      );
+  });
+}
+
+/**
+ * Update report status
+ *
+ * @param reportId - Report ID
+ * @param status - New status
+ * @param reviewedBy - User ID of reviewer
+ * @param action - Action taken
+ * @returns Promise resolving to updated report
+ * @throws {NotFoundError} If report doesn't exist
+ * @throws {StorageError} If update fails
+ */
+export async function updateReportStatus(
+  reportId: string,
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed',
+  reviewedBy: string,
+  action?: 'keep' | 'remove' | 'edit' | 'ban-user'
+): Promise<ReviewReport> {
+  const database = await getDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_REVIEW_REPORTS], 'readwrite');
+    const store = transaction.objectStore(STORE_REVIEW_REPORTS);
+    const getRequest = store.get(reportId);
+
+    getRequest.onsuccess = () => {
+      const report = getRequest.result;
+      if (!report) {
+        reject(new NotFoundError('review report', reportId));
+        return;
+      }
+
+      const updated: ReviewReport = {
+        ...report,
+        status,
+        reviewedAt: Date.now(),
+        reviewedBy,
+        action,
+      };
+
+      const putRequest = store.put(updated);
+
+      putRequest.onsuccess = () => resolve(updated);
+      putRequest.onerror = () =>
+        reject(
+          new StorageError(`Failed to update report: ${reportId}`, {
+            technicalDetails: putRequest.error?.message,
+            cause: putRequest.error || undefined,
+          })
+        );
+    };
+
+    getRequest.onerror = () =>
+      reject(
+        new StorageError(`Failed to load report: ${reportId}`, {
+          technicalDetails: getRequest.error?.message,
+          cause: getRequest.error || undefined,
         })
       );
   });
