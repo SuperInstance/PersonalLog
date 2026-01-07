@@ -1,489 +1,391 @@
-# PersonalLog - Production Orchestration Hub
+# PersonalLog - AI Orchestration Hub
 
 > "Building production-ready AI workflow software with systematic autonomous iteration"
 
 ---
 
-## Current Status: 🟢 ACTIVE ORCHESTRATION
+## Current Status: 🟢 PRODUCTION READY
 
-**Mode:** Production Deployment with Multi-Agent Coordination
-**Goal:** Ship PersonalLog.AI with JEPA-enhanced transcripts
-**Method:** BMAD (Backlog → Milestones → Agents → Delivery)
-**Agent Limit:** 6 per round (max)
-**Round Frequency:** Spawn next round only after current round completes
+**Mode:** Feature Development with Multi-Agent Coordination
+**TypeScript Errors:** 0 (production code)
+**Total Files:** 633 TypeScript/TSX files
+**Test Coverage:** 200+ test cases
+**Build Status:** ✅ PASSING
 
 ---
 
-## BMAD Orchestration Method
+## Quick Start for AI Agents
 
-Our customized framework for systematic development:
+### 1. First Actions (Always Do This)
+```bash
+# Check current status
+npm run type-check  # Should be 0 errors
+npm run build       # Should pass
 
-### **B - Backlog Management**
+# Check recent work
+git log --oneline -5
+cat .agents/WORK_STATUS.md
+
+# See what's needed
+ls -la .agents/roadmaps/
+```
+
+### 2. Understanding the Project
+
+**What is PersonalLog?**
+- An adaptive personal AI system with real-time emotional intelligence
+- Local-first, privacy-focused, system-agnostic architecture
+- Multi-modal AI agent ecosystem (JEPA, Spreader, and more)
+- Plugin-powered extensibility with marketplace
+
+**Key Philosophy:**
+> "Most AI gives people access to the world. We give them access to themselves."
+
+**Tech Stack:**
+- Next.js 15 + React 19 + TypeScript (strict mode)
+- IndexedDB for persistence
+- WebAssembly + Web Workers for performance
+- Web Audio API for JEPA
+- Hardware detection for adaptive features
+
+### 3. Core Systems
+
+#### **JEPA (Joint Embedded Predictive Architectures)**
+- **Location:** `src/lib/jepa/`
+- **Purpose:** Real-time emotion analysis from audio
+- **Key Files:**
+  - `audio-capture.ts` - Web Audio API integration
+  - `stt-engine.ts` - Multi-backend transcription (Whisper, Cloudflare, OpenAI)
+  - `audio-features.worker.ts` - Background feature extraction (MFCC, spectral, prosodic)
+  - `emotion-storage.ts` - VAD emotion persistence
+- **Hardware Tiers:** RTX 4050 (Tiny-JEPA) → RTX 4080+ (Multimodal JEPA)
+- **Entry Point:** `src/app/jepa/page.tsx`
+
+#### **Agents System**
+- **Location:** `src/lib/agents/`
+- **Purpose:** Messenger-style AI agent conversations
+- **Key Files:**
+  - `registry.ts` - Agent registration and availability
+  - `validator.ts` - Hardware requirement validation
+  - `requirements.ts` - Requirement type definitions
+  - `message-pipeline.ts` - Agent message routing
+  - `handlers.ts` - Agent handler registration
+- **Built-in Agents:** JEPA (emotion analysis), Spreader (conversation spreading)
+- **Entry Point:** `src/components/agents/AgentSection.tsx`
+
+#### **Spreader System**
+- **Location:** `src/lib/agents/spreader/`
+- **Purpose:** Parallel child conversation management
+- **Key Files:**
+  - `spreader-agent.ts` - Main agent implementation
+  - `dag.ts` - DAG orchestration for complex spreads
+  - `dag-executor.ts` - DAG execution engine
+  - `optimizer.ts` - Token usage optimization
+  - `compression-strategies.ts` - Context compression
+- **Features:** DAG-based orchestration, auto-merge, token optimization
+- **Entry Point:** `src/components/agents/spreader/SpreaderConversation.tsx`
+
+#### **Intelligence Hub**
+- **Location:** `src/lib/intelligence/`
+- **Purpose:** Unified intelligence system (analytics + experiments + optimization + personalization)
+- **Key Files:**
+  - `hub.ts` - Central intelligence coordinator
+  - `workflows.ts` - Automated workflows (daily optimization, continuous learning)
+  - `data-flow.ts` - Cross-system data pipelines
+- **Features:** Pattern recognition, auto-tuning, preference learning
+- **Entry Point:** `src/app/settings/intelligence/page.tsx`
+
+#### **Plugin System**
+- **Location:** `src/lib/plugin/`
+- **Purpose:** Extensibility and marketplace
+- **Key Files:**
+  - `storage.ts` - IndexedDB plugin storage (7 stores, 80 methods)
+  - `api.ts` - Complete plugin API (45 functions)
+  - `manager.ts` - Plugin lifecycle management
+  - `permissions.ts` - Permission system (3-state: granted/denied/prompt)
+- **Marketplace:** `src/lib/marketplace/` + `src/app/marketplace/`
+- **Features:** Install, uninstall, enable, disable, update, rate, review
+
+#### **Analytics & Experiments**
+- **Locations:** `src/lib/analytics/`, `src/lib/experiments/`, `src/lib/optimization/`, `src/lib/personalization/`
+- **Purpose:** Self-optimizing AI system
+- **Features:**
+  - Event tracking and aggregation
+  - A/B testing with statistical significance
+  - Auto-tuning with 26+ optimization rules
+  - Usage pattern detection with 80%+ prediction accuracy
+
+#### **Backup & Recovery**
+- **Location:** `src/lib/backup/`
+- **Purpose:** Data safety and disaster recovery
+- **Key Files:**
+  - `recovery.ts` - Backup creation and restoration
+  - `rollback.ts` - Snapshot management with GZIP compression
+  - `integrity.ts` - Data integrity validation
+- **Features:** Compressed snapshots, pre-restore safety backups, integrity scoring
+
+### 4. Hardware Detection System
+
+**CRITICAL:** PersonalLog is **system-agnostic** - features automatically adjust based on hardware.
+
+**Hardware Tiers:**
+```
+Tier 1 (0-30):   No GPU, basic features only
+Tier 2 (31-50):  RTX 4050+, Tiny-JEPA possible
+Tier 3 (51-70):  RTX 4060+, JEPA-Large + Whisper
+Tier 4 (71-100): RTX 4080+ or DGX, all features + multimodal
+```
+
+**Detection Files:**
+- `src/lib/hardware/detection.ts` - GPU, RAM, CPU, storage detection
+- `src/lib/hardware/scoring.ts` - JEPA score (0-100)
+- `src/lib/hardware/capabilities.ts` - Feature detection
+- `src/lib/flags/features.ts` - Feature flag management
+
+**ALWAYS check hardware requirements before implementing features.**
+
+### 5. Working Conventions
+
+#### **Code Style**
+- **TypeScript Strict Mode:** Zero tolerance for errors
+- **No `any` types:** Use proper typing or `unknown`
+- **JSDoc Comments:** Required on all public functions
+- **File Organization:** Co-locate components with their logic
+
+#### **Testing**
+- **Unit Tests:** `npm run test:unit` (vitest)
+- **Integration Tests:** `npm run test:integration`
+- **E2E Tests:** `npm run test:e2e` (playwright)
+- **Smoke Tests:** `npm run test:smoke` (fast validation)
+
+#### **Git Commits**
+- **Format:** Conventional commits (`feat:`, `fix:`, `refactor:`, `docs:`)
+- **Sign-off:** Add co-authorship line for AI contributions
+- **Example:**
+  ```
+  feat: Add plugin marketplace rating system
+
+  - Implement rating submission and storage
+  - Add review system with helpful voting
+  - Create rating statistics with distribution
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+  Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+  ```
+
+#### **Error Handling**
+- **Use Custom Errors:** Extend `Error` class
+- **Validation:** Validate inputs at system boundaries
+- **User Feedback:** Show user-friendly error messages
+- **Logging:** Use structured logging (console.error with context)
+
+### 6. Multi-Agent Orchestration (BMAD Method)
+
+When deploying multiple agents:
+
+**B - Backlog Management**
 - Organize work into clear, prioritized backlogs
 - Break large features into small, deliverable chunks
-- Estimate complexity before assigning to agents
-- Always maintain 3+ rounds of work ready to assign
+- Estimate complexity before assigning
 
-### **M - Milestones & Metrics**
-- Define clear milestones for each round
-- Set measurable success criteria
-- Track progress quantitatively (files changed, errors fixed, etc.)
-- Celebrate achievements when milestones are hit
+**M - Milestones & Metrics**
+- Define clear success criteria
+- Track progress quantitatively
+- Set measurable outcomes
 
-### **A - Agents & Assignments**
-- Deploy up to 6 specialized agents per round (not more)
-- Give agents focused, achievable scopes
-- **ALWAYS use AutoAccept mode** for autonomous decision-making
-- Monitor closely but trust agents to implement
-- Each agent has clear deliverables and success criteria
+**A - Agents & Assignments**
+- Deploy up to 6 specialized agents per round (NOT MORE)
+- Give agents focused, achievable scopes (2-4 hours each)
+- **ALWAYS use AutoAccept mode** for autonomous decisions
+- Monitor but trust agents to implement
 
-### **D - Delivery & Documentation**
-- Verify all agent work before marking round complete
-- Create summary documents for each round
-- Update progress trackers
-- Commit all changes before spawning next round
-- Reflect on what worked well and what didn't
+**D - Delivery & Documentation**
+- Verify all agent work before marking complete
+- Create summary documents
+- Commit changes before spawning next round
+- Reflect on what worked
 
----
+### 7. Common Tasks
 
-## Critical Architecture Principles
+#### **Add a New Agent**
+1. Create definition in `src/lib/agents/presets.ts`
+2. Implement handler in `src/lib/agents/handlers.ts`
+3. Add UI in `src/components/agents/`
+4. Register in `src/lib/agents/registry.ts`
+5. Add hardware requirements if needed
 
-### 🎯 System-Agnostic Design (Foundation of MVP)
+#### **Add a New Feature Flag**
+1. Add to `src/lib/flags/features.ts`
+2. Add hardware score requirement if needed
+3. Update detection in `src/lib/hardware/detection.ts`
+4. Add UI toggle in settings
 
-**PRINCIPLE:** PersonalLog must work across the entire hardware spectrum, from low-end laptops to high-end workstations. Feature availability adjusts automatically based on hardware capabilities.
+#### **Add a New Plugin**
+1. Create plugin manifest following `src/lib/plugin/types.ts`
+2. Implement plugin logic
+3. Add to marketplace storage
+4. Test installation/activation flow
 
-**Hardware Spectrum:**
+#### **Debug TypeScript Errors**
+1. Run `npm run type-check` to see all errors
+2. Fix errors systematically by file
+3. Use `grep -r "import.*from.*file"` to find dependencies
+4. Check for circular dependencies with `npx madge --circular src/`
 
-**Tier 1: Low-End (No GPU, <8GB RAM)**
-- Feature: Basic AI chat through APIs only
-- JEPA: DISABLED (not enough resources)
-- Local Models: DISABLED
-- Experience: Fully functional, API-dependent
+#### **Run Tests**
+```bash
+# Quick validation
+npm run type-check && npm run test:unit
 
-**Tier 2: Mid-Range (RTX 4050, 8-16GB RAM)**
-- Feature: Full-featured with local models
-- JEPA: ENABLED (Tiny-JEPA only)
-- Local Models: ENABLED (small/medium models)
-- Experience: Complete feature set, good performance
+# Full test suite
+npm run test:all
 
-**Tier 3: High-End (RTX 5090, 32GB+ RAM)**
-- Feature: Maximum features, multimodal JEPA
-- JEPA: ENABLED (all models including multimodal)
-- Local Models: ENABLED (all model sizes)
-- Experience: Pro-grade capabilities, parallel processing
+# Specific test file
+npm run test:unit -- path/to/test.test.ts
 
-**Tier 4: Extreme (Jetson Thor, DGX Station, etc.)**
-- Feature: Research/professional grade
-- JEPA: ENABLED (multiple models simultaneously)
-- Local Models: ENABLED (maximum scale)
-- Experience: Enterprise/research capabilities
+# Watch mode during development
+npm run test:watch
+```
 
-**Implementation:**
+### 8. File Locations Reference
+
+| Category | Location |
+|----------|----------|
+| **Orchestration** | `CLAUDE.md`, `.agents/WORK_STATUS.md` |
+| **Roadmaps** | `.agents/roadmaps/` |
+| **Round Briefings** | `.agents/round-N/briefing.md` |
+| **Agent Types** | `src/lib/agents/types.ts` |
+| **Agent Registry** | `src/lib/agents/registry.ts` |
+| **JEPA System** | `src/lib/jepa/` |
+| **Spreader System** | `src/lib/agents/spreader/` |
+| **Intelligence** | `src/lib/intelligence/` |
+| **Analytics** | `src/lib/analytics/` |
+| **Experiments** | `src/lib/experiments/` |
+| **Optimization** | `src/lib/optimization/` |
+| **Personalization** | `src/lib/personalization/` |
+| **Plugin System** | `src/lib/plugin/` |
+| **Marketplace** | `src/lib/marketplace/` |
+| **Backup** | `src/lib/backup/` |
+| **Hardware Detection** | `src/lib/hardware/` |
+| **Feature Flags** | `src/lib/flags/` |
+| **Tests** | `src/**/*.test.ts`, `tests/` |
+
+### 9. Architecture Principles
+
+#### **System-Agnostic Design**
+PersonalLog must work across the entire hardware spectrum. Features automatically enable/disable based on:
+
 ```typescript
-// Hardware detection runs on app startup
+// Hardware detection runs on startup
 const capabilities = await detectHardwareCapabilities();
+const score = calculateJEPAScore(capabilities);
 
-// Feature flags adjust automatically
-if (capabilities.hardwareScore < 30) {
+// Features adjust automatically
+if (score < 30) {
   // Low-end: API-only mode
   enableFeature('api_mode');
   disableFeature('jepa.transcription');
-  disableFeature('ai.local_models');
-} else if (capabilities.hardwareScore < 60) {
+} else if (score < 60) {
   // Mid-range: Local models + basic JEPA
   enableFeature('ai.local_models');
   enableFeature('jepa.transcription', { model: 'tiny-jepa' });
 } else {
   // High-end: Everything enabled
-  enableFeature('ai.local_models', { maxSize: 'large' });
-  enableFeature('jepa.transcription', { model: 'jepa-large' });
   enableFeature('jepa.multimodal');
 }
 ```
 
-### ☁️ Cloudflare Integration (Web Version Foundation)
+#### **Privacy-First Data Handling**
+- **Tier 1:** Local (IndexedDB) - User's computer
+- **Tier 2:** User's Cloudflare - User's account, user's data
+- **Tier 3:** Our servers - NOTHING! Zero data storage
 
-**PRINCIPLE:** The web version runs on USER'S Cloudflare account, not ours. We provide the UI and orchestration; user provides the infrastructure (free tier).
+We never see, touch, or store user conversations.
 
-**User Flow:**
-```
-1. User visits PersonalLog.AI
-   ↓
-2. Click "Login with Cloudflare" (OAuth)
-   ↓
-3. First-time users:
-   - "Connect your Cloudflare account to use PersonalLog"
-   - Guided signup: Create Cloudflare account (free tier)
-   - "We use YOUR Cloudflare, not ours. Your data, your control."
-   ↓
-4. Authorize PersonalLog app (OAuth scope)
-   ↓
-5. PersonalLog deploys Workers to user's account (one-click)
-   - Chat handler runs on user's Workers
-   - Data stored in user's R2/D1
-   - User pays Cloudflare directly (if exceeding free tier)
-   ↓
-6. PersonalLog is just the UI/orchestration layer
-   - Zero infrastructure costs for us
-   - Zero data storage costs for us
-   - Zero API costs for us
-```
+#### **Plugin Architecture**
+- **Storage:** IndexedDB with 7 stores (manifests, states, permissions, files, versions, logs, stats)
+- **API:** 45 functions for complete lifecycle management
+- **Marketplace:** Browse, install, rate, review plugins
+- **Permissions:** 3-state tracking (granted/denied/prompt)
 
-**Business Model Implications:**
-- **Free Tier Users:** Pay nothing (Cloudflare free tier sufficient)
-- **Power Users:** Pay Cloudflare directly for additional resources
-- **Our Revenue:** Banner ads (free) or nominal fee (ad-free + extras)
-
-**Our Role:**
-- Provide beautiful, functional UI
-- Provide orchestration and routing logic
-- Guide users to Cloudflare signup
-- Deploy Workers to user's account automatically
-- Handle updates and maintenance
-- NEVER touch user's data
-
-**Moat:**
-- Custom Cloudflare integration (competitors can't easily replicate)
-- Seamless desktop → web → mobile sync via user's Cloudflare
-- "Your Cloudflare account" brand association
-- Zero-infrastructure-cost model (hard to compete with)
-
-### 🔒 Privacy-First Data Handling
-
-**PRINCIPLE:** User's data stays on user's infrastructure. We never see, touch, or store user conversations.
-
-**Storage Hierarchy:**
-```
-Tier 1: Local (Desktop App)
-- IndexedDB for conversations
-- Local model storage (GGUF files)
-- User's computer, user's control
-
-Tier 2: User's Cloudflare (Web Version)
-- User's R2 bucket for storage
-- User's D1 database for metadata
-- User's Workers for processing
-- User pays Cloudflare, not us
-
-Tier 3: Our Servers
-- NOTHING! Zero data storage
-- We just provide UI and orchestration
-- User brings their own infrastructure
-```
-
-### 🌐 Ecosystem Foundation
-
-**PRINCIPLE:** Build the foundation once, deploy to infinite domains. One tech stack, many specialized products.
-
-**Current Products (Planned):**
-- PersonalLog.AI (general productivity) ← MVP
-- StudyLog.AI (students, researchers)
-- BusinessLog.AI (professionals, enterprise)
-- ActiveLog.AI (fitness, health)
-- PlayerLog.AI (gaming, esports)
-- RealLog.AI (content creators, streaming)
-- FishingLog.AI (niche example)
-- ... infinite Log.AI products possible
-
-**Shared Technology:**
-- Same AI models (JEPA, Whisper, Phi-3, etc.)
-- Same Cloudflare integration
-- Same sync architecture
-- Same authentication (Cloudflare OAuth)
-- Same core features (chat, search, analytics)
-
-**Differentiation:**
-- Branding (name, logo, colors)
-- UI Theme (domain-specific)
-- Specialized Features (citations, meetings, workouts)
-- Target Audience (students, professionals, gamers)
-- Domain-Specific Data (papers, contracts, exercises)
-
-**Foundation Requirements (MUST BUILD NOW):**
-1. ✅ Hardware detection and adaptive feature flags
-2. ✅ Modular architecture (easy to rebrand/retheme)
-3. ✅ Cloudflare Workers integration architecture
-4. ✅ Cross-platform sync (desktop → web → mobile)
-5. ✅ Plugin system for domain-specific features
-
----
-
-## Current Project Status
-
-### ✅ Completed
-- **TypeScript Safety:** 0 errors (100% error-free codebase)
-- **Test Infrastructure:** All test files updated and passing
-- **Core Features:** Messenger, Knowledge, Analytics, Optimization
-- **Architecture:** Complete system with intelligence features
-- **Business Model:** Mass-adoption ecosystem strategy documented
-
-### 🎯 In Progress
-- **JEPA Integration:** Subtext transcription as beta research feature
-- **System-Agnostic Architecture:** Hardware detection + feature flags
-- **Cloudflare Integration:** Web version with user's Workers
-- **Production Polish:** Packaging for deployment
-
-### 📋 Next Up
-- **Documentation:** User guides, API docs, deployment guides
-- **Desktop App:** Electron packaging with JEPA
-- **Web Version:** Cloudflare Workers integration
-- **Mobile Apps:** React Native with JEPA hybrid
-
----
-
-## File Locations
-
-| Category | Location |
-|----------|----------|
-| **Orchestration Hub** | `CLAUDE.md` (this file) |
-| **Roadmaps** | `.agents/ROADMAPS/` |
-| **Round Briefings** | `.agents/round-N/briefing.md` |
-| **Round Reflections** | `.agents/round-N/reflection.md` |
-| **Agent Tasks** | `.agents/round-N/agent-{N}-tasks.md` |
-| **Progress Tracker** | `.agents/WORK_STATUS.md` |
-| **Source Code** | `src/` |
-| **Tests** | `tests/`, `src/**/*.test.ts` |
-
----
-
-## Orchestration Workflow
-
-### Per Round (BMAD Cycle)
+### 10. Quick Reference Commands
 
 ```bash
-# 1. BACKLOG: Review and prioritize tasks
-#    - Check existing roadmaps
-#    - Create/update round briefings
-#    - Break work into agent-sized chunks
+# Development
+npm run dev              # Start dev server on port 3002
+npm run build            # Production build
+npm run type-check       # TypeScript validation
+npm run lint             # ESLint check
 
-# 2. MILESTONES: Define success criteria
-#    - Set clear objectives for round
-#    - Define measurable outcomes
-#    - Estimate round completion time
+# Testing
+npm run test             # Type check only
+npm run test:unit        # Vitest unit tests
+npm run test:smoke       # Fast smoke tests
+npm run test:all         # Full test suite
 
-# 3. AGENTS: Deploy up to 6 specialized agents
-#    Agent 1: Task A (focused scope)
-#    Agent 2: Task B (focused scope)
-#    Agent 3: Task C (focused scope)
-#    ...
-#    (Monitor agents in real-time)
+# Verification
+npm run verify:build     # Verify production build
+npm run verify:deployment # Verify deployment readiness
 
-# 4. DELIVERY: Verify and document
-#    - Wait for ALL agents to complete
-#    - Review all agent outputs
-#    - Verify builds pass
-#    - Create reflection document
-#    - Commit changes
-#    - Update progress trackers
-
-# 5. PLAN NEXT ROUND
-#    - Review what's left
-#    - Create briefings for next round
-#    - Adjust strategy based on learnings
-#    - Spawn next round
+# Cleanup
+npm run clean            # Remove build artifacts
 ```
 
-### Agent Constraints
+### 11. Quality Standards
 
-**Maximum Agents:** 6 per round
-**Maximum Scope:** Focused, achievable tasks (2-4 hours each)
-**Mode:** AutoAccept ENABLED (autonomous decision-making) - ALWAYS USE
-**Monitoring:** Orchestrator checks progress every 5-10 minutes
-**Completion:** ALL agents must finish before next round
-
-**IMPORTANT:** All agents MUST be spawned with `run_in_background=false` and AutoAccept mode enabled. This allows agents to make autonomous decisions about implementation while the orchestrator monitors their progress.
-
-### Success Criteria
-
-**Round is successful when:**
-- ✅ All agents completed their assigned tasks
-- ✅ Build passes (or specific tests pass)
-- ✅ Changes committed to git
-- ✅ Reflection document created
-- ✅ Progress tracker updated
-- ✅ Next round briefings ready
-
-**Round is retried when:**
-- ❌ Agent crashes or produces errors
-- ❌ Build fails after agent changes
-- ❌ Tests fail due to agent changes
-- ❌ Deliverables don't meet quality standards
-
----
-
-## Current Roadmaps
-
-### 🎯 Active: JEPA Integration (Round 1)
-**Location:** `.agents/roadmaps/JEPA_INTEGRATION.md`
-**Status:** Planning phase
-**Goal:** Add JEPA subtext transcription as beta research feature
-
-### 📋 Planned: Production Deployment
-**Location:** `.agents/roadmaps/PRODUCTION_DEPLOYMENT.md`
-**Status:** Not started
-**Goal:** Package and deploy PersonalLog.AI
-
-### 🔮 Planned: Mobile Apps
-**Location:** `.agents/roadmaps/MOBILE_APPS.md`
-**Status:** Not started
-**Goal:** React Native apps for iOS/Android
-
----
-
-## Agent Deployment Template
-
-### When Creating a Round:
-
-1. **Create Round Directory:**
-   ```bash
-   mkdir -p .agents/round-{N}
-   ```
-
-2. **Create Briefing Document:**
-   ```bash
-   # .agents/round-{N}/briefing.md
-   # - Round overview
-   # - Success criteria
-   # - Agent assignments
-   # - Timeline
-   ```
-
-3. **Deploy Agents (max 6) - CRITICAL: ALWAYS use AutoAccept mode:**
-   ```bash
-   # Agent 1: Focus on X
-   # - Use Task tool with AutoAccept enabled
-   # - Set run_in_background=false for sequential execution
-   # - OR set run_in_background=true for parallel execution
-   #
-   # Agent 2: Focus on Y
-   # ... up to 6 agents
-   #
-   # REMEMBER: AutoAccept MUST be enabled for ALL agents
-   ```
-
-4. **Monitor and Wait:**
-   - Check agent outputs periodically
-   - Assist if agents get stuck
-   - Document progress
-
-5. **When All Complete:**
-   - Verify all work
-   - Create reflection
-   - Commit changes
-   - Spawn next round
-
----
-
-## Quality Standards
-
-**All agent work must:**
+**All code MUST:**
 - ✅ Pass TypeScript strict mode (0 errors)
 - ✅ Pass ESLint (0 warnings)
-- ✅ Pass tests (100% of relevant tests)
-- ✅ Be properly documented
+- ✅ Pass relevant tests (100%)
+- ✅ Be properly documented (JSDoc)
 - ✅ Handle edge cases
 - ✅ Include error handling
-- ✅ Follow existing code patterns
+- ✅ Follow existing patterns
 
 **Zero compromise on quality.**
 
----
+### 12. Getting Help
 
-## Quick Reference
-
-### Spawn a New Round:
+**For Context on a Feature:**
 ```bash
-# 1. Create briefing
-cat > .agents/round-{N}/briefing.md << 'EOF'
-# Round N Briefing
-## Goal: ...
-## Success Criteria: ...
-## Agent Assignments: ...
-EOF
+# Search for relevant files
+grep -r "keyword" src/
 
-# 2. Update progress tracker
-# Edit .agents/WORK_STATUS.md
+# Read the implementation
+cat src/lib/feature/file.ts
 
-# 3. Deploy agents (CRITICAL: ALWAYS use AutoAccept mode)
-# Use Task tool with AutoAccept enabled for ALL agents
-# Up to 6 agents with focused scopes
-# Example:
-# Agent 1: <focused task>
-# Agent 2: <focused task>
-# ...
-
-# 4. Wait for completion
-# Monitor with TaskOutput tool
-
-# 5. Verify and commit
-npm run build
-npm test
-git add .
-git commit -m "round-N: ..."
+# Check tests for usage examples
+cat src/lib/feature/__tests__/file.test.ts
 ```
 
-### Check Agent Progress:
+**For Understanding Architecture:**
 ```bash
-# List active agents
-ls -la .agents/round-*/
+# Read architecture docs
+cat docs/ARCHITECTURE.md
 
-# Check specific agent output
-cat .agents/tasks/{agent-id}.output
+# Check recent work
+git log --oneline -10
 
-# Monitor in real-time
-tail -f .agents/tasks/*.output
+# See what agents exist
+ls -la src/lib/agents/
 ```
 
-### Round Completion Checklist:
-- [ ] All agents completed
-- [ ] Build passes
-- [ ] Tests pass
-- [ ] Reflection written
-- [ ] Changes committed
-- [ ] Progress updated
-- [ ] Next round planned
+**For Debugging:**
+1. Check TypeScript errors: `npm run type-check`
+2. Check for circular deps: `npx madge --circular src/`
+3. Read test files for usage examples
+4. Check similar implementations in the codebase
 
 ---
 
-## Orchestrator Commands
+## Status: 🟢 PRODUCTION READY
 
-### Continue Workflow
-```bash
-# 1. Plan next round (create briefings)
-# 2. Deploy agents (max 6)
-# 3. Monitor progress
-# 4. Verify completion
-# 5. Commit and spawn next round
-```
-
-### View Status
-```bash
-# Overall status
-cat .agents/WORK_STATUS.md
-
-# Current round
-cat .agents/round-{CURRENT}/briefing.md
-
-# Roadmaps
-ls -la .agents/roadmaps/
-```
-
-### Force Actions (Emergency Only)
-```bash
-# Skip to next round (use sparingly)
-echo "FORCE_NEXT_ROUND=true" > .agents/SKIP_ROUND
-
-# Pause orchestration
-echo "PAUSED=true" > .agents/PAUSE
-```
-
----
-
-**Status:** 🟢 ACTIVE - Round 1: JEPA Integration Planning
-**Last Updated:** 2025-01-04
+**TypeScript Errors:** 0 (production code)
+**Build Status:** ✅ PASSING
+**Last Updated:** 2025-01-07
 **Orchestrator:** Claude Sonnet 4.5
-**Method:** BMAD (Backlog → Milestones → Agents → Delivery)
 
 ---
 
-*"We build production software systematically, one focused round at a time. Quality over speed, but never compromise on delivery."*
+*"We build production software systematically, one feature at a time."*
