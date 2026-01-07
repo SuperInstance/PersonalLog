@@ -1,244 +1,291 @@
-# Round 6: Advanced Spreader Features
+# Round 6 Briefing: Advanced Spreader Features
 
-**Status:** Active
-**Date:** 2025-01-04
-**Mission:** Enhance Spreader with DAG tasks, automatic merging, context optimization, and analytics
-
----
-
-## Vision
-
-Transform Spreader from a simple parallel conversation manager into an intelligent context optimization system with automatic orchestration.
-
-**Current State (Round 3):**
-- Manual "Spread this:" command
-- Child conversations created in parallel
-- Manual merge required
-- Basic context tracking
-- Rule-based schema generation
-
-**Target State (After Round 6):**
-- DAG-based task dependencies (DB must finish before API)
-- Automatic merging when children complete
-- Intelligent context optimization algorithms
-- Multi-model spreading (different models for different tasks)
-- Comprehensive spread analytics
-- Smart schema generation with ML
+**Date:** 2025-01-05
+**Status:** 🚀 IN PROGRESS
+**Focus:** DAG task dependencies, automatic merging, context optimization
+**Agent Limit:** 6 (max)
+**Mode:** AutoAccept ENABLED
 
 ---
 
-## Architecture
+## Round Overview
 
-### DAG Task Dependencies
-```yaml
-tasks:
-  - id: "db-design"
-    name: "Design Database"
-    depends_on: []
+Round 6 transforms the Spreader agent from a simple parallel task manager into a sophisticated DAG (Directed Acyclic Graph) orchestration system with automatic result merging and intelligent context optimization.
 
-  - id: "api-design"
-    name: "Design API"
-    depends_on: ["db-design"]  # Must wait for DB
+### Core Vision
 
-  - id: "frontend"
-    name: "Build Frontend"
-    depends_on: ["api-design"]  # Must wait for API
+> "Complex tasks should execute in parallel with automatic dependencies, and results should merge seamlessly without user intervention."
 
-  - id: "testing"
-    name: "Testing"
-    depends_on: ["db-design", "api-design", "frontend"]  # Wait for all
+---
+
+## Goals
+
+### Primary Goals
+1. **DAG Task Dependencies** - Define task execution order ("DB must finish before API")
+2. **Automatic Merging** - Child results merge without user action
+3. **Context Optimization** - Intelligent message prioritization
+4. **Progress Visualization** - Show DAG execution in real-time
+5. **Error Recovery** - Handle task failures gracefully
+
+### Success Criteria
+- ✅ Tasks can define dependencies (DAG structure)
+- ✅ Automatic execution in dependency order
+- ✅ Child results merge automatically
+- ✅ Context optimized intelligently
+- ✅ DAG visualization shows execution
+- ✅ Zero TypeScript errors
+- ✅ All existing tests pass
+
+---
+
+## Agent Assignments
+
+### Agent 1: DAG Task Dependency System
+**Focus:** Implement task dependency resolution and execution
+**Estimated Time:** 3-4 hours
+
+**Tasks:**
+1. Create `src/lib/agents/spreader/dag.ts` - DAG data structures
+2. Create `src/lib/agents/spread/dependency-resolver.ts` - Topological sort
+3. Enhance `src/lib/agents/spread/spread-commands.ts` - Add "dependsOn" syntax
+4. Update spawn logic to respect dependencies
+5. Implement parallel execution of independent tasks
+6. Add cycle detection (prevent circular dependencies)
+
+**Success Metrics:**
+- Tasks define dependencies: "dependsOn": ["task-1", "task-2"]
+- Topological sort produces execution order
+- Independent tasks run in parallel
+- Dependent tasks wait for prerequisites
+- Circular dependencies detected and rejected
+
+---
+
+### Agent 2: Automatic Result Merging
+**Focus:** Merge child results without user action
+**Estimated Time:** 3-4 hours
+
+**Tasks:**
+1. Create `src/lib/agents/spread/auto-merge.ts` - Automatic merging
+2. Define merge strategies:
+   - Concatenation (lists)
+   - Merging (objects/maps)
+   - Voting (conflicts)
+   - Priority (designated primary)
+3. Trigger merge when all children complete
+4. Update parent conversation automatically
+5. Show merge status to user
+
+**Success Metrics:**
+- Results merge automatically when children complete
+- Multiple merge strategies supported
+- Parent conversation updates seamlessly
+- User sees merge progress
+
+---
+
+### Agent 3: Context Optimization Engine
+**Focus:** Intelligent message prioritization for context
+**Estimated Time:** 3-4 hours
+
+**Tasks:**
+1. Create `src/lib/agents/spread/context-optimizer.ts`
+2. Implement prioritization algorithms:
+   - Recency (recent messages more important)
+   - Relevance (keywords, semantic similarity)
+   - Hierarchy (user messages > agent messages)
+   - Token budget management
+3. Add context compaction strategies
+4. Dynamic context adjustment based on task needs
+5. Metrics and logging
+
+**Success Metrics:**
+- Context stays within token limits
+- Most important messages retained
+- Context adapts to task requirements
+- Performance metrics available
+
+---
+
+### Agent 4: DAG Visualization UI
+**Focus:** Show DAG execution in real-time
+**Estimated Time:** 3-4 hours
+
+**Tasks:**
+1. Create `src/components/agents/spreader/DAGVisualization.tsx`
+2. Render DAG as node-edge graph
+3. Show task states (pending, running, complete, failed)
+4. Animate state transitions
+5. Interactive (click nodes for details)
+6. Progress indicators
+
+**Success Metrics:**
+- DAG renders clearly
+- Task states visible
+- Real-time updates
+- Smooth animations
+- Interactive exploration
+
+---
+
+### Agent 5: Error Recovery & Retry
+**Focus:** Handle task failures gracefully
+**Estimated Time:** 2-3 hours
+
+**Tasks:**
+1. Create `src/lib/agents/spread/error-handler.ts`
+2. Implement retry strategies:
+   - Exponential backoff
+   - Max retry limits
+   - Fallback tasks
+3. Error aggregation (collect all child errors)
+4. User notification of failures
+5. Partial success handling (some tasks succeed)
+
+**Success Metrics:**
+- Failed tasks retry automatically
+- Errors are aggregated and reported
+- User can see what failed
+- Partial successes handled
+- Graceful degradation
+
+---
+
+### Agent 6: Integration & Polish
+**Focus:** Connect all Spreader features
+**Estimated Time:** 2-3 hours
+
+**Tasks:**
+1. Integrate DAG system into Spreader agent
+2. Integrate auto-merge into workflow
+3. Integrate context optimization
+4. Integrate DAG visualization
+5. Integrate error handling
+6. Add onboarding for DAG features
+7. Polish UI and animations
+8. Add keyboard shortcuts
+9. Ensure accessibility
+
+**Success Metrics:**
+- All features work together
+- User can create DAGs easily
+- Visualization is beautiful
+- Error recovery works
+- Zero TypeScript errors
+
+---
+
+## Technical Architecture
+
+### DAG Execution Flow
+
 ```
-
-### Automatic Merging
-- Child completes → Auto-merge if no conflicts
-- Conflict resolution strategies (merge, ask user, keep latest)
-- Schema auto-update on merge
-- Progress tracking dashboard
+User Command: "Spread this: Design DB (1), API (2) depends on DB, Frontend (3) depends on API"
+  ↓
+Parse Command:
+  Task 1: { name: "DB", command: "Design database schema" }
+  Task 2: { name: "API", command: "Design REST API", dependsOn: ["DB"] }
+  Task 3: { name: "Frontend", command: "Design frontend UI", dependsOn: ["API"] }
+  ↓
+Build DAG:
+  DB ← API ← Frontend
+  ↓
+Topological Sort: [DB, API, Frontend]
+  ↓
+Execute (Parallel where possible):
+  - Run DB (independent) → Complete
+  - Run API (waiting for DB) → Complete
+  - Run Frontend (waiting for API) → Complete
+  ↓
+Auto-Merge:
+  - Combine DB schema + API spec + UI designs
+  - Update parent conversation
+  ↓
+Result: Complete system design
+```
 
 ### Context Optimization
-- Message importance scoring
-- Automatic compaction at threshold
-- Intelligent summarization (ML-based)
-- Context compression algorithms
 
----
-
-## Agent Deployment (5 with AutoAccept)
-
-### Agent 1: DAG Task System
-**Mission:** Build DAG-based task dependency system
-**Scope:**
-- Create `src/lib/agents/spreader/dag.ts` - DAG types and validation
-- Create `src/lib/agents/spread/dag-executor.ts` - DAG execution engine
-- Implement topological sort for dependency resolution
-- Handle circular dependency detection
-- Visual DAG builder (graph visualization)
-- Parallel execution of independent tasks
-
-**Deliverables:**
-- DAG validation and execution
-- Visual DAG graph with nodes/edges
-- Automatic parallel execution where possible
-- Error handling for failed tasks
-
-### Agent 2: Automatic Merging Engine
-**Mission:** Build automatic merging system
-**Scope:**
-- Create `src/lib/agents/spread/auto-merge.ts` - Merge engine
-- Conflict detection (schema conflicts, overlapping changes)
-- Merge strategies (auto-merge, ask-user, keep-latest)
-- Schema reconciliation on merge
-- Progress notification when merge complete
-- Undo/redo for merges
-
-**Deliverables:**
-- Automatic merge when children complete
-- Conflict detection and resolution
-- Schema auto-update
-- User notification system
-
-### Agent 3: Context Optimization Algorithms
-**Mission:** Build intelligent context optimization
-**Scope:**
-- Create `src/lib/agents/spread/optimizer.ts` - Optimization engine
-- Message importance scoring (ML-based or heuristic)
-- Intelligent summarization (extract key points)
-- Context compression (remove redundant messages)
-- Automatic compaction triggers
-- Preservable context (always keep)
-
-**Deliverables:**
-- Message importance scores
-- Smart context compaction
-- Lossless and lossy compression
-- Preservable markers
-
-### Agent 4: Multi-Model Spreading
-**Mission:** Enable spreading with different AI models
-**Scope:**
-- Create `src/lib/agents/spread/multi-model.ts` - Multi-model support
-- Model selection per task (fast vs accurate models)
-- Cost-aware model selection
-- Performance tracking per model
-- Model capability matching
-- Fallback strategies
-
-**Deliverables:**
-- Assign different models to different tasks
-- Model recommendation system
-- Cost optimization
-- Performance tracking
-
-### Agent 5: Spread Analytics & Reporting
-**Mission:** Build comprehensive spread analytics
-**Scope:**
-- Create `src/lib/agents/spread/analytics.ts` - Analytics engine
-- Track spread efficiency (time saved, quality metrics)
-- Success rate tracking
-- Visual analytics dashboard
-- Export spread reports (PDF/JSON)
-- A/B testing for spread strategies
-
-**Deliverables:**
-- Spread metrics dashboard
-- Efficiency tracking
-- Success rate analytics
-- Export reports
-- Visual charts
-
----
-
-## Success Criteria
-
-**Functional:**
-- ✅ DAG tasks execute in correct order
-- ✅ Automatic merging works when no conflicts
-- ✅ Context optimization reduces token usage
-- ✅ Multi-model spreading assigns correct models
-- ✅ Analytics track all spread metrics
-
-**Performance:**
-- ✅ DAG execution finds optimal parallelization
-- ✅ Auto-merge happens within 5s of child completion
-- ✅ Context optimization saves 30%+ tokens
-- ✅ Multi-model spreading reduces cost by 20%+
-
-**Technical:**
-- ✅ Zero TypeScript errors
-- ✅ DAG handles circular dependencies gracefully
-- ✅ Merge detects all conflict types
-- ✅ Optimization is reversible (can undo)
-
-**User Experience:**
-- ✅ DAG visualization is clear
-- ✅ Automatic merging feels magical
-- ✅ Context optimization is transparent
-- ✅ Analytics provide actionable insights
-
----
-
-## DAG Example
-
-```typescript
-const spreadDAG = {
-  nodes: [
-    { id: 'research', task: 'Research auth methods', dependencies: [] },
-    { id: 'db-design', task: 'Design database schema', dependencies: ['research'] },
-    { id: 'api-design', task: 'Design API endpoints', dependencies: ['research'] },
-    { id: 'implementation', task: 'Implement both', dependencies: ['db-design', 'api-design'] },
-    { id: 'testing', task: 'Test everything', dependencies: ['implementation'] }
-  ],
-  execution: [
-    // Round 1: Parallel
-    { tasks: ['research'], status: 'running' },
-
-    // Round 2: Parallel (after research)
-    { tasks: ['db-design', 'api-design'], status: 'running' },
-
-    // Round 3: Sequential (wait for both)
-    { tasks: ['implementation'], status: 'running' },
-
-    // Round 4: Final
-    { tasks: ['testing'], status: 'running' }
-  ]
-};
+```
+Token Budget: 8000 tokens
+  ↓
+Analyze Messages:
+  - User messages (high priority)
+  - Recent agent results (high priority)
+  - Old agent results (low priority)
+  - System messages (lowest priority)
+  ↓
+Select Messages:
+  - Keep: 50 user messages (5000 tokens)
+  - Keep: 10 recent results (2500 tokens)
+  - Drop: 20 old results (save to disk)
+  ↓
+Optimized Context (7500 tokens)
 ```
 
 ---
 
-## AutoAccept Mode
+## File Structure
 
-All 5 agents deployed with **AutoAccept ENABLED**.
+```
+src/
+├── lib/
+│   └── agents/
+│       └── spread/
+│           ├── dag.ts                    # NEW: DAG structures
+│           ├── dependency-resolver.ts    # NEW: Topological sort
+│           ├── auto-merge.ts             # NEW: Automatic merging
+│           ├── context-optimizer.ts      # NEW: Context optimization
+│           ├── error-handler.ts          # NEW: Error recovery
+│           └── spreader-agent.ts         # UPDATE: Integrate all
+├── components/
+│   └── agents/
+│       └── spreader/
+│           ├── DAGVisualization.tsx      # NEW: DAG UI
+│           └── SpreadDashboard.tsx       # UPDATE: Enhanced
+```
 
-Agents authorized to:
-- Make architectural decisions
-- Write/refactor code
-- Add dependencies
-- Run tests and fix errors
-- Update documentation
+---
 
-Agents should NOT:
-- Delete existing spread components
-- Remove manual spread commands
-- Break backward compatibility
+## Success Metrics
+
+### Quantitative
+- ✅ 6 agents deployed
+- ✅ 0 TypeScript errors
+- ✅ DAG execution works
+- ✅ Auto-merge functional
+- ✅ Context optimization effective
+- ✅ All tests passing
+
+### Qualitative
+- ✅ DAG creation is intuitive
+- ✅ Visualization is beautiful
+- ✅ Auto-merge feels magical
+- ✅ Context stays manageable
+- ✅ Errors handled gracefully
 
 ---
 
 ## Timeline
 
-**Agent Execution:** Parallel deployment of all 5 agents
-**Integration:** After agents complete, integrate with Spreader
-**Testing:** Verify DAG execution, auto-merge, optimization
-**Documentation:** Update Round 6 reflection
+**Estimated Total Time:** 18-22 hours (6 agents × 3 hours average)
+
+**Agent 1:** 3-4 hours (DAG Dependencies)
+**Agent 2:** 3-4 hours (Auto-Merge)
+**Agent 3:** 3-4 hours (Context Optimization)
+**Agent 4:** 3-4 hours (DAG Visualization)
+**Agent 5:** 2-3 hours (Error Recovery)
+**Agent 6:** 2-3 hours (Integration & Polish)
 
 ---
 
-**Round 6 Status:** 🟢 ACTIVE
-**Next:** Deploy 5 agents with AutoAccept
-**Goal:** Intelligent Spreader with DAG, auto-merge, optimization
+**Briefing Status:** ✅ COMPLETE
+**Ready for Agent Deployment:** YES
+**AutoAccept Mode:** ENABLED
 
 ---
 
-*"Round 6 transforms Spreader from a manual tool into an intelligent orchestration system that automatically manages context, tasks, and optimizations."*
-
-**End of Round 6 Briefing**
+*Round 6 Briefing - Advanced Spreader Features*
+*Created: 2025-01-05*
+*Orchestrator: Claude Sonnet 4.5*
+*Method: BMAD*

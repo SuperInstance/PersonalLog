@@ -586,3 +586,35 @@ export function getDAGStatistics(dag: DAGGraph) {
     avgDuration
   };
 }
+
+// ============================================================================
+// DAG CREATION HELPERS
+// ============================================================================
+
+/**
+ * Creates a DAG from an array of nodes.
+ * Convenience function that creates an empty DAG and adds all nodes.
+ */
+export function createDAG(nodes: DAGNode[]): DAGGraph {
+  const dag = createEmptyDAG();
+  for (const node of nodes) {
+    addNode(dag, node);
+  }
+  return dag;
+}
+
+/**
+ * Converts parsed tasks to DAG nodes.
+ * Used by the spread command parser.
+ */
+export function tasksToDAGNodes(
+  tasks: Array<{ id: string; command: string; dependsOn: string[] }>
+): DAGNode[] {
+  return tasks.map(task =>
+    createDAGNode(
+      task.id,
+      task.command,
+      task.dependsOn
+    )
+  );
+}

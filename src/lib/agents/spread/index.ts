@@ -4,7 +4,7 @@
  * Intelligent orchestration of parallel conversations with dependencies.
  */
 
-// DAG types and validation
+// DAG types and validation (from spreader)
 export {
   createEmptyDAG,
   createDAGNode,
@@ -50,6 +50,39 @@ export type {
   DAGExecutionProgress,
   DAGExecutionResult
 } from './dag-executor'
+
+// Error handling
+export {
+  DAGErrorHandler,
+  createErrorHandler,
+  categorizeError,
+  calculateRetryDelay,
+  createRetryState,
+  updateRetryState,
+  shouldRetry,
+  sleep,
+  aggregateErrors,
+  formatErrorForUser,
+  formatErrorReportForUser,
+  analyzePartialSuccess,
+  DEFAULT_RETRY_POLICY,
+  AGGRESSIVE_RETRY_POLICY,
+  CONSERVATIVE_RETRY_POLICY
+} from './error-handler'
+
+export type {
+  ErrorCategory,
+  DAGTaskError,
+  TransientError,
+  PermanentError,
+  UserActionError,
+  ErrorInfo,
+  ErrorReport,
+  RetryPolicy,
+  RetryState,
+  ErrorHandlerConfig,
+  PartialSuccessResult
+} from './error-handler'
 
 // DAG builder
 export {
@@ -106,3 +139,58 @@ export {
   type TimeSeriesDataPoint,
   type ComparisonMetrics
 } from './metrics'
+
+// Auto-merge orchestration
+export {
+  AutoMergeOrchestrator,
+  createAutoMergeOrchestrator,
+  detectBestStrategy,
+  DEFAULT_AUTO_MERGE_CONFIG,
+} from './auto-merge-orchestrator'
+
+export type {
+  AutoMergeConfig,
+  MergeProgress,
+  MergeStrategy,
+} from './auto-merge-orchestrator'
+
+// DAG auto-merge integration
+export {
+  AutoMergeDAGExecutor,
+  AutoMergeTaskExecutor,
+  createAutoMergeDAGExecutor,
+  executeDAGWithAutoMerge,
+} from './dag-auto-merge-integration'
+
+export type {
+  AutoMergeDAGExecutorConfig,
+} from './dag-auto-merge-integration'
+
+// Context optimization
+export {
+  ContextOptimizerEngine,
+  getContextOptimizer,
+  resetContextOptimizer,
+} from './context-optimizer'
+
+export type {
+  EnhancedMessageScore,
+  ScoringWeights,
+  TaskContextRequirements,
+  ContextOptimizationResult,
+  OptimizationStrategy,
+  ContextOptimizerConfig,
+  ContextMetrics,
+} from './context-optimizer'
+
+// Context integration
+export {
+  optimizeContextForSpread,
+  optimizeContextAfterMerge,
+  recordContextOptimization,
+  getContextOptimizationStats,
+} from './context-integration'
+
+export type {
+  SpreaderContextIntegration,
+} from './context-integration'

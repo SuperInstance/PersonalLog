@@ -5,6 +5,7 @@
  */
 
 import { Message } from '@/types/conversation'
+import { DAGNode, DAGExecutionState } from '../spread/dag'
 
 // ============================================================================
 // SPREADER STATE TYPES
@@ -29,6 +30,12 @@ export interface SpreaderState {
   // Configuration
   autoCompact: boolean
   autoSpread: boolean
+
+  // Round 6: DAG Integration
+  dagNodes?: DAGNode[]
+  dagExecutionState?: Map<string, DAGExecutionState>
+  dagVisualizationEnabled?: boolean
+  autoMergeEnabled?: boolean
 }
 
 export interface SessionSchema {
@@ -150,6 +157,7 @@ export interface SpreaderHandlerResponse {
     children?: ChildConversation[]
     merge?: MergeResult
     percentage?: number
+    executionPlan?: any // Resolution result from DAG
   }
 }
 

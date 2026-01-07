@@ -13,8 +13,16 @@ import {
   DAGNodeStatus,
   createExecutionPlan,
   validateDAG
-} from '../spreader/dag';
+} from './dag';
 import { createConversation, addMessage } from '@/lib/storage/conversation-store';
+import {
+  DAGErrorHandler,
+  createErrorHandler,
+  type ErrorHandlerConfig,
+  type PartialSuccessResult,
+  analyzePartialSuccess,
+  formatErrorReportForUser
+} from './error-handler';
 
 // ============================================================================
 // EXECUTOR CONFIGURATION
@@ -27,6 +35,12 @@ export interface DAGExecutorConfig {
   onProgress?: (progress: DAGExecutionProgress) => void;
   onTaskComplete?: (taskId: string, result: unknown) => void;
   onTaskFailed?: (taskId: string, error: Error) => void;
+  /** Error handler configuration */
+  errorHandler?: Partial<ErrorHandlerConfig>;
+  /** Minimum success rate for partial success (0-1) */
+  minimumSuccessRate?: number;
+  /** Whether to continue execution on task failures */
+  continueOnFailure?: boolean;
 }
 
 export interface DAGExecutionProgress {
@@ -46,6 +60,10 @@ export interface DAGExecutionResult {
   executionTime: number; // milliseconds
   completedTasks: string[];
   failedTasks: string[];
+  /** Partial success analysis (if there were failures) */
+  partialSuccess?: PartialSuccessResult;
+  /** Formatted error report for user */
+  errorReport?: string;
 }
 
 // ============================================================================
@@ -95,6 +113,7 @@ export class DAGExecutor {
   private parentId: string;
   private startTime: number = 0;
   private abortController: AbortController | null = null;
+  private errorHandler: DAGErrorHandler;
 
   constructor(
     parentId: string,
@@ -110,8 +129,19 @@ export class DAGExecutor {
       maxParallelTasks: config.maxParallelTasks ?? 5,
       onProgress: config.onProgress ?? (() => {}),
       onTaskComplete: config.onTaskComplete ?? (() => {}),
-      onTaskFailed: config.onTaskFailed ?? (() => {})
+      onTaskFailed: config.onTaskFailed ?? (() => {}),
+      errorHandler: config.errorHandler ?? {},
+      minimumSuccessRate: config.minimumSuccessRate ?? 0.8,
+      continueOnFailure: config.continueOnFailure ?? true
     };
+
+    // Initialize error handler
+    this.errorHandler = createErrorHandler({
+      ...this.config.errorHandler,
+      onRetry: (taskId, attempt, delay) => {
+        console.log(`Retrying task ${taskId} (attempt ${attempt}, delay ${delay}ms)`);
+      }
+    });
   }
 
   /**
@@ -120,6 +150,9 @@ export class DAGExecutor {
   async execute(dag: DAGGraph): Promise<DAGExecutionResult> {
     this.startTime = Date.now();
     this.abortController = new AbortController();
+
+    // Clear error handler state
+    this.errorHandler.clear();
 
     // Validate DAG
     const validation = validateDAG(dag);
@@ -133,7 +166,7 @@ export class DAGExecutor {
     const plan = createExecutionPlan(dag);
 
     // Initialize state
-    for (const [id] of dag.nodes) {
+    for (const [id] of dag.getNodesMap()) {
       this.state.set(id, {
         status: 'pending',
         retries: 0
@@ -156,6 +189,12 @@ export class DAGExecutor {
 
         // Execute tasks in this round (with parallelism limit)
         await this.executeRound(dag, round, results, errors);
+
+        // Check if we should continue after failures
+        if (errors.size > 0 && !this.config.continueOnFailure) {
+          // Stop execution on first failure
+          break;
+        }
       }
 
       // Final progress update
@@ -169,13 +208,30 @@ export class DAGExecutor {
         .filter(([_, s]) => s.status === 'failed')
         .map(([id]) => id);
 
+      // Analyze partial success if there were failures
+      let partialSuccess: PartialSuccessResult | undefined;
+      let errorReport: string | undefined;
+
+      if (failedTasks.length > 0) {
+        const errorReportData = this.errorHandler.getErrorReport();
+        partialSuccess = analyzePartialSuccess(
+          dag.getNodesMap().size,
+          completedTasks.length,
+          errorReportData,
+          this.config.minimumSuccessRate
+        );
+        errorReport = formatErrorReportForUser(errorReportData);
+      }
+
       return {
         success: failedTasks.length === 0,
         results,
         errors,
         executionTime: Date.now() - this.startTime,
         completedTasks,
-        failedTasks
+        failedTasks,
+        partialSuccess,
+        errorReport
       };
 
     } catch (error) {
@@ -220,37 +276,61 @@ export class DAGExecutor {
     for (let i = 0; i < parallelTasks.length; i += batchSize) {
       const batch = parallelTasks.slice(i, i + batchSize);
 
-      // Execute batch in parallel
+      // Execute batch in parallel with retry logic
       const batchPromises = batch.map(taskId =>
-        this.executeTask(dag, taskId)
-          .then(result => {
-            results.set(taskId, result);
-            this.config.onTaskComplete(taskId, result);
-            return { taskId, result, success: true };
-          })
-          .catch(error => {
-            errors.set(taskId, error);
-            this.config.onTaskFailed(taskId, error);
-            return { taskId, error, success: false };
-          })
+        this.executeTaskWithRetry(dag, taskId, results, errors)
       );
 
-      const batchResults = await Promise.all(batchPromises);
+      await Promise.all(batchPromises);
+    }
+  }
 
-      // Check if we should continue (no failures that block next round)
-      const failures = batchResults.filter(r => !r.success);
-      if (failures.length > 0) {
-        console.warn(`Round ${round.round}: ${failures.length} tasks failed`);
+  /**
+   * Executes a single task with automatic retry on transient errors.
+   */
+  private async executeTaskWithRetry(
+    dag: DAGGraph,
+    taskId: string,
+    results: Map<string, unknown>,
+    errors: Map<string, Error>
+  ): Promise<void> {
+    let lastError: Error | undefined;
 
-        // Retry failed tasks
-        for (const failure of failures) {
-          const taskState = this.state.get(failure.taskId);
-          if (taskState && taskState.retries < this.config.maxRetries) {
-            console.log(`Retrying task ${failure.taskId} (attempt ${taskState.retries + 1})`);
-            await this.sleep(this.config.retryDelay);
-            await this.retryTask(dag, failure.taskId, results, errors);
+    try {
+      const result = await this.executeTask(dag, taskId);
+      results.set(taskId, result);
+      this.config.onTaskComplete(taskId, result);
+    } catch (error) {
+      lastError = error as Error;
+
+      // Use error handler to determine if we should retry
+      const retryDecision = await this.errorHandler.handleTaskFailure(
+        lastError,
+        taskId
+      );
+
+      if (retryDecision.shouldRetry) {
+        // Retry the task
+        try {
+          const result = await this.executeTask(dag, taskId);
+          results.set(taskId, result);
+          this.config.onTaskComplete(taskId, result);
+
+          // Update state to show success after retry
+          const currentState = this.state.get(taskId);
+          if (currentState) {
+            currentState.status = 'complete';
           }
+        } catch (retryError) {
+          // Retry failed, let error handler handle it
+          await this.errorHandler.handleTaskFailure(retryError as Error, taskId);
+          errors.set(taskId, retryError as Error);
+          this.config.onTaskFailed(taskId, retryError as Error);
         }
+      } else {
+        // Don't retry, mark as failed
+        errors.set(taskId, lastError);
+        this.config.onTaskFailed(taskId, lastError);
       }
     }
   }
@@ -262,16 +342,19 @@ export class DAGExecutor {
     dag: DAGGraph,
     taskId: string
   ): Promise<unknown> {
-    const node = dag.nodes.get(taskId);
+    const node = dag.getNode(taskId);
     if (!node) {
       throw new Error(`Task ${taskId} not found`);
     }
+
+    // Get retry state
+    const retryState = this.errorHandler.getRetryState(taskId);
 
     // Update state
     this.state.set(taskId, {
       status: 'running',
       startTime: Date.now(),
-      retries: this.state.get(taskId)?.retries || 0
+      retries: retryState?.attempt || 0
     });
 
     try {
@@ -286,7 +369,7 @@ export class DAGExecutor {
         status: 'complete',
         endTime: Date.now(),
         result,
-        retries: this.state.get(taskId)?.retries || 0
+        retries: retryState?.attempt || 0
       });
 
       return result;
@@ -297,7 +380,7 @@ export class DAGExecutor {
         status: 'failed',
         endTime: Date.now(),
         error: error as Error,
-        retries: this.state.get(taskId)?.retries || 0
+        retries: retryState?.attempt || 0
       });
 
       throw error;
@@ -305,44 +388,18 @@ export class DAGExecutor {
   }
 
   /**
-   * Retries a failed task.
-   */
-  private async retryTask(
-    dag: DAGGraph,
-    taskId: string,
-    results: Map<string, unknown>,
-    errors: Map<string, Error>
-  ): Promise<void> {
-    const taskState = this.state.get(taskId);
-    if (!taskState) return;
-
-    // Increment retry count
-    taskState.retries++;
-
-    try {
-      const result = await this.executeTask(dag, taskId);
-      results.set(taskId, result);
-      errors.delete(taskId);
-    } catch (error) {
-      // Already updated in executeTask
-      console.error(`Retry ${taskState.retries} failed for task ${taskId}:`, error);
-    }
-  }
-
-  /**
    * Creates a child conversation for a task.
    */
   private async createChildConversation(node: DAGNode): Promise<string> {
-    const title = `📋 ${node.task}`;
+    const title = `📋 ${node.name}`;
 
     const conversation = await createConversation(title, 'ai-assisted');
 
     // Add initial context message
-    const contextMessage = `You're working on task: ${node.task}\n\n` +
+    const contextMessage = `You're working on task: ${node.name}\n\n` +
+      `Command: ${node.command}\n` +
       `This is a parallel task from a DAG execution plan.\n` +
-      `Task ID: ${node.id}\n` +
-      `Priority: ${node.priority || 'normal'}\n` +
-      `Estimated duration: ${node.estimatedDuration || 'unknown'}s\n\n` +
+      `Task ID: ${node.id}\n\n` +
       `Please complete this task and provide a summary when done.`;
 
     await addMessage(

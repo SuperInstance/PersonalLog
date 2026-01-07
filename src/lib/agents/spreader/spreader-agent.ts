@@ -27,14 +27,23 @@ import {
   spreadConversations,
   mergeChildConversation,
   parseSpreadCommand,
+  parseSpreadCommandWithDeps,
   parseMergeCommand,
   isSpreadCommand,
-  isMergeCommand
+  isMergeCommand,
+  type ParsedTask
 } from './spread-commands'
 import { agentEventBus } from '../communication/event-bus'
 import { MessageType, type AgentMessage } from '../communication/types'
 import { ContextOptimizer } from '../spread/optimizer'
 import { estimateTotalTokens } from '../spread/optimizer'
+import { DAGNode, createDAG, tasksToDAGNodes } from '../spread/dag'
+import { DependencyResolver, formatResolutionResult } from '../spread/dependency-resolver'
+import { DAGExecutor, DAGExecutionProgress } from '../spread/dag-executor'
+import { executeDAGWithAutoMerge, type AutoMergeDAGExecutorConfig } from '../spread/dag-auto-merge-integration'
+import { optimizeContextForSpread, optimizeContextAfterMerge } from '../spread/context-integration'
+import { MergeStrategy } from '../spread/auto-merge-orchestrator'
+import type { DAGGraph } from '../spread/dag'
 
 // ============================================================================
 // SPREADER AGENT CLASS
@@ -472,42 +481,230 @@ async function handleOptimizeCommand(
 }
 
 /**
- * Handles "Spread this:" commands.
+ * Handles "Spread this:" commands with DAG-based dependency resolution and auto-merge.
  */
 async function handleSpreadCommand(
   message: Message,
   context: SpreaderHandlerContext
 ): Promise<SpreaderHandlerResponse> {
-  const { conversationId, messages } = context
+  const { conversationId, messages, agentState } = context
   const text = message.content.text || ''
 
-  // Parse tasks
-  const tasks = parseSpreadCommand(text)
+  // Parse tasks with dependencies
+  const parsedTasks = parseSpreadCommandWithDeps(text)
 
-  if (tasks.length === 0) {
+  if (parsedTasks.length === 0) {
     return {
       type: 'message',
       content: "I couldn't find any tasks to spread. Try: 'Spread this: Research auth, Design DB, Write API'"
     }
   }
 
-  // Create parallel conversations
-  const result = await spreadConversations({
-    tasks,
-    parentConversationId: conversationId,
-    context: messages.slice(-10)  // Last 10 messages as context
-  })
+  // Convert to DAG nodes
+  const dagNodes = tasksToDAGNodes(parsedTasks)
 
-  // Format response
-  const taskList = result.children.map((child, i) =>
-    `${i + 1}. ${child.task} (${child.status})`
-  ).join('\n')
+  // Create DAG and resolve execution order
+  let resolutionResult
+  try {
+    const graph = createDAG(dagNodes)
+    const resolver = new DependencyResolver()
+    resolutionResult = resolver.resolve(graph)
+  } catch (error) {
+    return {
+      type: 'message',
+      content: `❌ Failed to resolve task dependencies: ${error instanceof Error ? error.message : 'Unknown error'}`
+    }
+  }
+
+  // Check if resolution failed
+  if (!resolutionResult.success) {
+    return {
+      type: 'message',
+      content: `❌ Invalid task dependencies:\n${resolutionResult.error}\n${
+        resolutionResult.cyclePath ? `\nCycle: ${resolutionResult.cyclePath.join(' → ')}` : ''
+      }`
+    }
+  }
+
+  // Check if tasks have dependencies
+  const hasDependencies = parsedTasks.some(t => t.dependsOn.length > 0)
+
+  if (!hasDependencies) {
+    // No dependencies: use legacy parallel spawning
+    const tasks = parseSpreadCommand(text)
+
+    // Apply context optimization
+    let optimizedContext = messages.slice(-10)
+    if (agentState.autoCompact) {
+      const optimizationResult = await optimizeContextForSpread(
+        messages,
+        tasks
+      )
+      optimizedContext = optimizationResult.optimizedParentContext
+
+      console.log('[Spreader] Context optimized for spread:', {
+        originalTokens: await estimateTotalTokens(messages),
+        optimizedTokens: await estimateTotalTokens(optimizedContext),
+        savings: optimizationResult.optimizationResult?.tokensSaved || 0
+      })
+    }
+
+    const result = await spreadConversations({
+      tasks,
+      parentConversationId: conversationId,
+      context: optimizedContext
+    })
+
+    // Format response
+    const taskList = result.children.map((child, i) =>
+      `${i + 1}. ${child.task} (${child.status})`
+    ).join('\n')
+
+    return {
+      type: 'spread',
+      content: `📊 Creating ${result.children.length} parallel conversations:\n\n${taskList}\n\n` +
+        `Each conversation will work independently. When they're done, you can merge them back here.`,
+      metadata: { children: result.children }
+    }
+  }
+
+  // Has dependencies: Use full DAG executor with auto-merge
+  const graph = createDAG(dagNodes)
+
+  // Build execution plan content
+  let content = `📊 Creating ${parsedTasks.length} conversations with dependencies:\n\n`
+  content += `Execution plan:\n\n`
+
+  for (const level of resolutionResult.levels) {
+    content += `Level ${level.level} (parallel):\n`
+    for (const task of level.tasks) {
+      content += `  - [${task.id}] ${task.name}\n`
+    }
+    content += '\n'
+  }
+
+  content += `✨ Features enabled:\n`
+  content += `  - DAG-based execution order\n`
+  content += `  - Auto-merge on completion\n`
+  content += `  - Context optimization\n`
+  content += `  - Error recovery & retry\n\n`
+
+  content += `💡 Tasks will execute in dependency order. Results will auto-merge when complete.`
+
+  // Apply context optimization
+  let optimizedContext = messages
+  if (agentState.autoCompact) {
+    const optimizationResult = await optimizeContextForSpread(
+      messages,
+      parsedTasks.map(t => t.command)
+    )
+    optimizedContext = optimizationResult.optimizedParentContext
+
+    console.log('[Spreader] Context optimized for DAG spread:', {
+      originalTokens: await estimateTotalTokens(messages),
+      optimizedTokens: await estimateTotalTokens(optimizedContext),
+      savings: optimizationResult.optimizationResult?.tokensSaved || 0
+    })
+  }
+
+  // Create parent conversation object for auto-merge
+  const parentConversation = {
+    id: conversationId,
+    title: 'Parent Conversation',
+    messages: optimizedContext
+  } as any
+
+  // Create parent schema for merging
+  const parentSchema = agentState.currentSchema || {
+    project: '',
+    completed: [],
+    next: parsedTasks.map(t => t.command),
+    decisions: {},
+    technicalSpecs: { stack: [], architecture: '', patterns: [] }
+  }
+
+  // Configure auto-merge
+  const autoMergeConfig: AutoMergeDAGExecutorConfig = {
+    maxRetries: 3,
+    retryDelay: 1000,
+    maxParallelTasks: 5,
+    continueOnFailure: true,
+    minimumSuccessRate: 0.8,
+    parentConversation,
+    parentSchema,
+    autoMerge: {
+      enabled: true,
+      strategy: MergeStrategy.MERGE,
+      autoMergeOnComplete: true,
+      waitForAllChildren: true,
+      maxWaitTime: 300000, // 5 minutes
+      notifyProgress: true,
+      showConflicts: true
+    },
+    onProgress: (progress: DAGExecutionProgress) => {
+      console.log('[Spreader] DAG execution progress:', {
+        completed: progress.completedTasks,
+        total: progress.totalTasks,
+        percentage: progress.percentage.toFixed(1),
+        round: `${progress.currentRound}/${progress.totalRounds}`
+      })
+    },
+    onMergeComplete: (result) => {
+      console.log('[Spreader] Auto-merge complete:', {
+        schema: result.mergedSchema
+      })
+
+      // Update agent state with merged schema
+      if (agentState.currentSchema) {
+        agentState.currentSchema = {
+          ...agentState.currentSchema,
+          ...result.mergedSchema
+        }
+      }
+    },
+    onMergeFailed: (error) => {
+      console.error('[Spreader] Auto-merge failed:', error)
+    }
+  }
+
+  // Execute DAG with auto-merge (fire and forget - execution happens in background)
+  executeDAGWithAutoMerge(graph, parentConversation, parentSchema, autoMergeConfig)
+    .then(result => {
+      console.log('[Spreader] DAG execution complete:', {
+        success: result.executionResult.success,
+        completed: result.executionResult.completedTasks.length,
+        failed: result.executionResult.failedTasks.length,
+        executionTime: result.executionResult.executionTime
+      })
+
+      // Optimize context after merge
+      if (agentState.autoCompact) {
+        optimizeContextAfterMerge(messages, [], context)
+          .then(postMergeResult => {
+            console.log('[Spreader] Post-merge optimization:', {
+              tokensSaved: postMergeResult.optimizationResult?.tokensSaved || 0
+            })
+          })
+      }
+    })
+    .catch(error => {
+      console.error('[Spreader] DAG execution failed:', error)
+    })
+
+  // Store DAG nodes and execution state for dashboard visualization
+  agentState.dagNodes = dagNodes
+  agentState.dagExecutionState = new Map()
 
   return {
     type: 'spread',
-    content: `📊 Creating ${result.children.length} parallel conversations:\n\n${taskList}\n\n` +
-      `Each conversation will work independently. When they're done, you can merge them back here.`,
-    metadata: { children: result.children }
+    content,
+    metadata: {
+      dagNodes,
+      executionPlan: resolutionResult,
+      hasDependencies: true,
+      autoMergeEnabled: true,
+      contextOptimizationEnabled: agentState.autoCompact
+    }
   }
 }
 
@@ -656,6 +853,7 @@ function generateHelpMessage(metrics: ContextMetrics): string {
     `4. **Merging results** back into the main conversation\n\n` +
     `**Commands:**\n` +
     `- \`Spread this: task1, task2, task3\` - Create parallel conversations\n` +
+    `- \`Spread this: Task A (1), Task B (2) depends on 1\` - Create dependent tasks\n` +
     `- \`Merge child <id>\` - Merge a child conversation back\n` +
     `- \`Status\` - Show current context usage\n` +
     `- \`Help\` - Show this message\n\n` +

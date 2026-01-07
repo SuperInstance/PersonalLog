@@ -1,13 +1,15 @@
 /**
  * Spread Dashboard Component
  *
- * Shows active child conversations and their status.
+ * Shows active child conversations and their status with optional DAG visualization.
  */
 
 'use client'
 
 import React, { useState } from 'react'
 import { ChildConversation } from '@/lib/agents/spreader/types'
+import { DAGVisualizationDashboard } from './DAGVisualization'
+import { DAGNode, DAGExecutionState } from '@/lib/agents/spreader/dag'
 import { cn } from '@/lib/utils'
 
 interface SpreadDashboardProps {
@@ -15,15 +17,25 @@ interface SpreadDashboardProps {
   onViewChild?: (childId: string) => void
   onMergeChild?: (childId: string) => void
   compact?: boolean
+  // DAG visualization props
+  showDAG?: boolean
+  dagNodes?: DAGNode[]
+  dagExecutionState?: Map<string, DAGExecutionState>
+  onDAGNodeClick?: (nodeId: string) => void
 }
 
 export function SpreadDashboard({
   children,
   onViewChild,
   onMergeChild,
-  compact = false
+  compact = false,
+  showDAG = false,
+  dagNodes,
+  dagExecutionState,
+  onDAGNodeClick
 }: SpreadDashboardProps) {
   const [expandedChildren, setExpandedChildren] = useState<Set<string>>(new Set())
+  const [viewMode, setViewMode] = useState<'list' | 'dag'>('list')
 
   if (children.length === 0) {
     return (
@@ -58,9 +70,37 @@ export function SpreadDashboard({
       {/* Header */}
       <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Parallel Conversations
-          </h4>
+          <div className="flex items-center gap-3">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Parallel Conversations
+            </h4>
+            {showDAG && dagNodes && dagNodes.length > 0 && (
+              <div className="flex items-center gap-1 text-xs">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    'px-2 py-1 rounded transition-colors',
+                    viewMode === 'list'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  )}
+                >
+                  List
+                </button>
+                <button
+                  onClick={() => setViewMode('dag')}
+                  className={cn(
+                    'px-2 py-1 rounded transition-colors',
+                    viewMode === 'dag'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  )}
+                >
+                  DAG
+                </button>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-xs">
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-gray-400" />
@@ -84,20 +124,30 @@ export function SpreadDashboard({
         </div>
       </div>
 
-      {/* Child List */}
-      <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
-        {children.map(child => (
-          <ChildConversationCard
-            key={child.id}
-            child={child}
-            expanded={expandedChildren.has(child.id)}
-            onToggle={() => toggleExpanded(child.id)}
-            onView={onViewChild}
-            onMerge={onMergeChild}
-            compact={compact}
+      {/* Content */}
+      {showDAG && viewMode === 'dag' && dagNodes && dagNodes.length > 0 ? (
+        <div className="h-96">
+          <DAGVisualizationDashboard
+            nodes={dagNodes}
+            executionState={dagExecutionState}
+            onNodeClick={onDAGNodeClick}
           />
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
+          {children.map(child => (
+            <ChildConversationCard
+              key={child.id}
+              child={child}
+              expanded={expandedChildren.has(child.id)}
+              onToggle={() => toggleExpanded(child.id)}
+              onView={onViewChild}
+              onMerge={onMergeChild}
+              compact={compact}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

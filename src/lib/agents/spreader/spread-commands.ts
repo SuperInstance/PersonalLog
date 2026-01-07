@@ -315,7 +315,107 @@ export function openChildConversation(childId: string): string {
 // ============================================================================
 
 /**
- * Parses spread command to extract tasks.
+ * Parsed task with optional dependencies.
+ */
+export interface ParsedTask {
+  /** Task ID (auto-generated or user-specified) */
+  id: string
+  /** Task name/description */
+  name: string
+  /** Task command/instruction */
+  command: string
+  /** List of task IDs this task depends on */
+  dependsOn: string[]
+}
+
+/**
+ * Parses spread command to extract tasks with dependencies.
+ *
+ * Supports multiple syntaxes:
+ * - Simple: "Spread this: Task A, Task B, Task C"
+ * - Numbered: "Spread this: (1) Task A, (2) Task B, (3) Task C"
+ * - With dependencies: "Spread this: Task A (1), Task B (2) depends on 1, Task C (3) depends on 2"
+ *
+ * @param text - User message text
+ * @returns Array of parsed tasks with dependencies
+ *
+ * @example
+ * ```typescript
+ * parseSpreadCommandWithDeps("Spread this: Design DB (1), Design API (2) depends on 1")
+ * // Returns: [
+ * //   { id: '1', name: 'Design DB', command: 'Design DB', dependsOn: [] },
+ * //   { id: '2', name: 'Design API', command: 'Design API', dependsOn: ['1'] }
+ * // ]
+ * ```
+ */
+export function parseSpreadCommandWithDeps(text: string): ParsedTask[] {
+  const lowerText = text.toLowerCase()
+
+  // Match "spread this:" or "spread:" patterns
+  const spreadMatch = lowerText.match(/spread\s+(this)?:?\s*(.+)/i)
+  if (!spreadMatch) {
+    return []
+  }
+
+  const tasksText = spreadMatch[2]
+  const tasks: ParsedTask[] = []
+
+  // Try to extract numbered tasks first
+  // Pattern: (1) Task name, (2) Task name depends on 1, etc.
+  const numberedTaskPattern = /\((\d+)\)\s*([^,(]+?)(?:\s*,\s*|\s*$)/gi
+  const dependencyPattern = /depends\s+on\s+(\d+(?:\s*,\s*\d+)*)/gi
+
+  let match
+  const taskMap = new Map<string, ParsedTask>()
+
+  // First pass: extract all tasks with their IDs
+  while ((match = numberedTaskPattern.exec(tasksText)) !== null) {
+    const id = match[1]
+    const name = match[2].trim()
+    const fullMatch = match[0]
+
+    // Check if this task has dependencies
+    const depMatch = fullMatch.match(new RegExp(`depends\\s+on\\s+(\\d+(?:\\s*,\\s*\\d+)*)`, 'gi'))
+    const dependencies: string[] = []
+
+    if (depMatch) {
+      for (const dm of depMatch) {
+        const depIds = dm.match(/(\d+)/g)
+        if (depIds) {
+          dependencies.push(...depIds)
+        }
+      }
+    }
+
+    taskMap.set(id, {
+      id,
+      name,
+      command: name,
+      dependsOn: dependencies
+    })
+  }
+
+  // If we found numbered tasks, return them
+  if (taskMap.size > 0) {
+    return Array.from(taskMap.values())
+  }
+
+  // Fallback: simple comma-separated tasks (auto-generate IDs)
+  const simpleTasks = tasksText
+    .split(',')
+    .map(t => t.trim())
+    .filter(t => t.length > 0)
+
+  return simpleTasks.map((task, index) => ({
+    id: String(index + 1),
+    name: task,
+    command: task,
+    dependsOn: []
+  }))
+}
+
+/**
+ * Parses spread command to extract tasks (legacy version for backward compatibility).
  *
  * @param text - User message text
  * @returns Array of tasks
@@ -327,23 +427,8 @@ export function openChildConversation(childId: string): string {
  * ```
  */
 export function parseSpreadCommand(text: string): string[] {
-  const lowerText = text.toLowerCase()
-
-  // Match "spread this:" or "spread:" patterns
-  const spreadMatch = lowerText.match(/spread\s+(this)?:?\s*(.+)/i)
-  if (!spreadMatch) {
-    return []
-  }
-
-  const tasksText = spreadMatch[2]
-
-  // Split by comma
-  const tasks = tasksText
-    .split(',')
-    .map(t => t.trim())
-    .filter(t => t.length > 0)
-
-  return tasks
+  const tasksWithDeps = parseSpreadCommandWithDeps(text)
+  return tasksWithDeps.map(t => t.command)
 }
 
 /**
