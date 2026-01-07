@@ -41,7 +41,11 @@ import { DAGNode, createDAG, tasksToDAGNodes } from '../spread/dag'
 import { DependencyResolver, formatResolutionResult } from '../spread/dependency-resolver'
 import { DAGExecutor, DAGExecutionProgress } from '../spread/dag-executor'
 import { executeDAGWithAutoMerge, type AutoMergeDAGExecutorConfig } from '../spread/dag-auto-merge-integration'
-import { optimizeContextForSpread, optimizeContextAfterMerge } from '../spread/context-integration'
+import {
+  optimizeContextForSpread,
+  optimizeContextAfterMerge,
+  getContextOptimizer
+} from '../spread/context-integration'
 import { MergeStrategy } from '../spread/auto-merge-orchestrator'
 import type { DAGGraph } from '../spread/dag'
 
@@ -679,7 +683,15 @@ async function handleSpreadCommand(
 
       // Optimize context after merge
       if (agentState.autoCompact) {
-        optimizeContextAfterMerge(messages, [], context)
+        optimizeContextAfterMerge(messages, [], {
+          optimizer: getContextOptimizer(),
+          autoOptimizeBeforeSpread: agentState.autoCompact,
+          autoOptimizeAfterMerge: agentState.autoCompact,
+          maxContextTokens: DEFAULT_MAX_TOKENS,
+          spreadContextTokens: Math.floor(DEFAULT_MAX_TOKENS / 4),
+          enableTaskAnalysis: false,
+          logOptimizations: true
+        })
           .then(postMergeResult => {
             console.log('[Spreader] Post-merge optimization:', {
               tokensSaved: postMergeResult.optimizationResult?.tokensSaved || 0
@@ -699,7 +711,6 @@ async function handleSpreadCommand(
     type: 'spread',
     content,
     metadata: {
-      dagNodes,
       executionPlan: resolutionResult,
       hasDependencies: true,
       autoMergeEnabled: true,

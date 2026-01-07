@@ -158,6 +158,9 @@ export interface SpreaderHandlerResponse {
     merge?: MergeResult
     percentage?: number
     executionPlan?: any // Resolution result from DAG
+    hasDependencies?: boolean
+    autoMergeEnabled?: boolean
+    contextOptimizationEnabled?: boolean
   }
 }
 

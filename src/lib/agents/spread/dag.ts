@@ -302,6 +302,91 @@ export class DAGGraph {
   }
 
   /**
+   * Performs topological sort on the graph using Kahn's algorithm.
+   *
+   * @returns Array of node IDs in topological order
+   * @throws Error if graph contains a cycle
+   */
+  topologicalSort(): string[] {
+    const inDegree = new Map<string, number>()
+    const queue: string[] = []
+
+    // Initialize in-degrees
+    for (const [id, node] of this.nodes) {
+      const degree = node.dependsOn.length
+      inDegree.set(id, degree)
+      if (degree === 0) {
+        queue.push(id)
+      }
+    }
+
+    const sorted: string[] = []
+
+    while (queue.length > 0) {
+      const id = queue.shift()!
+      sorted.push(id)
+
+      // Reduce in-degree for all dependent nodes
+      for (const dependent of this.getDependents(id)) {
+        const newDegree = inDegree.get(dependent)! - 1
+        inDegree.set(dependent, newDegree)
+
+        if (newDegree === 0) {
+          queue.push(dependent)
+        }
+      }
+    }
+
+    // Check if all nodes were processed (no cycles)
+    if (sorted.length !== this.nodes.size) {
+      throw new Error('Graph contains a cycle')
+    }
+
+    return sorted
+  }
+
+  /**
+   * Gets execution levels (groups of tasks that can run in parallel).
+   *
+   * @returns Array of levels, each containing node IDs that can run in parallel
+   */
+  getExecutionLevels(): string[][] {
+    const levels: string[][] = []
+    const processed = new Set<string>()
+    let currentLevel: string[] = []
+
+    // Start with root nodes (no dependencies)
+    currentLevel = this.getRootNodes().map(n => n.id)
+
+    while (currentLevel.length > 0) {
+      levels.push(currentLevel)
+
+      // Mark current level as processed
+      for (const id of currentLevel) {
+        processed.add(id)
+      }
+
+      // Find next level: nodes whose dependencies are all processed
+      const nextLevel: string[] = []
+      for (const node of this.nodes.values()) {
+        if (processed.has(node.id)) continue
+
+        // Check if all dependencies are processed
+        const dependencies = node.dependsOn
+        const allDepsProcessed = dependencies.every(dep => processed.has(dep))
+
+        if (allDepsProcessed) {
+          nextLevel.push(node.id)
+        }
+      }
+
+      currentLevel = nextLevel
+    }
+
+    return levels
+  }
+
+  /**
    * Gets graph statistics.
    *
    * @returns Object with graph metrics
@@ -424,7 +509,26 @@ export function tasksToDAGNodes(tasks: Array<{
 export type DAGNodeStatus = 'pending' | 'running' | 'complete' | 'failed'
 
 /**
- * Full execution state for all nodes in the DAG.
+ * Execution state for a single task/node in the DAG.
+ */
+export interface DAGTaskState {
+  /** Current status of the task */
+  status: DAGNodeStatus
+  /** Number of retry attempts */
+  retries?: number
+  /** Task start time (timestamp) */
+  startTime?: number
+  /** Task end time (timestamp) */
+  endTime?: number
+  /** Task result (if completed) */
+  result?: unknown
+  /** Task error (if failed) */
+  error?: Error
+}
+
+/**
+ * Full execution state for all nodes in the DAG (mapping from node ID to status only).
+ * Use DAGTaskState for detailed task state tracking.
  */
 export interface DAGExecutionState {
   /** Map of node ID to execution status */
@@ -441,8 +545,11 @@ export interface DAGExecutionPlan {
   errors: string[]
   /** Levels of execution (each level can run in parallel) */
   levels: string[][]
-  /** Rounds (alias for levels) */
-  rounds: string[][]
+  /** Rounds with metadata for execution */
+  rounds: Array<{
+    round: number
+    parallelTasks: string[]
+  }>
   /** Complete execution order */
   order: string[]
   /** Total number of levels */
@@ -457,14 +564,31 @@ export interface DAGExecutionPlan {
 export function validateDAG(graph: DAGGraph): DAGExecutionPlan {
   const validation = graph.validate()
   if (!validation.valid) {
-    throw new Error('Invalid DAG: ' + validation.errors.join(', '))
+    return {
+      isValid: false,
+      errors: validation.errors,
+      levels: [],
+      rounds: [],
+      order: [],
+      levelCount: 0,
+      ready: []
+    }
   }
 
   const sorted = graph.topologicalSort()
   const levels = graph.getExecutionLevels()
 
+  // Convert levels to rounds with metadata
+  const rounds = levels.map((parallelTasks, round) => ({
+    round,
+    parallelTasks
+  }))
+
   return {
+    isValid: true,
+    errors: [],
     levels,
+    rounds,
     order: sorted,
     levelCount: levels.length,
     ready: levels[0] || []

@@ -8,7 +8,7 @@
 import {
   DAGGraph,
   DAGNode,
-  DAGExecutionState,
+  DAGTaskState,
   DAGExecutionPlan,
   DAGNodeStatus,
   createExecutionPlan,
@@ -107,7 +107,7 @@ export class DefaultTaskExecutor implements TaskExecutor {
 // ============================================================================
 
 export class DAGExecutor {
-  private state: Map<string, DAGExecutionState> = new Map();
+  private state: Map<string, DAGTaskState> = new Map();
   private config: Required<DAGExecutorConfig>;
   private taskExecutor: TaskExecutor;
   private parentId: string;
@@ -168,7 +168,7 @@ export class DAGExecutor {
     // Initialize state
     for (const [id] of dag.getNodesMap()) {
       this.state.set(id, {
-        status: 'pending',
+        status: 'pending' as DAGNodeStatus,
         retries: 0
       });
     }
@@ -352,7 +352,7 @@ export class DAGExecutor {
 
     // Update state
     this.state.set(taskId, {
-      status: 'running',
+      status: 'running' as DAGNodeStatus,
       startTime: Date.now(),
       retries: retryState?.attempt || 0
     });
@@ -366,7 +366,7 @@ export class DAGExecutor {
 
       // Update state
       this.state.set(taskId, {
-        status: 'complete',
+        status: 'complete' as DAGNodeStatus,
         endTime: Date.now(),
         result,
         retries: retryState?.attempt || 0
@@ -377,7 +377,7 @@ export class DAGExecutor {
     } catch (error) {
       // Update state
       this.state.set(taskId, {
-        status: 'failed',
+        status: 'failed' as DAGNodeStatus,
         endTime: Date.now(),
         error: error as Error,
         retries: retryState?.attempt || 0
@@ -451,7 +451,7 @@ export class DAGExecutor {
   /**
    * Gets the current execution state.
    */
-  getExecutionState(): Map<string, DAGExecutionState> {
+  getExecutionState(): Map<string, DAGTaskState> {
     return new Map(this.state);
   }
 
