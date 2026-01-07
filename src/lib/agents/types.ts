@@ -257,3 +257,52 @@ export interface AgentConfig {
   /** Conversation ID if bound to specific conversation */
   conversationId?: string;
 }
+
+// ============================================================================
+// MESSAGE PIPELINE TYPES
+// ============================================================================
+
+import type { Message, Conversation } from '@/types/conversation'
+import type { HardwareProfile } from '@/lib/hardware/types'
+
+/**
+ * Handler context passed to agent message handlers
+ */
+export interface HandlerContext {
+  /** Current conversation ID */
+  conversationId: string
+  /** Agent state data */
+  agentState: AgentState
+  /** Hardware profile for performance-aware decisions */
+  hardwareProfile: HardwareProfile
+  /** Full conversation object */
+  conversation: Conversation
+  /** Message being processed */
+  message: Message
+}
+
+/**
+ * Agent response from message handler
+ */
+export interface AgentResponse {
+  /** Response type */
+  type: 'message' | 'background' | 'error'
+  /** Message content (for message type) */
+  content?: string
+  /** Response metadata */
+  metadata?: Record<string, unknown>
+  /** Error message (for error type) */
+  error?: string
+}
+
+/**
+ * Agent handler function type
+ *
+ * @param message - The message to process
+ * @param context - Handler context with conversation and hardware info
+ * @returns Agent response (message, background, or error)
+ */
+export type AgentHandler = (
+  message: Message,
+  context: HandlerContext
+) => Promise<AgentResponse>

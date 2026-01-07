@@ -11,7 +11,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { Message } from '@/types/conversation'
 import {
   ContextOptimizer as OptimizerEngine,
-  estimateTotalTokens,
   type CompressionResult,
   type CompressionStrategy
 } from '@/lib/agents/spread/optimizer'
@@ -20,6 +19,7 @@ import {
   detectRedundancy,
   type RedundancyAnalysis
 } from '@/lib/agents/spread/compression-strategies'
+import { estimateTotalTokens } from '@/lib/agents/spread/token-utils'
 
 // ============================================================================
 // TYPES

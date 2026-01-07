@@ -6,19 +6,7 @@
  */
 
 import type { Message } from '@/types/conversation'
-import type { HandlerContext, AgentResponse } from './message-pipeline'
-
-/**
- * Agent handler function type
- *
- * @param message - The message to process
- * @param context - Handler context with conversation and hardware info
- * @returns Agent response (message, background, or error)
- */
-export type AgentHandler = (
-  message: Message,
-  context: HandlerContext
-) => Promise<AgentResponse>
+import type { HandlerContext, AgentResponse, AgentHandler } from './types'
 
 /**
  * Handler registry mapping agent IDs to their handlers

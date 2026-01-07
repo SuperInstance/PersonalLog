@@ -5,8 +5,8 @@
  * Includes daily optimization, continuous personalization, and adaptive workflows.
  */
 
-import type { IntelligenceHub } from './hub';
 import type { WorkflowExecution, WorkflowStep } from './types';
+import type { IIntelligenceHub } from './interfaces';
 
 // ============================================================================
 // WORKFLOW GENERATORS
@@ -279,9 +279,9 @@ export function generateAdaptiveInterfaceWorkflow(): WorkflowExecution {
 // ============================================================================
 
 export class WorkflowExecutor {
-  private hub: IntelligenceHub;
+  private hub: IIntelligenceHub;
 
-  constructor(hub: IntelligenceHub) {
+  constructor(hub: IIntelligenceHub) {
     this.hub = hub;
   }
 
@@ -361,11 +361,11 @@ export class WorkflowExecutor {
 // ============================================================================
 
 export class WorkflowScheduler {
-  private hub: IntelligenceHub;
+  private hub: IIntelligenceHub;
   private executor: WorkflowExecutor;
   private scheduledWorkflows: Map<string, NodeJS.Timeout> = new Map();
 
-  constructor(hub: IntelligenceHub) {
+  constructor(hub: IIntelligenceHub) {
     this.hub = hub;
     this.executor = new WorkflowExecutor(hub);
   }

@@ -10,7 +10,7 @@
  */
 
 import { Message } from '@/types/conversation'
-import { estimateMessageTokens, estimateTotalTokens } from './optimizer'
+import { estimateMessageTokens, estimateTotalTokens } from './token-utils'
 import { calculateImportance } from './importance-scoring'
 
 // ============================================================================

@@ -12,7 +12,7 @@ import type {
   IntelligenceSystem,
   Conflict,
 } from './types';
-import type { IntelligenceHub } from './hub';
+import type { IIntelligenceHub } from './interfaces';
 
 // ============================================================================
 // EVENT BUS
@@ -20,9 +20,9 @@ import type { IntelligenceHub } from './hub';
 
 export class IntelligenceEventBus {
   private listeners: Map<IntelligenceEventType, Set<IntelligenceEventListener>> = new Map();
-  private hub: IntelligenceHub;
+  private hub: IIntelligenceHub;
 
-  constructor(hub: IntelligenceHub) {
+  constructor(hub: IIntelligenceHub) {
     this.hub = hub;
   }
 
@@ -105,9 +105,9 @@ export class IntelligenceEventBus {
  *                     Experiment Results → Rollout Decision
  */
 export class IntelligenceDataPipeline {
-  private hub: IntelligenceHub;
+  private hub: IIntelligenceHub;
 
-  constructor(hub: IntelligenceHub) {
+  constructor(hub: IIntelligenceHub) {
     this.hub = hub;
   }
 
@@ -290,9 +290,9 @@ export class IntelligenceDataPipeline {
 // ============================================================================
 
 export class ConflictResolver {
-  private hub: IntelligenceHub;
+  private hub: IIntelligenceHub;
 
-  constructor(hub: IntelligenceHub) {
+  constructor(hub: IIntelligenceHub) {
     this.hub = hub;
   }
 
@@ -380,11 +380,11 @@ export class ConflictResolver {
  * High-level coordinator for all data flow and integration
  */
 export class IntegrationCoordinator {
-  private hub: IntelligenceHub;
+  private hub: IIntelligenceHub;
   private pipeline: IntelligenceDataPipeline;
   private resolver: ConflictResolver;
 
-  constructor(hub: IntelligenceHub) {
+  constructor(hub: IIntelligenceHub) {
     this.hub = hub;
     this.pipeline = new IntelligenceDataPipeline(hub);
     this.resolver = new ConflictResolver(hub);

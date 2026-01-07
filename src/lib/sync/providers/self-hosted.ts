@@ -10,8 +10,6 @@
 import {
   SyncProvider,
   ProviderCapabilities,
-} from './index'
-import {
   SyncProviderType,
   SelfHostedProviderConfig,
   DataDelta,

@@ -230,7 +230,7 @@ describe('Settings Functionality', () => {
 
   describe('Analytics Settings', () => {
     it('should export analytics data', async () => {
-      const { exportAnalyticsData } = await import('../../../lib/analytics/storage');
+      const { exportAnalyticsData } = await import('../../../lib/analytics');
 
       const data = await exportAnalyticsData();
 
@@ -242,7 +242,7 @@ describe('Settings Functionality', () => {
 
     it('should clear analytics data', async () => {
       const { trackEvent } = await import('../../../lib/analytics/collector');
-      const { clearAnalyticsData, exportAnalyticsData } = await import('../../../lib/analytics/storage');
+      const { clearAnalyticsData, exportAnalyticsData } = await import('../../../lib/analytics');
 
       // Track some events
       trackEvent('test_event', { type: 'test_event' });
@@ -256,12 +256,13 @@ describe('Settings Functionality', () => {
     });
 
     it('should toggle analytics tracking', async () => {
-      const { getAnalyticsConfig, setAnalyticsConfig } = await import('../../../lib/analytics/types');
+      const { getAnalyticsConfig } = await import('../../../lib/analytics/collector');
+      const { analytics } = await import('../../../lib/analytics');
 
       const config = getAnalyticsConfig();
 
       // Disable tracking
-      setAnalyticsConfig({ ...config, enabled: false });
+      analytics.updateConfig({ ...config, enabled: false });
 
       const newConfig = getAnalyticsConfig();
       expect(newConfig.enabled).toBe(false);
@@ -393,7 +394,7 @@ describe('Settings Functionality', () => {
     it('should export all user data', async () => {
       // This would test exporting all data (analytics, preferences, etc.)
 
-      const { exportAnalyticsData } = await import('../../../lib/analytics/storage');
+      const { exportAnalyticsData } = await import('../../../lib/analytics');
       const { getPersonalizationLearner } = await import('../../../lib/personalization');
 
       const analyticsData = await exportAnalyticsData();
@@ -410,7 +411,7 @@ describe('Settings Functionality', () => {
     });
 
     it('should export data as JSON', async () => {
-      const { exportAnalyticsData } = await import('../../../lib/analytics/storage');
+      const { exportAnalyticsData } = await import('../../../lib/analytics');
 
       const data = await exportAnalyticsData();
 
@@ -425,7 +426,7 @@ describe('Settings Functionality', () => {
   describe('Data Deletion', () => {
     it('should delete analytics data', async () => {
       const { trackEvent } = await import('../../../lib/analytics/collector');
-      const { clearAnalyticsData } = await import('../../../lib/analytics/storage');
+      const { clearAnalyticsData } = await import('../../../lib/analytics');
 
       // Track some events
       trackEvent('test1', { type: 'test1' });

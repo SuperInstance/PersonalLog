@@ -11,8 +11,6 @@
 import {
   SyncProvider,
   ProviderCapabilities,
-} from './index'
-import {
   SyncProviderType,
   CommercialProviderConfig,
   DataDelta,

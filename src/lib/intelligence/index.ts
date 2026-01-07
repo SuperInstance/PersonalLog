@@ -57,6 +57,8 @@ export type {
   IntelligenceState,
 } from './types';
 
+export type { IIntelligenceHub } from './interfaces';
+
 export { DEFAULT_INTELLIGENCE_SETTINGS } from './types';
 
 // ============================================================================

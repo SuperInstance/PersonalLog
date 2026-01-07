@@ -4,36 +4,13 @@
  * Manages available sync providers and factory functions.
  */
 
-import { SyncProviderType, SyncProviderConfig, DataDelta, SyncResult, NetworkStatus } from '../types'
+import { SyncProviderType, SyncProviderConfig, SyncProvider, ProviderCapabilities } from '../types'
 import { LocalProvider } from './local'
 import { SelfHostedProvider } from './self-hosted'
 import { CommercialProvider } from './commercial'
 
-// ============================================================================
-// PROVIDER INTERFACE
-// ============================================================================
-
-export interface SyncProvider {
-  readonly type: SyncProviderType
-  initialize(): Promise<void>
-  isAvailable(): Promise<boolean>
-  connect(): Promise<void>
-  disconnect(): Promise<void>
-  push(deltas: DataDelta[]): Promise<SyncResult>
-  pull(since?: number): Promise<{ deltas: DataDelta[], lastSync: number }>
-  getNetworkStatus(): Promise<NetworkStatus>
-  getCapabilities(): ProviderCapabilities
-  cleanup(): Promise<void>
-}
-
-export interface ProviderCapabilities {
-  maxPayloadSize: number
-  supportsEncryption: boolean
-  supportsCompression: boolean
-  supportsDeltaSync: boolean
-  supportsBatching: boolean
-  realTimeSync: boolean
-}
+// Re-export types for convenience
+export type { SyncProvider, ProviderCapabilities } from '../types'
 
 // ============================================================================
 // PROVIDER FACTORY

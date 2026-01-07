@@ -304,6 +304,32 @@ export interface NetworkStatus {
 }
 
 // ============================================================================
+// SYNC PROVIDER INTERFACE
+// ============================================================================
+
+export interface SyncProvider {
+  readonly type: SyncProviderType
+  initialize(): Promise<void>
+  isAvailable(): Promise<boolean>
+  connect(): Promise<void>
+  disconnect(): Promise<void>
+  push(deltas: DataDelta[]): Promise<SyncResult>
+  pull(since?: number): Promise<{ deltas: DataDelta[], lastSync: number }>
+  getNetworkStatus(): Promise<NetworkStatus>
+  getCapabilities(): ProviderCapabilities
+  cleanup(): Promise<void>
+}
+
+export interface ProviderCapabilities {
+  maxPayloadSize: number
+  supportsEncryption: boolean
+  supportsCompression: boolean
+  supportsDeltaSync: boolean
+  supportsBatching: boolean
+  realTimeSync: boolean
+}
+
+// ============================================================================
 // SYNC PROGRESS
 // ============================================================================
 

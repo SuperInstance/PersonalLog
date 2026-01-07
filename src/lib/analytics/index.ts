@@ -114,16 +114,9 @@ export {
   getThisWeeksSummary,
 } from './insights'
 
-// Pipeline
-export {
-  AnalyticsPipeline,
-  getAnalyticsPipeline,
-  initializePipeline,
-  quickReport,
-  quickInsights,
-  quickDailySummary,
-  quickWeeklySummary,
-} from './pipeline'
+// Note: Pipeline functions and classes are not exported from index.ts to avoid circular dependency.
+// Import them directly from './pipeline' if needed:
+// - import { AnalyticsPipeline, getAnalyticsPipeline, quickReport } from '@/lib/analytics/pipeline'
 
 // Export insight types
 export type {
@@ -139,44 +132,72 @@ export type {
   WeeklySummary,
 } from './insights'
 
-// Export pipeline types
-export type { PipelineConfig } from './pipeline'
+// Export config and storage functions for tests
+export { getAnalyticsConfig, clearAnalyticsData } from './collector'
 
-// Query API
-export {
-  // Usage queries
-  getMostUsedFeatures,
-  getFeatureUsage,
-  getFeatureAdoptionRate,
+// Query API - lazy export to avoid circular dependency
+export const getMostUsedFeatures = (...args: Parameters<typeof import('./queries').getMostUsedFeatures>) =>
+  import('./queries').then(m => m.getMostUsedFeatures(...args))
 
-  // Engagement queries
-  getEngagementSummary,
-  getPeakUsageHours,
-  getDailyActiveSessions,
-  getSessionStats,
+export const getFeatureUsage = (...args: Parameters<typeof import('./queries').getFeatureUsage>) =>
+  import('./queries').then(m => m.getFeatureUsage(...args))
 
-  // Performance queries
-  getPerformanceMetrics,
-  getAPIResponseStats,
-  getRenderPerformanceStats,
-  getStoragePerformance,
+export const getFeatureAdoptionRate = (...args: Parameters<typeof import('./queries').getFeatureAdoptionRate>) =>
+  import('./queries').then(m => m.getFeatureAdoptionRate(...args))
 
-  // Error queries
-  getErrorStats,
-  getErrorRate,
-  getMostFrequentErrors,
-  getUnrecoveredErrors,
+export const getEngagementSummary = (...args: Parameters<typeof import('./queries').getEngagementSummary>) =>
+  import('./queries').then(m => m.getEngagementSummary(...args))
 
-  // User action queries
-  getMessageStats,
-  getConversationStats,
+export const getPeakUsageHours = (...args: Parameters<typeof import('./queries').getPeakUsageHours>) =>
+  import('./queries').then(m => m.getPeakUsageHours(...args))
 
-  // Export & maintenance
-  exportAnalyticsData,
-  deleteAnalyticsData,
-  clearAllAnalyticsData,
-  getAnalyticsStorageInfo,
-} from './queries'
+export const getDailyActiveSessions = (...args: Parameters<typeof import('./queries').getDailyActiveSessions>) =>
+  import('./queries').then(m => m.getDailyActiveSessions(...args))
+
+export const getSessionStats = (...args: Parameters<typeof import('./queries').getSessionStats>) =>
+  import('./queries').then(m => m.getSessionStats(...args))
+
+export const getPerformanceMetrics = (...args: Parameters<typeof import('./queries').getPerformanceMetrics>) =>
+  import('./queries').then(m => m.getPerformanceMetrics(...args))
+
+export const getAPIResponseStats = (...args: Parameters<typeof import('./queries').getAPIResponseStats>) =>
+  import('./queries').then(m => m.getAPIResponseStats(...args))
+
+export const getRenderPerformanceStats = (...args: Parameters<typeof import('./queries').getRenderPerformanceStats>) =>
+  import('./queries').then(m => m.getRenderPerformanceStats(...args))
+
+export const getStoragePerformance = (...args: Parameters<typeof import('./queries').getStoragePerformance>) =>
+  import('./queries').then(m => m.getStoragePerformance(...args))
+
+export const getErrorStats = (...args: Parameters<typeof import('./queries').getErrorStats>) =>
+  import('./queries').then(m => m.getErrorStats(...args))
+
+export const getErrorRate = (...args: Parameters<typeof import('./queries').getErrorRate>) =>
+  import('./queries').then(m => m.getErrorRate(...args))
+
+export const getMostFrequentErrors = (...args: Parameters<typeof import('./queries').getMostFrequentErrors>) =>
+  import('./queries').then(m => m.getMostFrequentErrors(...args))
+
+export const getUnrecoveredErrors = (...args: Parameters<typeof import('./queries').getUnrecoveredErrors>) =>
+  import('./queries').then(m => m.getUnrecoveredErrors(...args))
+
+export const getMessageStats = (...args: Parameters<typeof import('./queries').getMessageStats>) =>
+  import('./queries').then(m => m.getMessageStats(...args))
+
+export const getConversationStats = (...args: Parameters<typeof import('./queries').getConversationStats>) =>
+  import('./queries').then(m => m.getConversationStats(...args))
+
+export const exportAnalyticsData = (...args: Parameters<typeof import('./queries').exportAnalyticsData>) =>
+  import('./queries').then(m => m.exportAnalyticsData(...args))
+
+export const deleteAnalyticsData = (...args: Parameters<typeof import('./queries').deleteAnalyticsData>) =>
+  import('./queries').then(m => m.deleteAnalyticsData(...args))
+
+export const clearAllAnalyticsData = () =>
+  import('./queries').then(m => m.clearAllAnalyticsData())
+
+export const getAnalyticsStorageInfo = () =>
+  import('./queries').then(m => m.getAnalyticsStorageInfo())
 
 // ============================================================================
 // UNIFIED API

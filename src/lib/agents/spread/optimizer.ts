@@ -8,6 +8,10 @@
 import { Message } from '@/types/conversation'
 import { calculateImportance, type MessageImportance } from './importance-scoring'
 import { detectRedundancy, type RedundancyAnalysis } from './compression-strategies'
+import { estimateMessageTokens, estimateTotalTokens } from './token-utils'
+
+// Re-export token utilities for convenience
+export { estimateMessageTokens, estimateTotalTokens }
 
 // ============================================================================
 // COMPRESSION RESULT TYPES
@@ -85,35 +89,6 @@ export function addPreservableMarker(message: Message, marker: string): Message 
       text: `${marker} ${message.content.text || ''}`
     }
   }
-}
-
-// ============================================================================
-// TOKEN ESTIMATION
-// ============================================================================
-
-/**
- * Estimates token count for a message.
- */
-export function estimateMessageTokens(message: Message): number {
-  let text = ''
-
-  if (message.content.text) {
-    text += message.content.text
-  }
-
-  if (message.content.systemNote) {
-    text += message.content.systemNote
-  }
-
-  // Rough estimate: ~4 characters per token
-  return Math.ceil(text.length / 4)
-}
-
-/**
- * Estimates total token count for an array of messages.
- */
-export function estimateTotalTokens(messages: Message[]): number {
-  return messages.reduce((sum, msg) => sum + estimateMessageTokens(msg), 0)
 }
 
 // ============================================================================

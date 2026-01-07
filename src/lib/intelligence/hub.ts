@@ -27,12 +27,13 @@ import {
   generateDailyOptimizationWorkflow,
   generateContinuousPersonalizationWorkflow,
 } from './workflows';
+import type { IIntelligenceHub } from './interfaces';
 
 // ============================================================================
 // INTELLIGENCE HUB
 // ============================================================================
 
-export class IntelligenceHub {
+export class IntelligenceHub implements IIntelligenceHub {
   private static instance: IntelligenceHub | null = null;
 
   private initialized = false;

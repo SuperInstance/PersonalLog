@@ -595,19 +595,4 @@ export interface AnalyticsExport {
   }
 }
 
-// ============================================================================
-// RE-EXPORTS FOR CONVENIENCE
-// ============================================================================
-
-// Re-export analytics config functions from collector for convenience
-export { getAnalyticsConfig } from './collector'
-
-/**
- * Set analytics config - convenience wrapper
- */
-export function setAnalyticsConfig(config: Partial<AnalyticsConfig>): void {
-  const { getEventCollector } = require('./collector')
-  const collector = getEventCollector()
-  collector.updateConfig(config)
-}
 

@@ -13,37 +13,8 @@ import type {
   AgentState,
 } from './types'
 import type { HardwareProfile } from '@/lib/hardware/types'
+import type { HandlerContext, AgentResponse } from './types'
 import { getAgentHandler } from './handlers'
-
-/**
- * Handler context passed to agent message handlers
- */
-export interface HandlerContext {
-  /** Current conversation ID */
-  conversationId: string
-  /** Agent state data */
-  agentState: AgentState
-  /** Hardware profile for performance-aware decisions */
-  hardwareProfile: HardwareProfile
-  /** Full conversation object */
-  conversation: Conversation
-  /** Message being processed */
-  message: Message
-}
-
-/**
- * Agent response from message handler
- */
-export interface AgentResponse {
-  /** Response type */
-  type: 'message' | 'background' | 'error'
-  /** Message content (for message type) */
-  content?: string
-  /** Response metadata */
-  metadata?: Record<string, unknown>
-  /** Error message (for error type) */
-  error?: string
-}
 
 /**
  * Message processing result
