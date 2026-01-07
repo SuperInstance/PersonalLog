@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { agentEventBus } from '@/lib/agents/communication/event-bus';
 import { MessageType, type AgentMessage } from '@/lib/agents/communication/types';
 
@@ -24,7 +24,7 @@ export function MessageInspector() {
   const [selectedMessage, setSelectedMessage] = useState<AgentMessage | null>(null);
 
   // Update messages and stats
-  const updateData = () => {
+  const updateData = useCallback(() => {
     const filtered = agentEventBus.getHistory(
       filter.from || filter.to || filter.type || filter.minPriority
         ? {
@@ -38,7 +38,7 @@ export function MessageInspector() {
     setMessages(filtered);
     setStats(agentEventBus.getStats());
     setSubscribers(agentEventBus.getSubscribers());
-  };
+  }, [filter]);
 
   // Auto-refresh
   useEffect(() => {
@@ -46,12 +46,12 @@ export function MessageInspector() {
       const interval = setInterval(updateData, 1000);
       return () => clearInterval(interval);
     }
-  }, [autoRefresh, filter]);
+  }, [autoRefresh, filter, updateData]);
 
   // Initial load
   useEffect(() => {
     updateData();
-  }, []);
+  }, [updateData]);
 
   // Send test message
   const sendTestMessage = () => {

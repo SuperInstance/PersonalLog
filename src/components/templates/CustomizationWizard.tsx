@@ -384,7 +384,7 @@ function NameIconStep({ agent, onChange }: StepProps) {
           className="form-input"
         />
         <p className="form-hint">
-          Choose a descriptive name that reflects your agent's purpose.
+          Choose a descriptive name that reflects your agent&apos;s purpose.
         </p>
       </div>
 
@@ -623,7 +623,7 @@ function CapabilitiesStep({ agent, onChange }: StepProps) {
     <div className="step-content">
       <h3>Capabilities & Tags</h3>
       <p className="step-subtitle">
-        Add tags to help users discover and understand your agent's capabilities.
+        Add tags to help users discover and understand your agent&apos;s capabilities.
       </p>
 
       <div className="form-group">

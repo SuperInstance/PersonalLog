@@ -13,7 +13,6 @@ import { DAGNode, DAGExecutionState } from '@/lib/agents/spreader/dag'
 import { cn } from '@/lib/utils'
 
 interface SpreadDashboardProps {
-  children: ChildConversation[]
   onViewChild?: (childId: string) => void
   onMergeChild?: (childId: string) => void
   compact?: boolean
@@ -22,6 +21,7 @@ interface SpreadDashboardProps {
   dagNodes?: DAGNode[]
   dagExecutionState?: Map<string, DAGExecutionState>
   onDAGNodeClick?: (nodeId: string) => void
+  children?: ChildConversation[]
 }
 
 export function SpreadDashboard({
@@ -37,11 +37,14 @@ export function SpreadDashboard({
   const [expandedChildren, setExpandedChildren] = useState<Set<string>>(new Set())
   const [viewMode, setViewMode] = useState<'list' | 'dag'>('list')
 
-  if (children.length === 0) {
+  // Use children directly as ChildConversation array
+  const childArray = children || []
+
+  if (childArray.length === 0) {
     return (
       <div className="spread-dashboard-empty text-center py-8 text-gray-500 dark:text-gray-400">
         <p className="text-sm">No active parallel conversations</p>
-        <p className="text-xs mt-1">Say "Spread this: task1, task2" to create some</p>
+        <p className="text-xs mt-1">Say &ldquo;Spread this: task1, task2&rdquo; to create some</p>
       </div>
     )
   }
@@ -59,10 +62,10 @@ export function SpreadDashboard({
   }
 
   const statusCounts = {
-    pending: children.filter(c => c.status === 'pending').length,
-    working: children.filter(c => c.status === 'working').length,
-    complete: children.filter(c => c.status === 'complete').length,
-    error: children.filter(c => c.status === 'error').length
+    pending: childArray.filter(c => c.status === 'pending').length,
+    working: childArray.filter(c => c.status === 'working').length,
+    complete: childArray.filter(c => c.status === 'complete').length,
+    error: childArray.filter(c => c.status === 'error').length
   }
 
   return (
@@ -135,7 +138,7 @@ export function SpreadDashboard({
         </div>
       ) : (
         <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-96 overflow-y-auto">
-          {children.map(child => (
+          {childArray.map((child: ChildConversation) => (
             <ChildConversationCard
               key={child.id}
               child={child}

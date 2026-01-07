@@ -198,57 +198,6 @@ export default function JEPAPage() {
     }
   }, [audioCapture])
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return
-      }
-
-      // R - Start/Stop recording
-      if (e.key === 'r' || e.key === 'R') {
-        e.preventDefault()
-        if (isRecording) {
-          handleStopRecording()
-        } else {
-          handleStartRecording()
-        }
-      }
-
-      // P - Pause/Resume
-      if ((e.key === 'p' || e.key === 'P') && isRecording) {
-        e.preventDefault()
-        handlePauseToggle()
-      }
-
-      // T - Switch to trends tab
-      if (e.key === 't' || e.key === 'T') {
-        e.preventDefault()
-        setActiveTab(activeTab === 'transcript' ? 'trends' : 'transcript')
-      }
-
-      // ? - Show keyboard shortcuts
-      if (e.key === '?') {
-        e.preventDefault()
-        setShowKeyboardModal(true)
-      }
-
-      // Esc - Close modals
-      if (e.key === 'Escape') {
-        if (showBetaModal) {
-          handleBetaAcknowledge()
-        }
-        if (showKeyboardModal) {
-          setShowKeyboardModal(false)
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isRecording, isPaused, activeTab, showBetaModal, showKeyboardModal])
-
   const handleStartRecording = useCallback(async () => {
     try {
       await audioCapture.startRecording()
@@ -313,22 +262,21 @@ export default function JEPAPage() {
     }
   }, [transcript, showSuccess, showError])
 
-  const handleTimestampClick = (seconds: number) => {
-    console.log('Timestamp clicked:', seconds)
+  const handleTimestampClick = useCallback((seconds: number) => {
     // TODO: Implement audio seeking (Round 3)
-  }
+  }, [])
 
-  const handleSegmentClick = (segmentId: string) => {
+  const handleSegmentClick = useCallback((segmentId: string) => {
     setHighlightedSegmentId(segmentId)
     setTimeout(() => setHighlightedSegmentId(null), 2000)
-  }
+  }, [])
 
-  const handleBetaAcknowledge = () => {
+  const handleBetaAcknowledge = useCallback(() => {
     localStorage.setItem('jepa_beta_seen', 'true')
     setShowBetaModal(false)
-  }
+  }, [])
 
-  const handleGenerateSampleData = async () => {
+  const handleGenerateSampleData = useCallback(async () => {
     setIsGeneratingData(true)
     try {
       await generateQuickSampleData()
@@ -341,7 +289,58 @@ export default function JEPAPage() {
     } finally {
       setIsGeneratingData(false)
     }
-  }
+  }, [showSuccess, showError])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      // R - Start/Stop recording
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault()
+        if (isRecording) {
+          handleStopRecording()
+        } else {
+          handleStartRecording()
+        }
+      }
+
+      // P - Pause/Resume
+      if ((e.key === 'p' || e.key === 'P') && isRecording) {
+        e.preventDefault()
+        handlePauseToggle()
+      }
+
+      // T - Switch to trends tab
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault()
+        setActiveTab(activeTab === 'transcript' ? 'trends' : 'transcript')
+      }
+
+      // ? - Show keyboard shortcuts
+      if (e.key === '?') {
+        e.preventDefault()
+        setShowKeyboardModal(true)
+      }
+
+      // Esc - Close modals
+      if (e.key === 'Escape') {
+        if (showBetaModal) {
+          handleBetaAcknowledge()
+        }
+        if (showKeyboardModal) {
+          setShowKeyboardModal(false)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isRecording, activeTab, showBetaModal, showKeyboardModal, handleStartRecording, handleStopRecording, handlePauseToggle, handleBetaAcknowledge])
 
   return (
     <>

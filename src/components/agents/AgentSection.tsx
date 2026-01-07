@@ -329,7 +329,7 @@ export function AgentSection({
                 No agents available
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500">
-                Your hardware doesn't meet the requirements for any agents
+                Your hardware doesn&apos;t meet the requirements for any agents
               </p>
             </div>
           )}

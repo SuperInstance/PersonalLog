@@ -91,7 +91,7 @@ function QuestionCard({ question }: QuestionCardProps) {
                   key={idx}
                   className="text-sm text-slate-600 dark:text-slate-400 bg-white/30 dark:bg-slate-800/30 rounded-lg px-3 py-1.5 border border-slate-200 dark:border-slate-700"
                 >
-                  "{example}"
+                  &quot;{example}&quot;
                 </div>
               ))}
             </div>

@@ -57,8 +57,6 @@ export default function BenchmarksPage() {
       });
 
       const duration = Date.now() - startTime;
-      console.log(`Benchmarks completed in ${duration}ms`);
-
       setSuite(result);
 
       // Save to history

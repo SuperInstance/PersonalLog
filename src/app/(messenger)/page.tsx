@@ -161,7 +161,6 @@ export default function MessengerPage() {
 
     // Create a new conversation with the agent
     // For now, just close the modal - agent activation logic will be handled separately
-    console.log('Activated agent:', selectedAgent.id)
     handleAgentModalClose()
   }, [selectedAgent, handleAgentModalClose])
 

@@ -82,11 +82,12 @@ export function SpreaderConversation({
           compact
         />
         {agentState.childConversations.length > 0 && (
+          /* eslint-disable react/no-children-prop */
           <SpreadDashboard
-            children={agentState.childConversations}
             onViewChild={handleViewChild}
             onMergeChild={handleMergeChild}
             compact
+            children={agentState.childConversations}
           />
         )}
       </div>
@@ -117,10 +118,11 @@ export function SpreaderConversation({
 
       {/* Spread Dashboard */}
       {agentState.childConversations.length > 0 && (
+        /* eslint-disable react/no-children-prop */
         <SpreadDashboard
-          children={agentState.childConversations}
           onViewChild={handleViewChild}
           onMergeChild={handleMergeChild}
+          children={agentState.childConversations}
         />
       )}
 
@@ -146,7 +148,7 @@ function WelcomeMessage({ metrics, onDismiss, onQuickSpread }: WelcomeMessagePro
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-            Hi! I'm Spreader 📚
+            Hi! I&apos;m Spreader 📚
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Your context window manager
@@ -176,7 +178,7 @@ function WelcomeMessage({ metrics, onDismiss, onQuickSpread }: WelcomeMessagePro
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-500">3.</span>
-            <span><strong>"Spreading" parallel tasks</strong> to child conversations</span>
+            <span><strong>&ldquo;Spreading&rdquo; parallel tasks</strong> to child conversations</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-500">4.</span>

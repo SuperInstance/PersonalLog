@@ -130,7 +130,7 @@ function EditAgentModal({
               <span>Edit Agent: {agent.name}</span>
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Customize your agent's behavior and personality
+              Customize your agent&apos;s behavior and personality
             </p>
           </div>
           <button
@@ -362,7 +362,7 @@ function FormEditor({ fields, onChange, isValid }: FormEditorProps) {
           placeholder="You are a helpful assistant..."
         />
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          This defines the agent's personality and behavior. Be specific!
+          This defines the agent&apos;s personality and behavior. Be specific!
         </p>
       </div>
     </div>

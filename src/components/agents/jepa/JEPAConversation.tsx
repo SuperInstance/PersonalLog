@@ -112,7 +112,6 @@ export function JEPAConversation({
     try {
       const markdown = await agent.exportTranscript()
       // TODO: Show success notification
-      console.log('Transcript exported:', markdown)
     } catch (error) {
       console.error('Failed to export transcript:', error)
     }
@@ -183,7 +182,7 @@ export function JEPAConversation({
                     Welcome to JEPA!
                   </h3>
                   <p className="text-sm text-slate-700 dark:text-slate-300 mb-4">
-                    I'm your emotional subtext analyzer. I listen to our conversations and analyze the
+                    I&apos;m your emotional subtext analyzer. I listen to our conversations and analyze the
                     emotional undertones in real-time.
                   </p>
 
@@ -210,7 +209,7 @@ export function JEPAConversation({
 
                   <div className="mt-4 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                     <p className="text-xs text-slate-600 dark:text-slate-400">
-                      Just start talking normally, and I'll work in the background. Click "Start Recording" to begin!
+                      Just start talking normally, and I&apos;ll work in the background. Click &quot;Start Recording&quot; to begin!
                     </p>
                   </div>
                 </div>

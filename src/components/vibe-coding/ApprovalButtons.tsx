@@ -57,7 +57,7 @@ function ApprovalButtons({
                 Ready to activate your agent?
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                This will add <strong>"{isActivating ? 'your custom agent' : 'the agent'}</strong> to your available contacts.
+                This will add <strong>&quot;{isActivating ? 'your custom agent' : 'the agent'}&quot;</strong> to your available contacts.
                 You can start conversations with it immediately.
               </p>
 

@@ -325,10 +325,10 @@ function VibeCodingConversation({
                 <Sparkles className="w-10 h-10 text-purple-500 dark:text-purple-400" />
               </div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
-                Let's create your perfect AI agent
+                Let&apos;s create your perfect AI agent
               </h2>
               <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
-                Tell me what you want your agent to do, and I'll help you build it through a quick conversation.
+                Tell me what you want your agent to do, and I&apos;ll help you build it through a quick conversation.
               </p>
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm text-slate-600 dark:text-slate-400">
                 <span className="font-mono">⌘</span>

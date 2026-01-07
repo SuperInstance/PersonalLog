@@ -60,7 +60,6 @@ export default function VibeCodingPage() {
   const handleActivateAgent = async (agentData: GeneratedAgent) => {
     // This is a mock implementation
     // In production, this would register the agent in the agent registry
-    console.log('Activating agent:', agentData)
     return Promise.resolve()
   }
 
@@ -121,7 +120,7 @@ export default function VibeCodingPage() {
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                   Vibe-coding is a conversational way to create custom AI agents. Just describe what you want,
-                  and I'll help you build it through a quick chat.
+                  and I&apos;ll help you build it through a quick chat.
                 </p>
               </section>
 

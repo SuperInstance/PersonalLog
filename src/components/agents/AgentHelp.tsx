@@ -194,7 +194,7 @@ function OverviewContent({ onNavigate }: { onNavigate: (path: string) => void })
           Hardware Requirements
         </h4>
         <p className="text-sm text-blue-800 dark:text-blue-300">
-          Some agents require specific hardware capabilities. Your system's hardware is automatically detected,
+          Some agents require specific hardware capabilities. Your system&apos;s hardware is automatically detected,
           and incompatible agents will be marked accordingly.
         </p>
       </div>
@@ -279,7 +279,7 @@ function TemplatesContent() {
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
           Templates are pre-built agent configurations optimized for specific use cases.
-          They're the fastest way to get started with AI agents.
+          They&apos;re the fastest way to get started with AI agents.
         </p>
       </div>
 
@@ -338,7 +338,7 @@ function TemplatesContent() {
         <ol className="text-sm text-green-800 dark:text-green-300 space-y-1 list-decimal list-inside">
           <li>Click the grid icon in the agents section</li>
           <li>Browse available templates by category</li>
-          <li>Click "Use Template" on any template</li>
+          <li>Click &quot;Use Template&quot; on any template</li>
           <li>The agent is instantly available in your agent list!</li>
         </ol>
       </div>

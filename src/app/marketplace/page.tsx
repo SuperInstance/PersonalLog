@@ -133,7 +133,6 @@ export default function MarketplacePage() {
 
   // Handle rating
   const handleRate = (agentId: string, rating: number, review?: string) => {
-    console.log('Rating agent:', agentId, rating, review);
     // TODO: Implement rating submission
   };
 
@@ -188,16 +187,13 @@ export default function MarketplacePage() {
       }
     }
 
-    // Log results (in production, show in UI)
-    console.log('Import results:', importResults);
-
     // Show summary
     const successful = importResults.filter((r) => r.success).length;
     const failed = importResults.length - successful;
 
     if (failed > 0) {
       throw new Error(
-        `Import completed with ${successful} successful and ${failed} failed. Check console for details.`
+        `Import completed with ${successful} successful and ${failed} failed. Check logs for details.`
       );
     }
   };
@@ -317,7 +313,7 @@ export default function MarketplacePage() {
 
                 {searchQuery && (
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    matching "{searchQuery}"
+                    matching &ldquo;{searchQuery}&rdquo;
                   </span>
                 )}
               </div>

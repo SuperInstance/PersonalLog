@@ -79,7 +79,7 @@ function AgentPreview({ agentData, onEdit, className = '' }: AgentPreviewProps) 
               Your custom agent is ready!
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              I've created this agent based on your requirements. Here's what it does:
+              I&apos;ve created this agent based on your requirements. Here&apos;s what it does:
             </p>
           </div>
         </div>

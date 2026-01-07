@@ -215,7 +215,7 @@ export function EnhancedSpreadDashboard({
         {/* Auto-Merge Badge */}
         {autoMergeEnabled && allComplete && (
           <div className="mt-3 flex items-center gap-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 rounded-full">
-            <span className="font-medium">✨ Auto-merge enabled with "{mergeStrategy}" strategy</span>
+            <span className="font-medium">✨ Auto-merge enabled with &ldquo;{mergeStrategy}&rdquo; strategy</span>
           </div>
         )}
       </div>
@@ -466,7 +466,7 @@ function EmptyState() {
         No active tasks
       </h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
-        Say "Spread this: task1, task2" to create parallel conversations, or use dependency syntax for DAG execution.
+        Say &ldquo;Spread this: task1, task2&rdquo; to create parallel conversations, or use dependency syntax for DAG execution.
       </p>
     </div>
   )
