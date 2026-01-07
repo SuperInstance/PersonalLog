@@ -14,7 +14,7 @@
  *
  * // Check availability
  * const hardware = await getHardwareInfo();
- * const agents = agentRegistry.getAvailableAgents(hardware.profile);
+ * const agents = await agentRegistry.getAvailableAgents(hardware.profile);
  *
  * // Activate an agent
  * agentRegistry.activateAgent('jepa-v1');
@@ -104,3 +104,18 @@ export {
   agentToJSON,
   agentFromJSON,
 } from './io';
+
+// Export feature checking utilities
+export type { FeatureCheckResult, AgentFeatureCheck } from './feature-check';
+export {
+  checkFeature,
+  checkAgentFeatures,
+  getAvailableFeatures,
+  getDisabledFeatures,
+  checkJEPATranscription,
+  checkLocalAI,
+  checkMultimodalAI,
+  formatFeatureCheckResult,
+  formatAgentFeatureCheck,
+  resetFeatureCheckerCache,
+} from './feature-check';

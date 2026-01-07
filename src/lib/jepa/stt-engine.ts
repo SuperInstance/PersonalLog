@@ -20,6 +20,8 @@ import type {
   ErrorCallback,
 } from './stt-types'
 import { DEFAULT_STT_CONFIG, STTError } from './stt-types'
+import { extractMFCC, extractSpectralFeatures, extractProsodicFeatures, normalizeFeatures } from './audio-features'
+import { EmotionResult, EmotionCategory } from './types'
 
 // Import backend implementations (will be created)
 // import { WhisperLocalEngine } from './whisper-wrapper'
@@ -211,13 +213,207 @@ export class STTEngine {
    * Clean up resources
    */
   async cleanup(): Promise<void> {
-    for (const [name, backend] of this.backends) {
+    const backendEntries = Array.from(this.backends.entries())
+    for (const [name, backend] of backendEntries) {
       if (backend && typeof backend.cleanup === 'function') {
         await backend.cleanup()
       }
     }
     this.backends.clear()
     this.setStatus('idle')
+  }
+
+  // ============================================================================
+  // EMOTION ANALYSIS FROM AUDIO
+  // ============================================================================
+
+  /**
+   * Analyze emotion from audio buffer
+   * Combines MFCC, spectral, and prosodic features to detect emotion
+   *
+   * @param audioBuffer - Web Audio API buffer
+   * @returns Emotion analysis result
+   */
+  async analyzeEmotionFromAudio(audioBuffer: globalThis.AudioBuffer): Promise<EmotionResult> {
+    try {
+      // Extract features
+      const mfcc = extractMFCC(audioBuffer)
+      const spectral = extractSpectralFeatures(audioBuffer)
+      const prosodic = extractProsodicFeatures(audioBuffer)
+
+      // Normalize features
+      const normalized = normalizeFeatures({ mfcc, spectral, prosodic })
+
+      // Analyze emotion from features
+      const emotion = this.inferEmotionFromFeatures(normalized)
+
+      return emotion
+    } catch (error) {
+      console.error('Failed to analyze emotion from audio:', error)
+      // Return neutral emotion on error
+      return {
+        valence: 0.5,
+        arousal: 0.5,
+        dominance: 0.5,
+        emotion: 'neutral' as EmotionCategory,
+        confidence: 0.0,
+      }
+    }
+  }
+
+  /**
+   * Transcribe audio with emotion analysis
+   * Returns both transcription and emotion from audio features
+   *
+   * @param request - Transcription request with audio
+   * @returns Transcript with embedded emotion data
+   */
+  async transcribeWithEmotion(
+    request: TranscriptionRequest & { audioBuffer?: globalThis.AudioBuffer },
+    options?: { backend?: STTBackend }
+  ): Promise<Transcript & { emotion?: EmotionResult }> {
+    // First, transcribe the audio
+    const transcript = await this.transcribe(request, options)
+
+    // Then analyze emotion from audio
+    let emotion: EmotionResult | undefined
+    if ('audioBuffer' in request && request.audioBuffer instanceof globalThis.AudioBuffer) {
+      emotion = await this.analyzeEmotionFromAudio(request.audioBuffer)
+    }
+
+    return {
+      ...transcript,
+      emotion,
+    }
+  }
+
+  /**
+   * Infer emotion from normalized audio features
+   * Uses heuristic rules based on audio feature research
+   */
+  private inferEmotionFromFeatures(features: ReturnType<typeof normalizeFeatures>): EmotionResult {
+    const { spectral, prosodic } = features
+
+    // Calculate valence (positive/negative) from spectral features
+    // Higher pitch and brightness → more positive
+    const spectralCentroid = spectral.centroid
+    const spectralRolloff = spectral.rolloff
+    const valence = this.normalizeValue(
+      (spectralCentroid + spectralRolloff) / 2,
+      -2, // Typical min
+      2   // Typical max
+    )
+
+    // Calculate arousal (intensity) from energy and pitch variation
+    // Higher energy and more variation → higher arousal
+    const energy = prosodic.energy
+    const jitter = prosodic.jitter
+    const arousal = this.normalizeValue(
+      energy * 10 + jitter,
+      0,  // Typical min
+      2  // Typical max
+    )
+
+    // Calculate dominance (control) from pitch and tempo
+    // Lower pitch (in typical range) and steadier tempo → more dominance
+    const pitch = Math.abs(prosodic.pitch)
+    const tempo = prosodic.tempo
+    const dominance = this.normalizeValue(
+      tempo - pitch / 100,
+      0,  // Typical min
+      150 // Typical max
+    )
+
+    // Categorize emotion based on VAD values
+    const emotion = this.categorizeEmotion(valence, arousal, dominance)
+
+    // Calculate confidence based on feature stability
+    const confidence = this.calculateEmotionConfidence(features)
+
+    return {
+      valence,
+      arousal,
+      dominance,
+      emotion,
+      confidence,
+    }
+  }
+
+  /**
+   * Categorize emotion from VAD values using VAD model
+   */
+  private categorizeEmotion(
+    valence: number,
+    arousal: number,
+    dominance: number
+  ): EmotionCategory {
+    // High valence, high arousal
+    if (valence > 0.6 && arousal > 0.6) {
+      return 'excited'
+    }
+    // High valence, medium arousal
+    if (valence > 0.6 && arousal > 0.3) {
+      return 'happy'
+    }
+    // High valence, low arousal
+    if (valence > 0.6) {
+      return 'calm'
+    }
+    // Medium valence, low arousal
+    if (valence > 0.4 && arousal < 0.4) {
+      return 'relaxed'
+    }
+    // Medium valence, medium arousal
+    if (valence > 0.3 && valence < 0.7 && arousal > 0.3 && arousal < 0.7) {
+      return 'neutral'
+    }
+    // Low valence, low arousal
+    if (valence < 0.4 && arousal < 0.4) {
+      return 'bored'
+    }
+    // Low valence, medium arousal
+    if (valence < 0.4 && arousal > 0.4 && arousal < 0.7) {
+      return 'sad'
+    }
+    // Low valence, high arousal
+    if (valence < 0.4 && arousal > 0.6) {
+      return dominance > 0.5 ? 'angry' : 'anxious'
+    }
+    // Medium valence, high arousal
+    if (arousal > 0.7) {
+      return 'tense'
+    }
+
+    return 'neutral'
+  }
+
+  /**
+   * Calculate confidence score for emotion detection
+   * Based on feature stability and clarity
+   */
+  private calculateEmotionConfidence(
+    features: ReturnType<typeof normalizeFeatures>
+  ): number {
+    const { spectral, prosodic } = features
+
+    // Higher energy → more confident (clearer signal)
+    const energyConfidence = Math.min(prosodic.energy * 5, 1)
+
+    // Lower zero crossing rate → more stable signal
+    const zcrConfidence = 1 - Math.min(spectral.zeroCrossingRate * 5, 1)
+
+    // Lower jitter/shimmer → more stable
+    const stabilityConfidence = 1 - Math.min(prosodic.jitter / 5 + prosodic.shimmer * 50, 1)
+
+    // Average confidences
+    return (energyConfidence + zcrConfidence + stabilityConfidence) / 3
+  }
+
+  /**
+   * Normalize a value to 0-1 range
+   */
+  private normalizeValue(value: number, min: number, max: number): number {
+    return Math.max(0, Math.min(1, (value - min) / (max - min)))
   }
 
   // ============================================================================

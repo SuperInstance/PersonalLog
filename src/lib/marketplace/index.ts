@@ -74,6 +74,9 @@ import {
   getRatingDistribution,
   getTopRatedAgents,
   updateRating,
+  getRatingStats,
+  getAgentReviews,
+  markReviewHelpful,
 } from './ratings';
 
 // Versions functions (for internal use)
@@ -118,6 +121,8 @@ import {
 export type {
   MarketplaceAgent,
   AgentRating,
+  RatingStats,
+  Review,
   AgentVersion,
   AgentStats,
   MarketplaceMetadata,
@@ -154,6 +159,7 @@ export {
   getUserRating,
   deleteRating,
   deleteRatingsForAgent,
+  loadAllRatings,
 } from './storage';
 
 // Export
@@ -190,6 +196,9 @@ export {
   deleteRatingForAgent,
   getRatingDistribution,
   getTopRatedAgents,
+  getRatingStats,
+  getAgentReviews,
+  markReviewHelpful,
 } from './ratings';
 
 // Search
@@ -237,7 +246,6 @@ export {
   deleteSharedAgent,
   searchCommunityAgents,
   getReports,
-  getAgentReviews,
 } from './community';
 
 export type {

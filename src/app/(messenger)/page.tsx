@@ -41,6 +41,7 @@ export default function MessengerPage() {
   const [agentModalOpen, setAgentModalOpen] = useState(false)
   const [selectedAgent, setSelectedAgent] = useState<AgentDefinition | null>(null)
   const [hardwareProfile, setHardwareProfile] = useState<any>(null)
+  const [agentAvailability, setAgentAvailability] = useState<any>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const device = useMobileDetection()
@@ -140,11 +141,16 @@ export default function MessengerPage() {
   }, [selectedConversation?.id])
 
   // Agent activation handler
-  const handleActivateAgent = useCallback((agentId: string) => {
+  const handleActivateAgent = useCallback(async (agentId: string) => {
     const agent = agentRegistry.getAgent(agentId)
     if (!agent || !hardwareProfile) return
 
     setSelectedAgent(agent)
+
+    // Check availability asynchronously
+    const availability = await agentRegistry.checkAvailability(agentId, hardwareProfile)
+    setAgentAvailability(availability)
+
     setAgentModalOpen(true)
   }, [hardwareProfile])
 
@@ -267,11 +273,11 @@ export default function MessengerPage() {
     <MobileBottomNav />
 
     {/* Agent Activation Modal */}
-    {selectedAgent && hardwareProfile && (
+    {selectedAgent && hardwareProfile && agentAvailability && (
       <AgentActivationModal
         agent={selectedAgent}
         hardwareProfile={hardwareProfile}
-        availability={agentRegistry.checkAvailability(selectedAgent.id, hardwareProfile)}
+        availability={agentAvailability}
         isOpen={agentModalOpen}
         onClose={handleAgentModalClose}
         onActivate={handleConfirmAgentActivation}

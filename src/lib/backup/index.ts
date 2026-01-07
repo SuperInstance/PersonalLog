@@ -125,3 +125,52 @@ export {
   getScheduleHistory,
   triggerScheduledBackup
 } from './scheduler'
+
+// ============================================================================
+// RECOVERY
+// ============================================================================
+
+export {
+  BackupRecovery,
+  restoreFromBackup,
+  previewRestore
+} from './recovery'
+
+// ============================================================================
+// ROLLBACK
+// ============================================================================
+
+export {
+  RollbackManager,
+  createSnapshot,
+  rollback,
+  listSnapshots
+} from './rollback'
+
+export type {
+  SnapshotMetadata,
+  CreateSnapshotOptions,
+  SnapshotProgress,
+  SnapshotType,
+  RollbackOptions,
+  RollbackProgress,
+  RollbackResult
+} from './rollback'
+
+// ============================================================================
+// INTEGRITY
+// ============================================================================
+
+export {
+  BackupIntegrityChecker,
+  checkBackupIntegrity,
+  generateIntegrityReport
+} from './integrity'
+
+export type {
+  IntegrityCheckResult,
+  IntegrityReport,
+  CategoryIntegrityResult,
+  IntegrityError,
+  CorruptionIndicator
+} from './integrity'

@@ -69,13 +69,38 @@ export function AgentSection({
   const [showHelp, setShowHelp] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [agentAvailabilities, setAgentAvailabilities] = useState<Map<string, AgentAvailabilityResult>>(new Map());
 
   const { shouldShow } = useAgentOnboarding();
   const { showSuccess, showError, showInfo } = useToast();
 
+  // Check agent availabilities when hardware profile changes
+  useEffect(() => {
+    if (!hardwareProfile) {
+      setAgentAvailabilities(new Map());
+      return;
+    }
+
+    const checkAvailabilities = async () => {
+      const allAgents = agentRegistry.getAllAgents();
+      const availabilities = new Map<string, AgentAvailabilityResult>();
+
+      await Promise.all(
+        allAgents.map(async (agent) => {
+          const availability = await agentRegistry.checkAvailability(agent.id, hardwareProfile);
+          availabilities.set(agent.id, availability);
+        })
+      );
+
+      setAgentAvailabilities(availabilities);
+    };
+
+    checkAvailabilities();
+  }, [hardwareProfile]);
+
   // Get all agents and check availability
   const { availableAgents, unavailableAgents } = useMemo(() => {
-    if (!hardwareProfile) {
+    if (!hardwareProfile || agentAvailabilities.size === 0) {
       return {
         availableAgents: [],
         unavailableAgents: [],
@@ -87,16 +112,18 @@ export function AgentSection({
     const unavailable: Array<{ agent: AgentDefinition; availability: AgentAvailabilityResult }> = [];
 
     allAgents.forEach((agent) => {
-      const availability = agentRegistry.checkAvailability(agent.id, hardwareProfile);
-      if (availability.available) {
-        available.push({ agent, availability });
-      } else {
-        unavailable.push({ agent, availability });
+      const availability = agentAvailabilities.get(agent.id);
+      if (availability) {
+        if (availability.available) {
+          available.push({ agent, availability });
+        } else {
+          unavailable.push({ agent, availability });
+        }
       }
     });
 
     return { availableAgents: available, unavailableAgents: unavailable };
-  }, [hardwareProfile]);
+  }, [hardwareProfile, agentAvailabilities]);
 
   const totalAgents = availableAgents.length + unavailableAgents.length;
 
@@ -192,11 +219,11 @@ export function AgentSection({
   if (collapsed) {
     return (
       <div className="px-2 py-2 space-y-1" role="region" aria-label="AI Agents">
-        {availableAgents.map(({ agent }) => (
+        {availableAgents.map(({ agent, availability }) => (
           <AgentCard
             key={agent.id}
             agent={agent}
-            availability={agentRegistry.checkAvailability(agent.id, hardwareProfile!)}
+            availability={availability}
             active={activeAgentIds.includes(agent.id)}
             onClick={() => onActivateAgent(agent.id)}
             compact

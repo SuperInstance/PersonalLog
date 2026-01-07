@@ -3,6 +3,7 @@
  *
  * Validates agent hardware requirements against detected system profile.
  * Integrates with Round 2 hardware detection system (scoring.ts).
+ * Integrates with feature flag system for complete validation.
  */
 
 import type { HardwareProfile } from '@/lib/hardware/types';
@@ -22,6 +23,7 @@ import {
   RequirementValidationError,
   RequirementSeverity,
 } from './requirements';
+import { checkFeature, checkAgentFeatures } from './feature-check';
 
 /**
  * Default validation options
@@ -39,11 +41,11 @@ const DEFAULT_OPTIONS: ValidationOptions = {
  * @param options - Validation options
  * @returns Validation result with errors and warnings
  */
-export function validateRequirements(
+export async function validateRequirements(
   requirements: ValidationRequirement,
   hardwareProfile: HardwareProfile,
   options: ValidationOptions = DEFAULT_OPTIONS
-): ValidationResult {
+): Promise<ValidationResult> {
   const errors: RequirementError[] = [];
   const warnings: string[] = [];
   let totalChecks = 0;
@@ -70,9 +72,9 @@ export function validateRequirements(
     passedChecks += apiResult.passed;
   }
 
-  // Validate feature flag requirements (placeholder - to be implemented with feature flag system)
+  // Validate feature flag requirements (now integrated with actual feature flag system)
   if (requirements.flags && requirements.flags.length > 0) {
-    const flagResult = validateFlagRequirements(requirements.flags);
+    const flagResult = await validateFlagRequirements(requirements.flags);
     errors.push(...flagResult.errors);
     warnings.push(...flagResult.warnings);
     totalChecks += flagResult.checked;
@@ -290,35 +292,65 @@ function validateAPIRequirements(
 }
 
 /**
- * Validate feature flag requirements (placeholder)
+ * Validate feature flag requirements
+ *
+ * Checks actual feature flags against requirements using the feature flag system.
  */
-function validateFlagRequirements(
+async function validateFlagRequirements(
   requirements: FeatureFlagRequirement[]
-): { errors: RequirementError[]; warnings: string[]; checked: number; passed: number } {
+): Promise<{ errors: RequirementError[]; warnings: string[]; checked: number; passed: number }> {
   const errors: RequirementError[] = [];
   const warnings: string[] = [];
   let checked = 0;
   let passed = 0;
 
-  // TODO: Integrate with actual feature flag system when implemented
-  for (const flag of requirements) {
+  // Check each required feature flag
+  for (const flagReq of requirements) {
     checked++;
 
-    // For now, assume all flags are enabled (placeholder)
-    // In production, this would check against a feature flag store
-    const flagEnabled = true;
+    try {
+      const checkResult = await checkFeature(flagReq.name);
 
-    if (flag.enabled !== flagEnabled) {
+      // Check if flag state matches requirement
+      const flagEnabled = checkResult.available;
+
+      if (flagReq.enabled !== flagEnabled) {
+        errors.push({
+          code: RequirementErrorCode.FLAG_DISABLED,
+          message: `Required feature flag "${flagReq.name}" is not ${flagReq.enabled ? 'enabled' : 'disabled'}.`,
+          details: checkResult.reason || `Flag: ${flagReq.name}, Required state: ${flagReq.enabled ? 'enabled' : 'disabled'}, Actual: ${flagEnabled ? 'enabled' : 'disabled'}`,
+          requirement: flagReq,
+          currentValue: flagEnabled,
+          requiredValue: flagReq.enabled,
+        });
+
+        // Add suggestion if available
+        if (checkResult.suggestion) {
+          warnings.push(checkResult.suggestion);
+        }
+      } else {
+        passed++;
+      }
+
+      // Add warnings for experimental features
+      if (checkResult.experimental) {
+        warnings.push(`Feature "${flagReq.name}" is experimental and may change.`);
+      }
+
+      // Add warnings for user-overridable features that are disabled
+      if (!flagEnabled && checkResult.userOverridable) {
+        warnings.push(`Feature "${flagReq.name}" can be enabled in Settings if desired.`);
+      }
+    } catch (error) {
+      // Feature check failed
       errors.push({
         code: RequirementErrorCode.FLAG_DISABLED,
-        message: `Required feature flag "${flag.name}" is not ${flag.enabled ? 'enabled' : 'disabled'}.`,
-        details: `Flag: ${flag.name}, Required state: ${flag.enabled ? 'enabled' : 'disabled'}`,
-        requirement: flag,
-        currentValue: flagEnabled,
-        requiredValue: flag.enabled,
+        message: `Failed to check feature flag "${flagReq.name}".`,
+        details: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        requirement: flagReq,
+        currentValue: false,
+        requiredValue: flagReq.enabled,
       });
-    } else {
-      passed++;
     }
   }
 
@@ -453,10 +485,10 @@ function checkAPIAvailability(apiName: string, profile: HardwareProfile): { avai
  * @param hardwareProfile - Detected hardware profile
  * @returns Array of requirement checks with severity
  */
-export function getRequirementChecks(
+export async function getRequirementChecks(
   requirements: ValidationRequirement,
   hardwareProfile: HardwareProfile
-): RequirementCheck[] {
+): Promise<RequirementCheck[]> {
   const checks: RequirementCheck[] = [];
 
   // Hardware requirement checks
@@ -585,14 +617,29 @@ export function getRequirementChecks(
   // Feature flag checks
   if (requirements.flags) {
     for (const flag of requirements.flags) {
-      // TODO: Integrate with actual feature flag system
-      checks.push({
-        name: `Feature Flag: ${flag.name}`,
-        severity: RequirementSeverity.INFO,
-        passed: true,
-        message: `Feature flag "${flag.name}" is ${flag.enabled ? 'enabled' : 'disabled'}`,
-        details: `Flag: ${flag.name}, State: ${flag.enabled ? 'enabled' : 'disabled'}`,
-      });
+      try {
+        const checkResult = await checkFeature(flag.name);
+        const passed = flag.enabled === checkResult.available;
+
+        checks.push({
+          name: `Feature Flag: ${flag.name}`,
+          severity: checkResult.userOverridable ? RequirementSeverity.INFO : RequirementSeverity.CRITICAL,
+          passed,
+          message: passed
+            ? `Feature flag "${flag.name}" is ${flag.enabled ? 'enabled' : 'disabled'} as required`
+            : `Feature flag "${flag.name}" is ${checkResult.available ? 'enabled' : 'disabled'} (need ${flag.enabled ? 'enabled' : 'disabled'})`,
+          details: checkResult.reason || `Flag: ${flag.name}, State: ${checkResult.available ? 'enabled' : 'disabled'}`,
+        });
+      } catch (error) {
+        // Feature check failed
+        checks.push({
+          name: `Feature Flag: ${flag.name}`,
+          severity: RequirementSeverity.WARNING,
+          passed: false,
+          message: `Unable to check feature flag "${flag.name}"`,
+          details: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
     }
   }
 

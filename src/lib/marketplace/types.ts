@@ -101,14 +101,46 @@ export interface AgentRating {
   agentId: string;
   /** User ID who submitted rating */
   userId: string;
+  /** User display name */
+  userName?: string;
   /** Rating value (1-5) */
   rating: number;
   /** Optional review text */
   review?: string;
+  /** Review title (optional) */
+  reviewTitle?: string;
+  /** Number of helpful votes */
+  helpful?: number;
+  /** Whether current user marked as helpful */
+  userMarkedHelpful?: boolean;
   /** Creation timestamp */
   createdAt: number;
   /** Last update timestamp */
   updatedAt: number;
+}
+
+/**
+ * Rating statistics
+ */
+export interface RatingStats {
+  /** Average rating (0-5) */
+  average: number;
+  /** Total number of ratings */
+  count: number;
+  /** Distribution of ratings (1-5 stars) */
+  distribution: Record<number, number>;
+  /** Percentage distribution */
+  distributionPercentages: Record<number, number>;
+}
+
+/**
+ * Review with user info
+ */
+export interface Review extends AgentRating {
+  /** Formatted date string */
+  formattedDate?: string;
+  /** Relative time string (e.g., "2 days ago") */
+  relativeTime?: string;
 }
 
 /**

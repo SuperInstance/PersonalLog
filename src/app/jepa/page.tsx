@@ -33,6 +33,8 @@ import { JEPA_Transcript } from '@/types/jepa'
 import { TranscriptDisplay } from '@/components/jepa/TranscriptDisplay'
 import { AudioWaveformWithControls } from '@/components/jepa/AudioWaveform'
 import { EmotionTrends } from '@/components/jepa/EmotionTrends'
+import { AudioScrubber } from '@/components/jepa/AudioScrubber'
+import { EmotionTimeline, EmotionDataPoint } from '@/components/jepa/EmotionTimeline'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -46,6 +48,7 @@ import { getAudioCapture } from '@/lib/jepa/audio-capture'
 import { generateQuickSampleData } from '@/lib/jepa/emotion-sample-data'
 import { detectEmotion } from '@/lib/jepa/emotion-text-analyzer'
 import { detectLanguageFromTranscript } from '@/lib/jepa/language-detection'
+import { EmotionResult } from '@/lib/jepa/types'
 import type { WaveformState } from '@/components/jepa/AudioWaveform'
 import { useToast } from '@/hooks/useToast'
 
@@ -130,9 +133,16 @@ export default function JEPAPage() {
   const [audioCapture] = useState(() => getAudioCapture())
   const [analyser, setAnalyser] = useState(audioCapture.getAnalyser())
   const [waveformState, setWaveformState] = useState<WaveformState>('idle')
-  const [activeTab, setActiveTab] = useState<'transcript' | 'trends'>('transcript')
+  const [activeTab, setActiveTab] = useState<'transcript' | 'trends' | 'timeline'>('transcript')
   const [isGeneratingData, setIsGeneratingData] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  // Audio seeking state
+  const [currentPosition, setCurrentPosition] = useState(0)
+  const [totalDuration, setTotalDuration] = useState(0)
+
+  // Emotion timeline data
+  const [emotionTimeline, setEmotionTimeline] = useState<EmotionDataPoint[]>([])
 
   const { showSuccess, showError, showInfo, showWarning } = useToast()
 
@@ -263,8 +273,52 @@ export default function JEPAPage() {
   }, [transcript, showSuccess, showError])
 
   const handleTimestampClick = useCallback((seconds: number) => {
-    // TODO: Implement audio seeking (Round 3)
-  }, [])
+    try {
+      audioCapture.seekTo(seconds)
+      setCurrentPosition(seconds)
+      showInfo(`Jumped to ${Math.floor(seconds / 60)}:${(Math.floor(seconds) % 60).toString().padStart(2, '0')}`, 2000)
+    } catch (error) {
+      console.error('Failed to seek:', error)
+      showError('Failed to seek to position')
+    }
+  }, [audioCapture, showInfo, showError])
+
+  const handleSeek = useCallback((position: number) => {
+    try {
+      audioCapture.seekTo(position)
+      setCurrentPosition(position)
+    } catch (error) {
+      console.error('Failed to seek:', error)
+    }
+  }, [audioCapture])
+
+  // Generate emotion timeline from transcript segments
+  useEffect(() => {
+    if (!transcript || transcript.segments.length === 0) {
+      setEmotionTimeline([])
+      return
+    }
+
+    // Convert transcript segments to emotion data points
+    const timeline: EmotionDataPoint[] = transcript.segments.map(segment => {
+      // Analyze emotion from text
+      const textEmotion = detectEmotion(segment.text)
+
+      // Create emotion data point
+      return {
+        time: segment.startTime,
+        emotion: {
+          ...textEmotion,
+          emotion: textEmotion.emotion as any, // Type assertion for compatibility
+        },
+        label: segment.text.slice(0, 50), // First 50 chars as label
+      }
+    })
+
+    setEmotionTimeline(timeline)
+    setTotalDuration(transcript.duration)
+    setCurrentPosition(0)
+  }, [transcript])
 
   const handleSegmentClick = useCallback((segmentId: string) => {
     setHighlightedSegmentId(segmentId)
@@ -318,7 +372,13 @@ export default function JEPAPage() {
       // T - Switch to trends tab
       if (e.key === 't' || e.key === 'T') {
         e.preventDefault()
-        setActiveTab(activeTab === 'transcript' ? 'trends' : 'transcript')
+        if (activeTab === 'transcript') {
+          setActiveTab('trends')
+        } else if (activeTab === 'trends') {
+          setActiveTab('timeline')
+        } else {
+          setActiveTab('transcript')
+        }
       }
 
       // ? - Show keyboard shortcuts
@@ -481,8 +541,27 @@ export default function JEPAPage() {
             </div>
           )}
 
+          {/* Audio Scrubber (shown when transcript exists) */}
+          {transcript && totalDuration > 0 && !isRecording && (
+            <div className="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+              <AudioScrubber
+                currentPosition={currentPosition}
+                totalDuration={totalDuration}
+                onSeek={handleSeek}
+                isPlaying={false}
+                showTime={true}
+                className="max-w-4xl mx-auto"
+                markers={transcript.segments.map(seg => ({
+                  position: seg.startTime,
+                  label: seg.text.slice(0, 20),
+                  interactive: true,
+                }))}
+              />
+            </div>
+          )}
+
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'transcript' | 'trends')} className="flex-1 flex flex-col">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'transcript' | 'trends' | 'timeline')} className="flex-1 flex flex-col">
             <div className="px-6 pt-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
               <TabsList>
                 <Tab value="transcript" className="flex items-center gap-2">
@@ -492,6 +571,10 @@ export default function JEPAPage() {
                 <Tab value="trends" className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
                   Emotion Trends
+                </Tab>
+                <Tab value="timeline" className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Timeline
                 </Tab>
               </TabsList>
             </div>
@@ -550,6 +633,36 @@ export default function JEPAPage() {
                   </Button>
                 </div>
                 <EmotionTrends />
+              </div>
+            </TabsPanel>
+
+            {/* Emotion Timeline Panel */}
+            <TabsPanel value="timeline" className="flex-1 overflow-auto p-6">
+              <div className="max-w-6xl mx-auto">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    Emotion Timeline
+                  </h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    Visualize emotion changes throughout the conversation
+                  </p>
+                </div>
+                {emotionTimeline.length > 0 ? (
+                  <EmotionTimeline
+                    emotions={emotionTimeline}
+                    onSeek={handleSeek}
+                    disabled={isRecording}
+                    showLabels={true}
+                    showConfidence={true}
+                    height={250}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-64 text-slate-400 dark:text-slate-600">
+                    <TrendingUp className="w-16 h-16 mb-4 opacity-50" />
+                    <p className="text-lg">No emotion data available</p>
+                    <p className="text-sm mt-2">Generate a transcript to see emotion timeline</p>
+                  </div>
+                )}
               </div>
             </TabsPanel>
           </Tabs>

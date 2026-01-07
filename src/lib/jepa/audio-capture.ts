@@ -384,6 +384,60 @@ export class AudioCapture {
     return this.analyserNode
   }
 
+  /**
+   * Get current playback position in seconds
+   */
+  getCurrentPosition(): number {
+    const state = this.stateManager.getCurrentState()
+    return state.duration / 1000 // Convert ms to seconds
+  }
+
+  /**
+   * Get total duration in seconds
+   */
+  getTotalDuration(): number {
+    const windowCount = this.buffer.getWindowCount()
+    return (windowCount * AUDIO_CONFIG.BUFFER_WINDOW_MS) / 1000
+  }
+
+  /**
+   * Seek to a specific time position (for playback)
+   * Note: This is for future playback functionality
+   */
+  seekTo(timeInSeconds: number): void {
+    const totalDuration = this.getTotalDuration()
+
+    if (timeInSeconds < 0 || timeInSeconds > totalDuration) {
+      throw new AudioCaptureError(
+        `Invalid seek position: ${timeInSeconds}s. Total duration: ${totalDuration}s`,
+        'INVALID_CONFIG'
+      )
+    }
+
+    // Calculate which window to seek to
+    const targetWindow = Math.floor((timeInSeconds * 1000) / AUDIO_CONFIG.BUFFER_WINDOW_MS)
+
+    // Update state manager to reflect seek position
+    this.stateManager.updateDuration(Math.floor(timeInSeconds * 1000))
+
+    // In a full implementation, this would:
+    // 1. Move the playback head to the target window
+    // 2. Update any audio playback nodes
+    // 3. Notify listeners of position change
+  }
+
+  /**
+   * Get audio windows for a specific time range
+   * Useful for extracting features for emotion analysis
+   */
+  getWindowsInRange(startTime: number, endTime: number): AudioWindow[] {
+    const allWindows = this.buffer.getWindows()
+    const startWindow = Math.floor((startTime * 1000) / AUDIO_CONFIG.BUFFER_WINDOW_MS)
+    const endWindow = Math.ceil((endTime * 1000) / AUDIO_CONFIG.BUFFER_WINDOW_MS)
+
+    return allWindows.slice(startWindow, endWindow + 1)
+  }
+
   // ==========================================================================
   // MICROPHONE DEVICES
   // ==========================================================================

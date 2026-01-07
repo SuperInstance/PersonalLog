@@ -12,10 +12,10 @@
  * agentRegistry.registerAgent(jepaAgent);
  *
  * // Check availability
- * const availability = agentRegistry.checkAvailability('jepa-v1', hardwareProfile);
+ * const availability = await agentRegistry.checkAvailability('jepa-v1', hardwareProfile);
  *
  * // Get available agents
- * const agents = agentRegistry.getAvailableAgents(hardwareProfile);
+ * const agents = await agentRegistry.getAvailableAgents(hardwareProfile);
  * ```
  */
 
@@ -29,6 +29,7 @@ import type {
 import { AgentState, AgentRegistryEventType, AgentCategory } from './types';
 import type { HardwareProfile } from '@/lib/hardware';
 import { calculateJEPAScore } from '@/lib/hardware/scoring';
+import { checkAgentFeatures } from './feature-check';
 
 /**
  * Agent Registry class
@@ -191,7 +192,7 @@ export class AgentRegistry {
    * @param hardwareProfile - Current hardware profile
    * @returns Availability check result
    */
-  checkAvailability(agentId: string, hardwareProfile: HardwareProfile): AgentAvailabilityResult {
+  async checkAvailability(agentId: string, hardwareProfile: HardwareProfile): Promise<AgentAvailabilityResult> {
     const agent = this.getAgent(agentId);
 
     if (!agent) {
@@ -262,10 +263,24 @@ export class AgentRegistry {
       }
     }
 
-    // Check feature flag requirements (not implemented yet - placeholder)
+    // Check feature flag requirements (now integrated with actual feature flag system)
     if (agent.requirements?.flags?.flags) {
-      // TODO: Integrate with feature flag system
-      // For now, assume all flags are available
+      try {
+        const featureCheck = await checkAgentFeatures(agent.requirements.flags.flags);
+
+        if (!featureCheck.canRun) {
+          missingFlags.push(...featureCheck.missingRequirements.flags);
+          missingHardware.push(...featureCheck.missingRequirements.hardware);
+        }
+
+        // Include suggestions in reason if available
+        if (!featureCheck.canRun && featureCheck.suggestions.length > 0) {
+          missingFlags.push(`Suggestions: ${featureCheck.suggestions.join('; ')}`);
+        }
+      } catch (error) {
+        // Feature check failed - add as warning
+        missingFlags.push(`Unable to check feature flags: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
 
     // Check agent dependencies
@@ -300,11 +315,18 @@ export class AgentRegistry {
    * @param hardwareProfile - Current hardware profile
    * @returns Array of available agent definitions
    */
-  getAvailableAgents(hardwareProfile: HardwareProfile): AgentDefinition[] {
-    return this.getAllAgents().filter((agent) => {
-      const availability = this.checkAvailability(agent.id, hardwareProfile);
-      return availability.available;
-    });
+  async getAvailableAgents(hardwareProfile: HardwareProfile): Promise<AgentDefinition[]> {
+    const agents = this.getAllAgents();
+    const available: AgentDefinition[] = [];
+
+    for (const agent of agents) {
+      const availability = await this.checkAvailability(agent.id, hardwareProfile);
+      if (availability.available) {
+        available.push(agent);
+      }
+    }
+
+    return available;
   }
 
   // ========================================================================

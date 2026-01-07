@@ -529,3 +529,28 @@ export async function deleteRatingsForAgent(agentId: string): Promise<void> {
       );
   });
 }
+
+/**
+ * Load all ratings
+ *
+ * @returns Promise resolving to array of all ratings
+ * @throws {StorageError} If database operation fails
+ */
+export async function loadAllRatings(): Promise<AgentRating[]> {
+  const database = await getDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_AGENT_RATINGS], 'readonly');
+    const store = transaction.objectStore(STORE_AGENT_RATINGS);
+    const request = store.getAll();
+
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () =>
+      reject(
+        new StorageError('Failed to load all ratings', {
+          technicalDetails: request.error?.message,
+          cause: request.error || undefined,
+        })
+      );
+  });
+}

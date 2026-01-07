@@ -8,7 +8,7 @@
  * with user-friendly error messages.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, Cpu, HardDrive, Wifi, Database } from 'lucide-react';
 import type { HardwareProfile } from '@/lib/hardware/types';
 import type { ValidationRequirement, ValidationResult, RequirementCheck as RequirementCheckType } from '@/lib/agents/requirements';
@@ -105,20 +105,40 @@ export function RequirementCheck({
   showSuggestions = true,
   className = '',
 }: RequirementCheckProps) {
-  // Validate requirements
-  const validationResult: ValidationResult = useMemo(() => {
-    return validateRequirements(requirements, hardwareProfile);
-  }, [requirements, hardwareProfile]);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [requirementChecks, setRequirementChecks] = useState<RequirementCheckType[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
-  // Get detailed requirement checks
-  const requirementChecks: RequirementCheckType[] = useMemo(() => {
-    return getRequirementChecks(requirements, hardwareProfile);
-  }, [requirements, hardwareProfile]);
+  // Validate requirements asynchronously
+  useEffect(() => {
+    const validate = async () => {
+      const result = await validateRequirements(requirements, hardwareProfile);
+      setValidationResult(result);
 
-  // Get upgrade suggestions
-  const suggestions = useMemo(() => {
-    return showSuggestions ? getUpgradeSuggestions(validationResult) : [];
-  }, [validationResult, showSuggestions]);
+      const checks = await getRequirementChecks(requirements, hardwareProfile);
+      setRequirementChecks(checks);
+
+      if (showSuggestions) {
+        const upgradeSuggestions = getUpgradeSuggestions(result);
+        setSuggestions(upgradeSuggestions);
+      }
+    };
+
+    validate();
+  }, [requirements, hardwareProfile, showSuggestions]);
+
+  // Show loading state while validating
+  if (!validationResult) {
+    return (
+      <div className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm ${className}`}>
+        <div className="p-6">
+          <div className="flex items-center justify-center py-8">
+            <div className="text-slate-600 dark:text-slate-400">Checking system requirements...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const canActivate = validationResult.valid;
   const hasWarnings = validationResult.warnings.length > 0;
@@ -286,9 +306,24 @@ export function RequirementCheckCompact({
   hardwareProfile,
   className = '',
 }: RequirementCheckCompactProps) {
-  const validationResult = useMemo(() => {
-    return validateRequirements(requirements, hardwareProfile);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+
+  useEffect(() => {
+    const validate = async () => {
+      const result = await validateRequirements(requirements, hardwareProfile);
+      setValidationResult(result);
+    };
+    validate();
   }, [requirements, hardwareProfile]);
+
+  // Show loading state
+  if (!validationResult) {
+    return (
+      <div className={`flex items-center gap-2 ${className}`}>
+        <div className="text-xs text-slate-600 dark:text-slate-400">Checking...</div>
+      </div>
+    );
+  }
 
   const canActivate = validationResult.valid;
 

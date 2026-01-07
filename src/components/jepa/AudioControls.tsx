@@ -8,9 +8,11 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { Play, Pause, SkipBack, SkipForward, RotateCcw } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { getAudioCapture } from '@/lib/jepa/audio-capture'
 import { AudioState, AudioWindow } from '@/lib/jepa/types'
+import { AudioScrubber } from './AudioScrubber'
 
 // ============================================================================
 // TYPES
@@ -33,6 +35,11 @@ interface AudioControlsProps {
   onComplete?: (windows: AudioWindow[], duration: number) => void
 
   /**
+   * Callback when user seeks to a position
+   */
+  onSeek?: (position: number) => void
+
+  /**
    * Custom className for styling
    */
   className?: string
@@ -46,6 +53,16 @@ interface AudioControlsProps {
    * Show audio level visualization
    */
   showLevel?: boolean
+
+  /**
+   * Show audio scrubber (timeline control)
+   */
+  showScrubber?: boolean
+
+  /**
+   * Show playback controls (play/pause/seek)
+   */
+  showPlaybackControls?: boolean
 }
 
 // ============================================================================
@@ -127,9 +144,12 @@ export function AudioControls({
   onData,
   onStateChange,
   onComplete,
+  onSeek,
   className = '',
   showTimer = true,
   showLevel = true,
+  showScrubber = false,
+  showPlaybackControls = false,
 }: AudioControlsProps) {
   const [audioState, setAudioState] = useState<AudioState>({
     state: 'idle',
@@ -140,6 +160,8 @@ export function AudioControls({
   })
   const [audioLevel, setAudioLevel] = useState<number>(0)
   const [isInitialized, setIsInitialized] = useState<boolean>(false)
+  const [currentPosition, setCurrentPosition] = useState<number>(0)
+  const [totalDuration, setTotalDuration] = useState<number>(0)
 
   const audioCaptureRef = useRef(getAudioCapture())
   const levelUpdateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -155,6 +177,10 @@ export function AudioControls({
     const unsubscribeState = audioCapture.onStateChange((state) => {
       setAudioState(state)
       onStateChange?.(state)
+
+      // Update position and duration
+      setCurrentPosition(state.duration / 1000)
+      setTotalDuration(audioCapture.getTotalDuration())
 
       // If recording stopped and has data, call onComplete
       if (state.state === 'stopped' && state.bufferSize > 0) {
@@ -256,10 +282,38 @@ export function AudioControls({
       const audioCapture = audioCaptureRef.current
       audioCapture.reset()
       setIsInitialized(false)
+      setCurrentPosition(0)
+      setTotalDuration(0)
     } catch (error) {
       console.error('Failed to reset:', error)
     }
   }, [])
+
+  const handleSeek = useCallback(
+    (position: number) => {
+      try {
+        const audioCapture = audioCaptureRef.current
+        audioCapture.seekTo(position)
+        setCurrentPosition(position)
+        onSeek?.(position)
+      } catch (error) {
+        console.error('Failed to seek:', error)
+      }
+    },
+    [onSeek]
+  )
+
+  const handleSkipBack = useCallback(() => {
+    const audioCapture = audioCaptureRef.current
+    const newPosition = Math.max(0, currentPosition - 10)
+    handleSeek(newPosition)
+  }, [currentPosition, handleSeek])
+
+  const handleSkipForward = useCallback(() => {
+    const audioCapture = audioCaptureRef.current
+    const newPosition = Math.min(totalDuration, currentPosition + 10)
+    handleSeek(newPosition)
+  }, [currentPosition, totalDuration, handleSeek])
 
   // ==========================================================================
   // RENDER
@@ -283,6 +337,18 @@ export function AudioControls({
       {/* Audio Level Meter */}
       {showLevel && (
         <AudioLevelMeter level={audioLevel} isActive={isRecording || isPaused} />
+      )}
+
+      {/* Audio Scrubber */}
+      {showScrubber && totalDuration > 0 && (
+        <AudioScrubber
+          currentPosition={currentPosition}
+          totalDuration={totalDuration}
+          onSeek={handleSeek}
+          isPlaying={isRecording}
+          disabled={!hasPermission || isRecording}
+          className="mt-4"
+        />
       )}
 
       {/* Error Display */}
@@ -311,6 +377,28 @@ export function AudioControls({
             Start Recording
           </Button>
         ) : null}
+
+        {/* Playback Controls */}
+        {showPlaybackControls && totalDuration > 0 && !isRecording && (
+          <>
+            <Button
+              onClick={handleSkipBack}
+              variant="outline"
+              size="sm"
+              disabled={isStopped}
+            >
+              <SkipBack className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={handleSkipForward}
+              variant="outline"
+              size="sm"
+              disabled={isStopped}
+            >
+              <SkipForward className="w-4 h-4" />
+            </Button>
+          </>
+        )}
 
         {isRecording && (
           <Button

@@ -148,6 +148,14 @@ export class AudioStateManager {
     this.notifyListeners()
   }
 
+  /**
+   * Update duration manually (for seeking/position tracking)
+   */
+  updateDuration(durationMs: number): void {
+    this.recordingDuration = durationMs
+    this.notifyListeners()
+  }
+
   // ==========================================================================
   // PRIVATE METHODS
   // ==========================================================================

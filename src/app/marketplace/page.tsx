@@ -132,8 +132,39 @@ export default function MarketplacePage() {
   };
 
   // Handle rating
-  const handleRate = (agentId: string, rating: number, review?: string) => {
-    // TODO: Implement rating submission
+  const handleRate = async (agentId: string, rating: number, review?: string) => {
+    try {
+      const { rateAgent } = await import('@/lib/marketplace/ratings');
+
+      // In production, get actual user ID
+      const userId = 'user-' + Math.random().toString(36).substring(7);
+
+      await rateAgent(agentId, userId, rating, review);
+
+      // Update agent stats in state
+      setAgents((prev) =>
+        prev.map((agent) =>
+          agent.id === agentId
+            ? {
+                ...agent,
+                marketplace: {
+                  ...agent.marketplace,
+                  stats: {
+                    ...agent.marketplace.stats,
+                    ratingCount: agent.marketplace.stats.ratingCount + 1,
+                  },
+                },
+              }
+            : agent
+        )
+      );
+
+      // Show success message
+      alert('Review submitted successfully!');
+    } catch (error) {
+      console.error('Failed to submit rating:', error);
+      alert(error instanceof Error ? error.message : 'Failed to submit review');
+    }
   };
 
   // Handle search

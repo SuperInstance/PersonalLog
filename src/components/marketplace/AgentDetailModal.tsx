@@ -6,14 +6,18 @@
 
 'use client';
 
-import { useState } from 'react';
-import { X, Download, Star, Calendar, User, ExternalLink, Github, FileText, History, MessageSquare } from 'lucide-react';
-import type { MarketplaceAgent } from '@/lib/marketplace/types';
+import { useState, useEffect } from 'react';
+import { X, Download, Star, Calendar, User, ExternalLink, Github, FileText, History, MessageSquare, Loader2 } from 'lucide-react';
+import type { MarketplaceAgent, AgentRating, RatingStats } from '@/lib/marketplace/types';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { RatingStars } from './RatingStars';
+import { RatingSummary } from './RatingSummary';
+import { ReviewForm } from './ReviewForm';
+import { ReviewsList } from './ReviewsList';
 import { cn } from '@/lib/utils';
 import { formatDate, formatRelativeTime } from '@/lib/utils';
+import { getRatingStats, getAgentReviews, getUserRatingForAgent, rateAgent } from '@/lib/marketplace/ratings';
 
 export interface AgentDetailModalProps {
   /** Agent to display */
@@ -46,21 +50,69 @@ export function AgentDetailModal({
   onRate,
 }: AgentDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabValue>('about');
-  const [ratingInput, setRatingInput] = useState(0);
-  const [reviewInput, setReviewInput] = useState('');
+  const [ratingStats, setRatingStats] = useState<RatingStats | null>(null);
+  const [userRating, setUserRating] = useState<AgentRating | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
   const isInstalled = agent.marketplace.installation?.installed;
+
+  // Load rating stats when modal opens
+  useEffect(() => {
+    if (isOpen && agent) {
+      loadRatingData();
+    }
+  }, [isOpen, agent.id]);
+
+  const loadRatingData = async () => {
+    try {
+      const [stats, userRat] = await Promise.all([
+        getRatingStats(agent.id),
+        getUserRatingForAgent(agent.id, 'current-user'), // In production, use actual user ID
+      ]);
+      setRatingStats(stats);
+      setUserRating(userRat);
+    } catch (error) {
+      console.error('Failed to load rating data:', error);
+    }
+  };
+
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
   };
 
-  const handleRateSubmit = () => {
-    if (ratingInput > 0 && onRate) {
-      onRate(agent.id, ratingInput, reviewInput);
-      setRatingInput(0);
-      setReviewInput('');
+  const handleRateSubmit = async (rating: number, reviewTitle?: string, review?: string) => {
+    try {
+      const userId = 'current-user'; // In production, use actual user ID
+
+      await rateAgent(agent.id, userId, rating, review);
+
+      // Reload rating data
+      await loadRatingData();
+
+      // Call parent callback
+      if (onRate) {
+        onRate(agent.id, rating, review);
+      }
+
+      setShowReviewForm(false);
+    } catch (error) {
+      console.error('Failed to submit rating:', error);
+      throw error;
+    }
+  };
+
+  const handleMarkHelpful = async (reviewId: string) => {
+    try {
+      const { markReviewHelpful } = await import('@/lib/marketplace/ratings');
+      await markReviewHelpful(reviewId, 'current-user');
+      // Reload rating data
+      await loadRatingData();
+    } catch (error) {
+      console.error('Failed to mark helpful:', error);
+      throw error;
     }
   };
 
@@ -328,92 +380,56 @@ export function AgentDetailModal({
 
         {activeTab === 'reviews' && (
           <div className="space-y-6">
-            {/* Rating Submission */}
+            {/* Rating Summary */}
+            {ratingStats && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <RatingSummary stats={ratingStats} size="md" />
+              </div>
+            )}
+
+            {/* Review Form */}
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                Rate this Agent
-              </h3>
-
-              <div className="space-y-3">
-                <RatingStars
-                  rating={ratingInput}
-                  onRate={(rating) => setRatingInput(rating)}
-                  readonly={false}
-                  showCount={false}
-                />
-
-                <textarea
-                  value={reviewInput}
-                  onChange={(e) => setReviewInput(e.target.value)}
-                  placeholder="Write a review (optional)..."
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                />
-
-                {ratingInput > 0 && (
-                  <Button size="sm" onClick={handleRateSubmit}>
-                    Submit Review
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {userRating ? 'Update Your Review' : 'Write a Review'}
+                </h3>
+                {userRating && !showReviewForm && (
+                  <Button size="sm" variant="outline" onClick={() => setShowReviewForm(true)}>
+                    Edit Review
                   </Button>
                 )}
               </div>
+
+              {showReviewForm || !userRating ? (
+                <ReviewForm
+                  agentId={agent.id}
+                  existingRating={userRating || undefined}
+                  onSubmit={handleRateSubmit}
+                  onCancel={() => {
+                    setShowReviewForm(false);
+                  }}
+                  submitText={userRating ? 'Update Review' : 'Submit Review'}
+                />
+              ) : (
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  You have already reviewed this agent. Thank you for your feedback!
+                </div>
+              )}
             </div>
 
             {/* Reviews List */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                Reviews
-              </h3>
-
-              {/* Reviews loaded separately - not shown in this view */}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Reviews functionality coming soon.
-              </p>
-
-              {/* {agent.marketplace.reviews && agent.marketplace.reviews.length > 0 ? (
-                <div className="space-y-4">
-                  {agent.marketplace.reviews.map((review) => (
-                    <div
-                      key={review.id}
-                      className="p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                              {review.reviewer}
-                            </span>
-                            <RatingStars rating={review.rating} size="sm" showCount={false} readonly />
-                          </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDate(review.date)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {review.title && (
-                        <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 mb-1">
-                          {review.title}
-                        </h4>
-                      )}
-
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        {review.content}
-                      </p>
-
-                      <div className="flex items-center gap-2 mt-2">
-                        <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                          Helpful ({review.helpful})
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  No reviews yet. Be the first to review!
-                </p>
-              )} */}
-            </div>
+            {isLoadingReviews ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+              </div>
+            ) : (
+              <ReviewsList
+                agentId={agent.id}
+                onMarkHelpful={handleMarkHelpful}
+                canMarkHelpful={!userRating}
+                pageSize={5}
+              />
+            )}
           </div>
         )}
       </div>
