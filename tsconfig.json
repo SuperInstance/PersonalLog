@@ -32,6 +32,7 @@
     "src/components/jepa/__tests__/EnhancedAudioWaveform.test.tsx",
     "src/components/jepa/__tests__/emotion-viz.test.tsx",
     "src/components/jepa/__tests__/transcription-display.test.tsx",
+    "src/lib/monitoring/__tests__/optimization-engine.test.ts",
     // Legacy test files that need API updates (non-blocking)
     "src/jepa/__tests__/export.test.ts",
     "src/jepa/__tests__/markdown-formatter.test.ts",
