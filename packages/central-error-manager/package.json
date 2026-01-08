@@ -1,0 +1,49 @@
+{
+  "name": "@superinstance/central-error-manager",
+  "version": "1.0.0",
+  "description": "Centralized error handling with categorization, recovery strategies, and structured logging",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "error-handling",
+    "error-management",
+    "logging",
+    "recovery",
+    "graceful-degradation",
+    "fallback",
+    "error-boundary",
+    "error-reporting",
+    "typescript"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/Central-Error-Manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/Central-Error-Manager/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/Central-Error-Manager#readme",
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
