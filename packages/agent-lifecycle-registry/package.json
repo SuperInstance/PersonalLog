@@ -1,0 +1,48 @@
+{
+  "name": "@superinstance/agent-lifecycle-registry",
+  "version": "1.0.0",
+  "description": "Agent Lifecycle Registry - Manage AI agent definitions, availability checking, and lifecycle",
+  "keywords": [
+    "agent",
+    "registry",
+    "lifecycle",
+    "ai",
+    "management"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/Agent-Lifecycle-Registry.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/Agent-Lifecycle-Registry/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/Agent-Lifecycle-Registry#readme"
+}
