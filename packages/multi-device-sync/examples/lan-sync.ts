@@ -8,8 +8,8 @@ import {
   initializeSyncEngine,
   registerDevice,
   sync,
-} from '@superinstance/multi-device-sync'
-import { LocalProvider } from '@superinstance/multi-device-sync'
+} from '../src'
+import { LocalProvider } from '../src'
 
 async function setupLANSync() {
   // Initialize sync engine
@@ -48,7 +48,7 @@ async function setupLANSync() {
   localStorage.setItem('sync-provider-config', JSON.stringify(lanConfig))
 
   // Listen to sync progress
-  engine.onProgress((progress) => {
+  engine.onProgress((progress: { progress: number; stage: string }) => {
     console.log(`[LAN Sync] ${progress.stage}: ${progress.progress}%`)
   })
 

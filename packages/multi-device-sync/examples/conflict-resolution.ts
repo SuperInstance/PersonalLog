@@ -9,7 +9,7 @@ import {
   ConflictResolver,
   type Conflict,
   type ConflictResolution,
-} from '@superinstance/multi-device-sync'
+} from '../src'
 
 async function demonstrateConflicts() {
   const engine = await initializeSyncEngine({
@@ -18,7 +18,7 @@ async function demonstrateConflicts() {
   })
 
   // Listen for conflicts
-  engine.onStatusChange((status) => {
+  engine.onStatusChange((status: string) => {
     if (status === 'conflict') {
       console.log('⚠️  Conflicts detected!')
       handleConflicts()

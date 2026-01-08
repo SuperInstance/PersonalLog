@@ -11,7 +11,7 @@ import {
   getSyncStatus,
   type SyncEngine,
   type DataDelta,
-} from '@superinstance/multi-device-sync'
+} from '../src'
 
 // Sample data store (in real app, use your own storage)
 interface Message {
@@ -99,12 +99,12 @@ async function main() {
   })
 
   // Listen to progress
-  engine.onProgress((progress) => {
+  engine.onProgress((progress: { progress: number; stage: string }) => {
     console.log(`Sync progress: ${progress.progress}% - ${progress.stage}`)
   })
 
   // Listen to status changes
-  engine.onStatusChange((status) => {
+  engine.onStatusChange((status: string) => {
     console.log('Sync status:', status)
   })
 
