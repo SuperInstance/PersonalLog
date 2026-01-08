@@ -1,0 +1,45 @@
+{
+  "name": "@superinstance/multi-device-sync",
+  "version": "1.0.0",
+  "description": "Multi-device synchronization system with offline support, conflict resolution, and multiple sync providers (LAN, self-hosted, commercial cloud)",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo \"No tests yet\"",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "sync",
+    "synchronization",
+    "multi-device",
+    "offline",
+    "conflict-resolution",
+    "webrtc",
+    "lan-sync",
+    "end-to-end-encryption",
+    "e2e"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/multi-device-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/multi-device-sync/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/multi-device-sync#readme",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}
