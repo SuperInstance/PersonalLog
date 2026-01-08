@@ -286,9 +286,42 @@ const indexedDBMock = (() => {
   }
 })()
 
+// IDBKeyRange mock (needed by idb library)
+class MockIDBKeyRange {
+  constructor(public lower: any, public upper: any, public lowerOpen: boolean, public upperOpen: boolean) {}
+
+  static only(value: any) {
+    return new MockIDBKeyRange(value, value, false, false)
+  }
+
+  static lowerBound(lower: any, open: boolean = false) {
+    return new MockIDBKeyRange(lower, undefined, open, true)
+  }
+
+  static upperBound(upper: any, open: boolean = false) {
+    return new MockIDBKeyRange(undefined, upper, true, open)
+  }
+
+  static bound(lower: any, upper: any, lowerOpen: boolean = false, upperOpen: boolean = false) {
+    return new MockIDBKeyRange(lower, upper, lowerOpen, upperOpen)
+  }
+}
+
 // Add indexedDB to global scope
 Object.defineProperty(global, 'indexedDB', {
   value: indexedDBMock,
+  writable: true,
+})
+
+// Add IDBKeyRange to global scope
+Object.defineProperty(global, 'IDBKeyRange', {
+  value: MockIDBKeyRange,
+  writable: true,
+})
+
+// Add IDBRequest to global scope (needed by idb library)
+Object.defineProperty(global, 'IDBRequest', {
+  value: class MockIDBRequestClass {},
   writable: true,
 })
 
