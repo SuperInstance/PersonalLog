@@ -75,7 +75,7 @@ export async function createBackup<T = unknown>(
     }
 
     // Generate backup metadata
-    const backupId = `backup_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    const backupId = `backup_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
     const timestamp = new Date().toISOString()
 
     // Calculate data size
