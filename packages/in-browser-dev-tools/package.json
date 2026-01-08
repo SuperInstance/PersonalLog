@@ -1,0 +1,56 @@
+{
+  "name": "@superinstance/in-browser-dev-tools",
+  "version": "1.0.0",
+  "description": "In-browser development tools for logging, tracing, state inspection, and mock data generation",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src --ext .ts",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run test && npm run build"
+  },
+  "keywords": [
+    "devtools",
+    "debugging",
+    "logging",
+    "tracing",
+    "performance",
+    "state-inspection",
+    "mock-data",
+    "developer-tools",
+    "browser",
+    "typescript"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/In-Browser-Dev-Tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/In-Browser-Dev-Tools/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/In-Browser-Dev-Tools#readme",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2",
+    "vitest": "^1.0.4",
+    "@vitest/coverage-v8": "^1.0.4"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
