@@ -4,8 +4,8 @@
  * Calculates confidence scores for proactive agent activation
  */
 
+import { ProactiveTriggerType } from '../types';
 import type {
-  ProactiveTriggerType,
   ConfidenceFactors,
   ConfidenceThresholds,
   ProactiveActionHistory,

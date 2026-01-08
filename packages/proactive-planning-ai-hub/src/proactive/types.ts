@@ -4,7 +4,8 @@
  * Type definitions for proactive agent activation system
  */
 
-import type { ProactiveTriggerType, ProactiveAgentAction, ProactiveContext } from '../types';
+import type { ProactiveAgentAction, ProactiveContext } from '../types';
+import { ProactiveTriggerType } from '../types';
 
 // ============================================================================
 // CONFIDENCE TYPES

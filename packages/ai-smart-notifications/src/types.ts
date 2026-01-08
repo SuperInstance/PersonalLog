@@ -445,6 +445,7 @@ export interface NotificationSettings {
  * Default notification preferences for a trigger type
  */
 export function getDefaultNotificationPreferences(trigger: NotificationTrigger): NotificationPreferences {
+  void trigger; // Mark as intentionally unused
   return {
     enabled: true,
     minUrgency: NotificationUrgency.LOW,
@@ -598,6 +599,7 @@ export interface NotificationTriggerDefinition {
  * Get trigger definition
  */
 export function getTriggerDefinition(trigger: NotificationTrigger): NotificationTriggerDefinition | undefined {
+  void trigger; // Mark as intentionally unused
   return TRIGGER_DEFINITIONS.get(trigger);
 }
 

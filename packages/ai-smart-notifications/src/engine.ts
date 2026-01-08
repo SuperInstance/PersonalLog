@@ -19,6 +19,7 @@ import type {
   AgentNeedPrediction,
   ResourcePrediction,
   AnomalyDetection,
+  NotificationCategory,
 } from './types';
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
@@ -499,9 +500,10 @@ export class ProactiveNotificationEngine {
   }
 
   private getDefaultActions(
-    trigger: NotificationTrigger,
+    _trigger: NotificationTrigger,
     urgency: NotificationUrgency
   ): any[] {
+    void _trigger;
     const actions: any[] = [];
 
     actions.push({
@@ -577,8 +579,9 @@ export class ProactiveNotificationEngine {
 
   private calculatePriority(
     notification: ProactiveNotification,
-    context: UserActivityContext
+    _context: UserActivityContext
   ): number {
+    void _context;
     let priority = 0.5;
 
     const urgencyWeight: Record<NotificationUrgency, number> = {
@@ -659,6 +662,9 @@ export class ProactiveNotificationEngine {
   // ========================================================================
 
   private recordHistory(notification: ProactiveNotification): void {
+    const _trigger = notification.trigger; // Mark as intentionally unused
+    void _trigger;
+
     const entry: NotificationHistoryEntry = {
       id: notification.id,
       trigger: notification.trigger,
@@ -699,6 +705,8 @@ export class ProactiveNotificationEngine {
   // ========================================================================
 
   private getCurrentContext(): UserActivityContext {
+    const _context = this.activityTracker.getContext(this.settings.quietHours, this.appFocused);
+    void _context; // Mark as intentionally unused
     return this.activityTracker.getContext(this.settings.quietHours, this.appFocused);
   }
 }

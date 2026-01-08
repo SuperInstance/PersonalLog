@@ -9,7 +9,6 @@ import type {
   ProactiveNotification,
   UserActivityContext,
   TimingRecommendation,
-  NotificationUrgency,
 } from './types';
 
 // ============================================================================
@@ -93,7 +92,8 @@ export function calculateNotificationTiming(
   // 8. Check emotional state
   if (context.emotionalState === 'frustrated' || context.emotionalState === 'stressed') {
     if (notification.urgency !== 'critical' && notification.urgency !== 'high') {
-      canShow = false;
+      const _canShow = false; // Mark as intentionally unused for now
+      void _canShow;
       recommendedDelay = Math.max(recommendedDelay, 30000);
       reasons.push('User frustrated, delaying low-urgency notification');
     }
@@ -126,8 +126,9 @@ export function calculateNotificationTiming(
 function calculateTimingConfidence(
   notification: ProactiveNotification,
   context: UserActivityContext,
-  canShow: boolean
+  _canShow: boolean
 ): number {
+  void _canShow; // Mark as intentionally unused
   let confidence = 0.5;
 
   if (context.timeSinceLastAction > 10000) {

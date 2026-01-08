@@ -60,7 +60,7 @@ export class IntelligenceHub {
   private bottlenecks: Bottleneck[] = [];
   private recommendations: Recommendation[] = [];
 
-  private constructor() {
+  public constructor() {
     this.settings = { ...DEFAULT_INTELLIGENCE_SETTINGS };
   }
 
