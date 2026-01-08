@@ -1,0 +1,48 @@
+{
+  "name": "@superinstance/auto-tuning-engine",
+  "version": "1.0.0",
+  "description": "Adaptive auto-optimization system that monitors performance, detects optimization opportunities, and applies improvements automatically",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "optimization",
+    "performance",
+    "auto-tuning",
+    "adaptive",
+    "monitoring",
+    "profiling",
+    "performance-optimization",
+    "auto-optimization"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/Auto-Tuning-Engine"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/Auto-Tuning-Engine/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/Auto-Tuning-Engine#readme",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
