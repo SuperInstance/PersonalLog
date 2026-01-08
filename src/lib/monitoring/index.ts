@@ -1,14 +1,48 @@
 /**
  * Unified Monitoring System
  *
- * Combines performance and security monitoring for comprehensive application tracking.
+ * Combines performance, security, health, and optimization monitoring for comprehensive application tracking.
  */
 
 import { getPerformanceMonitor as getPerfMonitor, trackAPICall, recordCustomMetric } from './performance';
 import { getSecurityMonitor as getSecMonitor, recordSecurityEvent, validateSecureInput, checkRateLimit } from './security';
+import { getHealthMonitor as getHealthMon } from './health-monitor';
+import { getOptimizationEngine as getOptEngine } from './optimization-engine';
+import { getPerformanceTracker as getPerfTracker } from './performance-tracker';
 
 export type { PerformanceMetric, ResourceTiming, APIMetric } from './performance';
 export type { SecurityEvent, SecurityMetrics } from './security';
+export type {
+  HealthMetric,
+  HealthScore,
+  HealthStatus,
+  HealthAlert,
+  AlertSeverity,
+  HealthHistoryPoint,
+  SystemHealthStatus,
+  MetricCategory,
+  TrendDirection,
+} from './metrics';
+export type {
+  OptimizationTrigger,
+  Optimization,
+  OptimizationExecution,
+  TriggerHistory,
+  OptimizationStatus,
+  OptimizationConfig,
+  RuleStatistics,
+  RuleValidation,
+  MetricType,
+  OptimizationEngineState,
+} from './optimization-types';
+export type {
+  OperationMetric,
+  OperationStats,
+  CategoryStats,
+  PerformanceAlert,
+  PerformanceTrend,
+  OperationCategory,
+} from './performance-tracker';
 
 // Re-export functions
 export { trackAPICall, recordCustomMetric } from './performance';
@@ -16,6 +50,22 @@ export { recordSecurityEvent, validateSecureInput, checkRateLimit } from './secu
 
 export { getPerformanceMonitor } from './performance';
 export { getSecurityMonitor } from './security';
+export { getHealthMonitor, resetHealthMonitor } from './health-monitor';
+export { getOptimizationEngine } from './optimization-engine';
+export { getPerformanceTracker, createPerformanceTracker } from './performance-tracker';
+export {
+  instrumentFetch,
+  InstrumentedIDB,
+  trackFunction,
+  trackAsyncFunction,
+  trackObject,
+  measure,
+  measureAsync,
+  monitorLongTasks,
+  monitorResourceLoading,
+  monitorPageNavigation,
+  initializeInstrumentation,
+} from './instrumentation';
 
 /**
  * Monitor API calls (combines performance and security)
