@@ -24,19 +24,19 @@
    - **Status:** ✅ Extracted & Published
 
 3. **Hardware Capability Profiler** 🔍
-   - **Repo:** [To be created]
+   - **Repo:** https://github.com/SuperInstance/hardware-capability-profiler
    - **Package:** `@superinstance/hardware-capability-profiler`
    - **Purpose:** Browser hardware profiling with JEPA scoring
    - **Status:** ✅ Extracted, fixed, ready for GitHub
 
 4. **Privacy-First Analytics** 📊
-   - **Repo:** [To be created]
+   - **Repo:** https://github.com/SuperInstance/Privacy-First-Analytics
    - **Package:** `@superinstance/privacy-first-analytics`
    - **Purpose:** Local analytics with automated insights
    - **Status:** ✅ Extracted, fixed, ready for GitHub
 
 5. **Sandbox Lifecycle Manager** 🔌
-   - **Repo:** [To be created]
+   - **Repo:** https://github.com/SuperInstance/Sandbox-Lifecycle-Manager
    - **Package:** `@superinstance/sandbox-lifecycle-manager`
    - **Purpose:** Production-ready plugin system with sandboxing
    - **Status:** ✅ Extracted, fixed, ready for GitHub
@@ -185,6 +185,7 @@
 - Add LICENSE, README, and contribution guidelines
 - Set up issue templates
 - Configure branch protection rules
+- Build and improve Architecture Markdowns for each tool's repo
 
 **Agents:** 5 agents in parallel
 - Agent 1: Tools 1-5

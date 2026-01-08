@@ -202,7 +202,7 @@ export function createError(
     WasmError,
     StorageError,
     QuotaError,
-    HardwareDetectionError,
+
     BenchmarkError,
     CapabilityError,
     NetworkError,
