@@ -1,0 +1,56 @@
+{
+  "name": "@superinstance/vibe-code-agent-gen",
+  "version": "1.0.0",
+  "description": "Create custom AI agents through natural conversation. A sophisticated system for generating agent definitions via a 3-turn clarification process.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "agent-generator",
+    "vibe-coding",
+    "conversational",
+    "llm",
+    "agent-creation",
+    "natural-language"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/Vibe-Code-Agent-Gen"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/Vibe-Code-Agent-Gen/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/Vibe-Code-Agent-Gen#readme",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
