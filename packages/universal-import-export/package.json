@@ -1,0 +1,63 @@
+{
+  "name": "@superinstance/universal-import-export",
+  "version": "1.0.0",
+  "description": "Universal data import/export system supporting multiple formats (JSON, CSV, Markdown, PDF, HTML, YAML) with validation and conflict resolution",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./import": {
+      "types": "./dist/import/index.d.ts",
+      "import": "./dist/import/index.js"
+    },
+    "./export": {
+      "types": "./dist/export/index.d.ts",
+      "import": "./dist/export/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "import",
+    "export",
+    "data",
+    "csv",
+    "json",
+    "markdown",
+    "pdf",
+    "html",
+    "yaml",
+    "validation",
+    "conflict-resolution",
+    "data-portability"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/universal-import-export"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/universal-import-export/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/universal-import-export#readme",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
