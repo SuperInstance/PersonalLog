@@ -1,0 +1,419 @@
+/**
+ * Private ML Personalization - Privacy-First Machine Learning Personalization
+ *
+ * A comprehensive personalization system that learns user preferences locally
+ * using machine learning algorithms, with zero data leaving the device.
+ *
+ * @packageDocumentation
+ */
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export type {
+  // Preferences
+  CommunicationPreferences,
+  UIPreferences,
+  ContentPreferences,
+  InteractionPatterns,
+
+  // Core types
+  PreferenceKey,
+  PreferenceValue,
+  Preference,
+  UserAction,
+  PreferenceSignal,
+  UserModel,
+  LearningState,
+  PreferenceExplanation,
+  StoredUserModel,
+  PersonalizationEvent,
+  PersonalizationObserver,
+} from './types'
+
+// ============================================================================
+// CORE CLASSES
+// ============================================================================
+
+export {
+  PreferenceLearner,
+  PreferenceAggregator,
+  PatternDetector,
+} from './learner'
+
+export {
+  PatternAnalyzer,
+  TimePatternAnalyzer,
+  TaskPatternAnalyzer,
+  WorkflowAnalyzer,
+  ContextualPatternAnalyzer,
+  AnomalyDetector,
+} from './patterns'
+
+export {
+  RuleBasedModel,
+  NaiveBayesClassifier,
+  KNearestNeighbors,
+  CollaborativeFiltering,
+  ContentBasedFiltering,
+  PredictiveEngine,
+} from './predictions'
+
+export type {
+  ProviderPrediction,
+  FeaturePrediction,
+  ContextualRecommendation,
+} from './predictions'
+
+export {
+  AccuracyTracker,
+  ABTestFramework,
+  AccuracyReporter,
+} from './accuracy'
+
+export type {
+  PredictionRecord,
+  AccuracyMetrics,
+  ConfidenceBucket,
+  ABDTestResult,
+} from './accuracy'
+
+export type {
+  TimePatterns,
+  TaskPatterns,
+  WorkflowPattern,
+  ContextualPattern,
+  Anomaly,
+  PatternContext,
+} from './patterns'
+
+export {
+  PreferenceModel,
+  PersonalizationModel,
+  ModelFactory,
+} from './models'
+
+export {
+  ThemeAdapter,
+  TypographyAdapter,
+  LayoutAdapter,
+  ContentAdapter,
+  AnimationAdapter,
+  PersonalizationAdapter,
+  generateCSSVariables,
+  getDensityClassName,
+  getFontSizeClassName,
+} from './adapters'
+
+export {
+  saveUserModel,
+  loadUserModel,
+  deleteUserModel,
+  listUserModels,
+  clearAllModels,
+  exportUserModel,
+  importUserModel,
+  exportUserModelAsFile,
+  importUserModelFromFile,
+  createBackup,
+  restoreBackup,
+  getStorageStats,
+  clearAllPersonalizationData,
+} from './storage'
+
+// ============================================================================
+// CONVENIENCE API
+// ============================================================================
+
+import { ModelFactory } from './models'
+import { PreferenceLearner, PreferenceAggregator, PatternDetector } from './learner'
+import type { UserAction, PreferenceKey, PreferenceValue } from './types'
+
+/**
+ * Convenience API for quick personalization access
+ */
+class PersonalizationAPI {
+  private learner = new PreferenceLearner()
+  private aggregator = new PreferenceAggregator()
+  private patternDetector = new PatternDetector()
+
+  /**
+   * Get user model
+   */
+  getModel(userId: string = 'default') {
+    return ModelFactory.getInstance().getModel(userId)
+  }
+
+  /**
+   * Record a user action for learning
+   */
+  recordAction(action: UserAction, userId: string = 'default') {
+    const model = this.getModel(userId)
+    const signals = this.learner.analyzeAction(action)
+
+    // Add signals to aggregator
+    for (const signal of signals) {
+      this.aggregator.addSignal(signal)
+    }
+
+    // Update patterns
+    if (action.type === 'session-ended') {
+      const duration = action.context?.duration as number | undefined
+      const hour = new Date(action.timestamp).getHours()
+      if (duration) {
+        this.patternDetector.recordSession(duration, hour)
+      }
+
+      const patterns = this.patternDetector.getPatterns()
+      model.updatePatterns(patterns)
+    }
+
+    if (action.type === 'feature-used') {
+      const feature = action.context?.feature as string | undefined
+      if (feature) {
+        this.patternDetector.recordFeatureUsage(feature)
+      }
+    }
+
+    if (action.type === 'error-occurred') {
+      this.patternDetector.recordError()
+    }
+
+    if (action.type === 'help-requested') {
+      this.patternDetector.recordHelp()
+    }
+
+    // Learn from aggregated signals
+    for (const [key] of Object.entries(signals)) {
+      const aggregated = this.aggregator.aggregate(key as PreferenceKey)
+      if (aggregated && model.isLearningEnabled()) {
+        const category = key.split('.')[0] as 'communication' | 'ui' | 'content'
+        if (model.isLearningEnabled(category)) {
+          model.getPreferences().learn(key as PreferenceKey, aggregated.value, aggregated.confidence)
+        }
+      }
+    }
+
+    model.recordAction()
+  }
+
+  /**
+   * Get a preference value
+   */
+  get<T = unknown>(key: PreferenceKey, userId: string = 'default'): T {
+    return this.getModel(userId).getPreferences().get<T>(key)
+  }
+
+  /**
+   * Set a preference value
+   */
+  set(key: PreferenceKey, value: PreferenceValue, userId: string = 'default'): void {
+    this.getModel(userId).getPreferences().set(key, value, 'explicit')
+  }
+
+  /**
+   * Reset a preference to default
+   */
+  reset(key: PreferenceKey, userId: string = 'default'): void {
+    this.getModel(userId).getPreferences().reset(key)
+  }
+
+  /**
+   * Explain why a preference is set
+   */
+  explain(key: PreferenceKey, userId: string = 'default') {
+    return this.getModel(userId).getPreferences().explain(key)
+  }
+
+  /**
+   * Toggle learning on/off
+   */
+  toggleLearning(enabled: boolean, userId: string = 'default'): void {
+    this.getModel(userId).toggleLearning(enabled)
+  }
+
+  /**
+   * Get learning statistics
+   */
+  getStats(userId: string = 'default') {
+    const model = this.getModel(userId)
+    const patternStats = this.patternDetector.getStats()
+    const aggStats = this.aggregator.getStats()
+
+    return {
+      learning: model.getLearningState(),
+      patterns: model.getPatterns(),
+      patternStats,
+      aggregationStats: aggStats,
+    }
+  }
+
+  /**
+   * Clear all learned data
+   */
+  clearLearning(userId: string = 'default'): void {
+    this.patternDetector.reset()
+    this.aggregator.clear()
+    // Note: We don't reset explicit preferences, only learned patterns
+  }
+
+  /**
+   * Reset all preferences to default
+   * Convenience method for tests
+   */
+  resetPreferences(userId: string = 'default'): void {
+    const model = this.getModel(userId)
+    const prefs = model.getPreferences()
+
+    // Reset all preference keys to defaults
+    const allKeys: PreferenceKey[] = [
+      'communication.responseLength',
+      'communication.tone',
+      'communication.useEmojis',
+      'communication.formatting',
+      'ui.theme',
+      'ui.density',
+      'ui.fontSize',
+      'ui.animations',
+      'ui.sidebarPosition',
+      'ui.autoScrollMessages',
+      'ui.groupMessagesByContext',
+      'content.topicsOfInterest',
+      'content.readingLevel',
+      'content.language',
+      'content.autoPlayMedia',
+      'content.summaryLength',
+      'content.technicalDetail',
+    ]
+
+    for (const key of allKeys) {
+      prefs.reset(key)
+    }
+
+    // Clear learned patterns
+    this.patternDetector.reset()
+    this.aggregator.clear()
+  }
+
+  /**
+   * Get all preferences
+   * Convenience method for tests
+   */
+  getPreferences(userId: string = 'default') {
+    const model = this.getModel(userId)
+    return model.getPreferences()
+  }
+
+  /**
+   * Export all learned data
+   * Convenience method for tests
+   */
+  async exportData(userId: string = 'default') {
+    const model = this.getModel(userId)
+    const stats = this.getStats(userId)
+
+    // Export model data
+    const { exportUserModel } = await import('./storage')
+    const modelData = await exportUserModel(userId)
+
+    return {
+      model: modelData,
+      patterns: stats.patterns,
+      patternStats: stats.patternStats,
+      learning: stats.learning,
+      timestamp: new Date().toISOString(),
+    }
+  }
+}
+
+// ============================================================================
+// SINGLETON INSTANCE
+// ============================================================================
+
+let personalizationAPI: PersonalizationAPI | null = null
+
+/**
+ * Get the personalization API singleton
+ */
+export function getPersonalizationAPI(): PersonalizationAPI {
+  if (!personalizationAPI) {
+    personalizationAPI = new PersonalizationAPI()
+  }
+  return personalizationAPI
+}
+
+// ============================================================================
+// QUICK ACCESS FUNCTIONS
+// ============================================================================
+
+/**
+ * Get a preference value
+ */
+export function getPreference<T = unknown>(key: PreferenceKey, userId?: string): T {
+  return getPersonalizationAPI().get<T>(key, userId)
+}
+
+/**
+ * Set a preference value
+ */
+export function setPreference(key: PreferenceKey, value: unknown, userId?: string): void {
+  getPersonalizationAPI().set(key, value as PreferenceValue, userId)
+}
+
+/**
+ * Record a user action
+ */
+export function recordUserAction(action: UserAction, userId?: string): void {
+  getPersonalizationAPI().recordAction(action, userId)
+}
+
+/**
+ * Get preference explanation
+ */
+export function explainPreference(key: PreferenceKey, userId?: string) {
+  return getPersonalizationAPI().explain(key, userId)
+}
+
+/**
+ * Toggle learning
+ */
+export function togglePersonalizationLearning(enabled: boolean, userId?: string): void {
+  getPersonalizationAPI().toggleLearning(enabled, userId)
+}
+
+/**
+ * Get personalization statistics
+ */
+export function getPersonalizationStats(userId?: string) {
+  return getPersonalizationAPI().getStats(userId)
+}
+
+/**
+ * Alias for getPersonalizationAPI - for test compatibility
+ */
+export function getPersonalizationLearner() {
+  return getPersonalizationAPI()
+}
+
+// ============================================================================
+// DEFAULT EXPORT
+// ============================================================================
+
+export default {
+  // Classes
+  PersonalizationAPI,
+  ModelFactory,
+  PreferenceLearner,
+  PreferenceAggregator,
+  PatternDetector,
+
+  // Functions
+  getPersonalizationAPI,
+  getPreference,
+  setPreference,
+  recordUserAction,
+  explainPreference,
+  togglePersonalizationLearning,
+  getPersonalizationStats,
+}

@@ -1,0 +1,65 @@
+{
+  "name": "@superinstance/private-ml-personalization",
+  "version": "1.0.0",
+  "description": "Privacy-first ML-based personalization system that learns user preferences locally",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "personalization",
+    "machine-learning",
+    "privacy-first",
+    "local-learning",
+    "preference-learning",
+    "behavioral-analysis",
+    "pattern-detection",
+    "adaptive-ui"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/Private-ML-Personalization.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/Private-ML-Personalization/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/Private-ML-Personalization#readme",
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
