@@ -64,6 +64,38 @@ async function main() {
       input: '25 20% 85%',
       ring: '25 100% 50%',
     },
+    typography: {
+      families: {
+        sans: {
+          name: 'Inter',
+          fallbacks: ['system-ui', '-apple-system', 'sans-serif'],
+          weights: [400, 500, 600, 700],
+        },
+      },
+      sizes: {
+        xs: { name: 'xs', value: 0.75, lineHeight: 1 },
+        sm: { name: 'sm', value: 0.875, lineHeight: 1.25 },
+        base: { name: 'base', value: 1, lineHeight: 1.5 },
+        lg: { name: 'lg', value: 1.125, lineHeight: 1.75 },
+        xl: { name: 'xl', value: 1.25, lineHeight: 1.75 },
+        '2xl': { name: '2xl', value: 1.5, lineHeight: 2 },
+        '3xl': { name: '3xl', value: 1.875, lineHeight: 2.25 },
+        '4xl': { name: '4xl', value: 2.25, lineHeight: 2.5 },
+      },
+      weights: {
+        light: 300 as any,
+        normal: 400 as any,
+        medium: 500 as any,
+        semibold: 600 as any,
+        bold: 700 as any,
+      },
+      lineHeights: {
+        tight: 1.25,
+        normal: 1.5,
+        relaxed: 1.75,
+        loose: 2,
+      },
+    },
   };
 
   // 3. Register the theme

@@ -49,9 +49,9 @@ function main() {
 
   // 5. Saturate color
   console.log('5️⃣ Saturate Color');
-  const baseColor = parseHSL('200 50% 50%');
-  const saturated = saturateHSL(baseColor, 30);
-  console.log(`   Original: ${hslToString(baseColor)}`);
+  const baseColor1 = parseHSL('200 50% 50%');
+  const saturated = saturateHSL(baseColor1, 30);
+  console.log(`   Original: ${hslToString(baseColor1)}`);
   console.log(`   Saturated (+30%): ${hslToString(saturated)}\n`);
 
   // 6. Rotate hue
@@ -114,9 +114,9 @@ function main() {
 
   // 11. Generate theme from base color
   console.log('1️⃣1️⃣ Generate Theme from Base Color');
-  const baseColor = '210 100% 50%'; // Blue
-  const lightTheme = generateThemeFromBaseColor(baseColor, 'light');
-  const darkTheme = generateThemeFromBaseColor(baseColor, 'dark');
+  const baseColor2 = '210 100% 50%'; // Blue
+  const lightTheme = generateThemeFromBaseColor(baseColor2, 'light');
+  const darkTheme = generateThemeFromBaseColor(baseColor2, 'dark');
 
   console.log('   Light Theme Colors:');
   console.log(`     Background: ${lightTheme.colors?.background}`);

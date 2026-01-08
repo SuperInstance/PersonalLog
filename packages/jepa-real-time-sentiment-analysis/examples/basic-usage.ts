@@ -89,7 +89,7 @@ vadExamples.forEach(({ text, expected }) => {
 
   console.log(`Message: "${text}"`)
   console.log(`  Expected: valence=${expected.valence}, arousal=${expected.arousal}`)
-  console.log(`  Detected: valence=${valence}, arousal=${aroussal}`)
+  console.log(`  Detected: valence=${valence}, arousal=${arousal}`)
   console.log(`  Match: ${valence === expected.valence && arousal === expected.arousal ? '✅' : '❌'}`)
   console.log('')
 })

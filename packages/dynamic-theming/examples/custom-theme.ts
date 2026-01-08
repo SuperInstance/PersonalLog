@@ -82,11 +82,11 @@ async function main() {
         '4xl': { name: '4xl', value: 2.25, lineHeight: 2.5 },
       },
       weights: {
-        light: 300,
-        normal: 400,
-        medium: 500,
-        semibold: 600,
-        bold: 700,
+        light: 300 as any,
+        normal: 400 as any,
+        medium: 500 as any,
+        semibold: 600 as any,
+        bold: 700 as any,
       },
       lineHeights: {
         tight: 1.25,
@@ -177,6 +177,19 @@ async function main() {
   console.log('\n🔄 Updating theme...');
   await themeRegistry.updateTheme('forest-green' as any, {
     metadata: {
+      id: 'forest-green' as any,
+      name: 'Forest Green',
+      version: '1.0.1',
+      category: ThemeCategory.CUSTOM,
+      tags: ['green', 'nature', 'forest', 'calm'],
+      previewColors: {
+        primary: '142 76% 36%',
+        secondary: '142 20% 90%',
+        accent: '142 60% 45%',
+        background: '142 20% 98%',
+      },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
       description: 'Updated nature-inspired forest green theme',
     },
   });
