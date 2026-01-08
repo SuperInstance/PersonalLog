@@ -28,9 +28,11 @@ import type {
 } from '../types';
 import {
   NotificationTrigger as Trigger,
+  ALL_NOTIFICATION_TRIGGERS,
   NotificationUrgency as Urgency,
   NotificationStatus as Status,
   NotificationCategory as Category,
+  NotificationActionType,
   DEFAULT_NOTIFICATION_SETTINGS,
   getDefaultNotificationPreferences,
 } from '../types';
@@ -162,7 +164,7 @@ describe('ProactiveNotificationEngine', () => {
 
     it('should initialize preferences for all trigger types', () => {
       const settings = engine.getSettings();
-      Object.values(Trigger).forEach(trigger => {
+      ALL_NOTIFICATION_TRIGGERS.forEach(trigger => {
         expect(settings.preferences[trigger]).toBeDefined();
       });
     });
@@ -221,7 +223,7 @@ describe('ProactiveNotificationEngine', () => {
       // Mock getStorageUsage
       vi.spyOn(engine as any, 'getStorageUsage').mockResolvedValue(0.9);
 
-      const notifications = await engine['evaluateResourceTriggers'](state, undefined, context);
+      const notifications = await engine['evaluateResourceTriggers'](state, context);
 
       const storageNotification = notifications.find(n => n.trigger === Trigger.STORAGE_FULL_PREDICTED);
       expect(storageNotification).toBeDefined();
@@ -232,7 +234,7 @@ describe('ProactiveNotificationEngine', () => {
       const state = createMockConversationState({ estimatedTokenUsage: 15000 });
       const context = createMockUserActivityContext();
 
-      const notifications = await engine['evaluateResourceTriggers'](state, undefined, context);
+      const notifications = await engine['evaluateResourceTriggers'](state, context);
 
       const tokenNotification = notifications.find(n => n.trigger === Trigger.TOKEN_USAGE_HIGH);
       expect(tokenNotification).toBeDefined();
@@ -515,7 +517,7 @@ describe('ProactiveNotificationEngine', () => {
       notification.feedback = {
         helpful: true,
         timestamp: Date.now(),
-        actionTaken: 'clear_cache',
+        actionTaken: NotificationActionType.CLEAR_CACHE,
       };
 
       engine['recordHistory'](notification);
@@ -800,7 +802,7 @@ describe('Integration Tests', () => {
     notification.feedback = {
       helpful: true,
       timestamp: Date.now(),
-      actionTaken: 'clear_cache' as any,
+      actionTaken: NotificationActionType.CLEAR_CACHE,
     };
 
     engine['recordHistory'](notification);

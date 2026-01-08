@@ -49,6 +49,31 @@ export const enum NotificationTrigger {
 }
 
 /**
+ * Array of all notification trigger values
+ * Use this instead of Object.values(NotificationTrigger) for const enums
+ */
+export const ALL_NOTIFICATION_TRIGGERS: NotificationTrigger[] = [
+  NotificationTrigger.HIGH_CPU_PREDICTED,
+  NotificationTrigger.HIGH_MEMORY_PREDICTED,
+  NotificationTrigger.STORAGE_FULL_PREDICTED,
+  NotificationTrigger.PERFORMANCE_DEGRADING,
+  NotificationTrigger.BATTERY_LOW_PREDICTED,
+  NotificationTrigger.NETWORK_DEGRADING_PREDICTED,
+  NotificationTrigger.TOKEN_USAGE_HIGH,
+  NotificationTrigger._AGENT_NEEDED_SOON,
+  NotificationTrigger.AGENT_READY,
+  NotificationTrigger.TASK_BLOCKING_PREDICTED,
+  NotificationTrigger.CONTEXT_TOO_LONG,
+  NotificationTrigger.USER_FRUSTRATION_DETECTED,
+  NotificationTrigger.INACTIVITY_TIMEOUT,
+  NotificationTrigger.FEATURE_SUGGESTION,
+  NotificationTrigger.OPTIMIZATION_SUGGESTION,
+  NotificationTrigger.BACKUP_NEEDED,
+  NotificationTrigger.UPDATE_AVAILABLE,
+  NotificationTrigger.ERROR_RECOVERY_SUGGESTION,
+];
+
+/**
  * Notification urgency levels
  */
 export const enum NotificationUrgency {

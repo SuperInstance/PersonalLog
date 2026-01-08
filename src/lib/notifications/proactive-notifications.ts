@@ -25,6 +25,7 @@ import {
   DEFAULT_NOTIFICATION_SETTINGS,
   getDefaultNotificationPreferences,
   NotificationTrigger as Trigger,
+  ALL_NOTIFICATION_TRIGGERS,
   NotificationUrgency as Urgency,
   NotificationStatus as Status,
   NotificationCategory as Category,
@@ -68,7 +69,7 @@ export class ProactiveNotificationEngine {
     this.activityTracker = getActivityTracker();
 
     // Initialize preferences for all trigger types
-    Object.values(Trigger).forEach(trigger => {
+    ALL_NOTIFICATION_TRIGGERS.forEach(trigger => {
       if (!this.settings.preferences[trigger]) {
         this.settings.preferences[trigger] = getDefaultNotificationPreferences(trigger);
       }
@@ -116,7 +117,7 @@ export class ProactiveNotificationEngine {
     notifications.push(...await this.evaluatePerformanceTriggers(currentState, context));
 
     // 2. Resource triggers
-    notifications.push(...await this.evaluateResourceTriggers(currentState, predictions?.resources, context));
+    notifications.push(...await this.evaluateResourceTriggers(currentState, context, predictions?.resources));
 
     // 3. Agent triggers
     if (predictions?.agentNeeds) {
@@ -371,7 +372,7 @@ export class ProactiveNotificationEngine {
       helpfulness: number;
     }> = {} as any;
 
-    for (const trigger of Object.values(Trigger)) {
+    for (const trigger of ALL_NOTIFICATION_TRIGGERS) {
       const triggerHistory = history.filter(h => h.trigger === trigger);
       const triggerActed = triggerHistory.filter(h => h.action).length;
       const triggerPrevented = triggerHistory.filter(h => h.issuePrevented).length;
@@ -483,8 +484,8 @@ export class ProactiveNotificationEngine {
    */
   private async evaluateResourceTriggers(
     state: ConversationState,
-    resourcePrediction?: ResourcePrediction,
-    context: UserActivityContext
+    context: UserActivityContext,
+    resourcePrediction?: ResourcePrediction
   ): Promise<ProactiveNotification[]> {
     const notifications: ProactiveNotification[] = [];
 
