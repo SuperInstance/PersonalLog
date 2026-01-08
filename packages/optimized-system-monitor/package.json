@@ -1,0 +1,48 @@
+{
+  "name": "@superinstance/optimized-system-monitor",
+  "version": "1.0.0",
+  "description": "Optimized system monitoring with performance tracking, health monitoring, automatic instrumentation, and adaptive optimization",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "monitoring",
+    "performance",
+    "health",
+    "optimization",
+    "metrics",
+    "observability",
+    "browser",
+    "system-monitor"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/optimized-system-monitor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/optimized-system-monitor/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/optimized-system-monitor#readme",
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
