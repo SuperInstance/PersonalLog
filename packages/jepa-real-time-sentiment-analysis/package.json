@@ -1,0 +1,54 @@
+{
+  "name": "@superinstance/jepa-real-time-sentiment-analysis",
+  "version": "1.0.0",
+  "description": "Real-time sentiment analysis from audio and text using JEPA (Joint Embedding Predictive Architecture). Detects sentiment patterns with VAD (Valence-Arousal-Dominance) scoring.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "sentiment-analysis",
+    "jepa",
+    "vad",
+    "valence",
+    "arousal",
+    "dominance",
+    "real-time",
+    "audio-analysis",
+    "text-analysis",
+    "machine-learning",
+    "emotion-detection",
+    "affective-computing"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/JEPA-Real-Time-Sentiment-Analysis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/JEPA-Real-Time-Sentiment-Analysis/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/JEPA-Real-Time-Sentiment-Analysis#readme",
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
