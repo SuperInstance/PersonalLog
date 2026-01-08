@@ -88,7 +88,7 @@ async function loadWasmVectorSearch() {
   throw new Error('WASM not available');
 }
 
-async function loadJsVectorSearch() {
+async function loadJsVectorSearch(): Promise<any> {
   // Simulate JS fallback
   console.log('Loading JS vector search fallback...');
   return {
@@ -164,7 +164,6 @@ async function logOperation(userId: string, operation: string) {
       component: 'UserService',
       operation,
       userId,
-      duration: 1234,
     });
   } catch (error) {
     logError('Operation failed', error as any, {

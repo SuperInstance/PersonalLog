@@ -202,7 +202,6 @@ export function createError(
     WasmError,
     StorageError,
     QuotaError,
-    // @ts-expect-error - Used in errorClasses mapping
     HardwareDetectionError,
     BenchmarkError,
     CapabilityError,

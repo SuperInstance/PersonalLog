@@ -73,10 +73,12 @@ async function pairWithDevice() {
   await provider.initialize()
 
   // Create offer for pairing
-  const offer = await provider.generatePairingOffer('Device B')
+  // TODO: Implement generatePairingOffer method
+  // const offer = await provider.generatePairingOffer('Device B')
 
   // In a real app, you'd exchange this offer via QR code, manual entry, etc.
-  console.log('Pairing offer:', offer)
+  // console.log('Pairing offer:', offer)
+  console.log('Pairing offer generation not yet implemented')
 
   // Other device would create answer and accept
   // const answer = await otherDevice.acceptPairing(offer)

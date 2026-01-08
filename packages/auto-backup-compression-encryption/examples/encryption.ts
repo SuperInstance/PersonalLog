@@ -68,7 +68,7 @@ async function restoreEncryptedBackup(backupId: string, password: string, salt: 
 
     // Decrypt the data
     const decrypted = await BackupCrypto.decryptSymmetric(
-      backup.data.encrypted,
+      (backup.data as any).encrypted,
       key
     )
 
@@ -96,7 +96,7 @@ async function wrongPasswordExample() {
   console.log('\n--- Testing wrong password ---\n')
 
   try {
-    await restoreEncryptedBackup(backupId, 'wrong-password', salt)
+    await restoreEncryptedBackup(backupId, 'wrong-password', salt || '')
   } catch (error) {
     console.log('Expected error with wrong password:', error)
   }
