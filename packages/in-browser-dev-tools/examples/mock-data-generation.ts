@@ -17,7 +17,7 @@ import {
   MockMessage,
   MockKnowledgeEntry,
   MockPluginState
-} from '@superinstance/in-browser-dev-tools';
+} from '../src';
 
 // Basic random data generation
 function demonstrateBasicGeneration() {
@@ -45,7 +45,7 @@ function demonstrateConversations() {
   // Generate multiple conversations
   const conversations = generateConversations(3);
   console.log(`\nGenerated ${conversations.length} conversations:`);
-  conversations.forEach((conv, index) => {
+  conversations.forEach((conv: MockConversation, index: number) => {
     console.log(`  ${index + 1}. ${conv.title} (${conv.messageCount} messages)`);
   });
 }
@@ -60,7 +60,7 @@ function demonstrateMessages() {
   const messages = generateMessages(conversationId, 5);
   console.log(`Generated ${messages.length} messages:`);
 
-  messages.forEach((msg, index) => {
+  messages.forEach((msg: MockMessage, index: number) => {
     console.log(`  ${index + 1}. [${msg.role}] ${msg.content.substring(0, 50)}...`);
   });
 }
@@ -80,7 +80,7 @@ function demonstrateKnowledgeEntries() {
   const entries = generateKnowledgeEntries(3);
   console.log(`\nGenerated ${entries.length} knowledge entries:`);
 
-  entries.forEach((entry, index) => {
+  entries.forEach((entry: MockKnowledgeEntry, index: number) => {
     console.log(`  ${index + 1}. ${entry.title}`);
     console.log(`     Tags: ${entry.tags.join(', ')}`);
     console.log(`     Embedding: ${entry.embedding ? 'Yes' : 'No'}`);
@@ -102,7 +102,7 @@ function demonstratePluginStates() {
   const pluginStates = generatePluginStates(3);
   console.log(`\nGenerated ${pluginStates.length} plugin states:`);
 
-  pluginStates.forEach((plugin, index) => {
+  pluginStates.forEach((plugin: MockPluginState, index: number) => {
     console.log(`  ${index + 1}. ${plugin.name}`);
     console.log(`     Enabled: ${plugin.enabled}`);
     console.log(`     State: ${plugin.state}`);
@@ -123,7 +123,7 @@ function demonstratePerformanceData() {
   const timeline = mockData.generatePerformanceTimeline(5);
   console.log(`\nPerformance timeline (${timeline.length} points):`);
 
-  timeline.forEach((point, index) => {
+  timeline.forEach((point: any, index: number) => {
     console.log(`  ${index + 1}. ${new Date(point.timestamp).toISOString()}`);
     console.log(`     FPS: ${point.metrics.fps}`);
     console.log(`     Memory: ${point.metrics.memoryUsed}MB`);
@@ -145,7 +145,7 @@ function demonstrateLogData() {
 
   // Group by level
   const byLevel: Record<string, number> = {};
-  logEntries.forEach((entry) => {
+  logEntries.forEach((entry: any) => {
     byLevel[entry.level] = (byLevel[entry.level] || 0) + 1;
   });
 
@@ -153,7 +153,7 @@ function demonstrateLogData() {
 
   // Group by category
   const byCategory: Record<string, number> = {};
-  logEntries.forEach((entry) => {
+  logEntries.forEach((entry: any) => {
     byCategory[entry.category] = (byCategory[entry.category] || 0) + 1;
   });
 
@@ -175,7 +175,7 @@ function demonstrateRandomUtilities() {
   // Random dates within range
   const dates = Array.from({ length: 5 }, () => mockData.randomDate(7));
   console.log('\nRandom dates (last 7 days):');
-  dates.forEach((date, index) => {
+  dates.forEach((date: number, index: number) => {
     console.log(`  ${index + 1}. ${new Date(date).toISOString()}`);
   });
 
@@ -209,7 +209,7 @@ function demonstrateCustomGeneration() {
 
   const users = Array.from({ length: 5 }, generateUser);
   console.log('Generated users:');
-  users.forEach((user, index) => {
+  users.forEach((user: CustomUser, index: number) => {
     console.log(`  ${index + 1}. ${user.name} (${user.role}) - ${user.email}`);
   });
 }

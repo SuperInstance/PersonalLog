@@ -4,7 +4,7 @@
  * Demonstrates performance tracing and measurement capabilities.
  */
 
-import { tracer, trace, traceSync, TraceCategory } from '@superinstance/in-browser-dev-tools';
+import { tracer, trace, traceSync, TraceCategory } from '../src';
 
 // Simulate async operation
 async function fetchUserData(userId: string): Promise<any> {
@@ -108,7 +108,7 @@ function demonstrateSlowestOperations() {
   const slowest = tracer.getSlowestSpans(5);
 
   console.log('Top 5 slowest operations:');
-  slowest.forEach((span, index) => {
+  slowest.forEach((span: any, index: number) => {
     console.log(
       `${index + 1}. ${span.name}: ${span.duration?.toFixed(2)}ms (${span.category})`
     );
@@ -140,7 +140,7 @@ function demonstrateSnapshots() {
   // Get memory trend
   const trend = tracer.getMemoryTrend();
   console.log('\nMemory trend:');
-  trend.forEach((point, index) => {
+  trend.forEach((point: any, index: number) => {
     console.log(`  ${index + 1}. ${point.usedMB.toFixed(2)}MB`);
   });
 }
@@ -152,7 +152,7 @@ function demonstrateSpanTree() {
   const tree = tracer.getSpanTree();
 
   function printTree(spans: any[], indent = 0) {
-    spans.forEach((span) => {
+    spans.forEach((span: any) => {
       console.log(
         `${'  '.repeat(indent)}${span.name}: ${span.duration?.toFixed(2)}ms (${span.category})`
       );
@@ -176,7 +176,7 @@ function demonstrateCategoryFiltering() {
   console.log(`Computation spans: ${computationSpans.length}`);
 
   console.log('\nAPI spans:');
-  apiSpans.forEach((span) => {
+  apiSpans.forEach((span: any) => {
     console.log(`  ${span.name}: ${span.duration?.toFixed(2)}ms`);
   });
 }

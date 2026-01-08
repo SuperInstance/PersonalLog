@@ -11,7 +11,7 @@ import {
   takeSnapshot,
   StateInspector,
   StateScope
-} from '@superinstance/in-browser-dev-tools';
+} from '../src';
 
 // Sample application state
 interface AppState {
@@ -78,7 +78,7 @@ function demonstrateBasicInspection() {
   registerInspector('app-state', stateManager);
 
   // Inspect state
-  inspectState('app-state').then((state) => {
+  inspectState('app-state').then((state: any) => {
     console.log('Current state:', JSON.stringify(state, null, 2));
   });
 }
@@ -109,7 +109,7 @@ async function demonstrateSnapshots() {
   // Compare snapshots
   const diffs = stateInspector.compareSnapshots(snapshot1.id, snapshot2.id);
   console.log('\nDiffs:', diffs.length);
-  diffs.forEach((diff) => {
+  diffs.forEach((diff: any) => {
     console.log(`  ${diff.path}: ${diff.type}`);
     console.log(`    Old:`, JSON.stringify(diff.oldValue));
     console.log(`    New:`, JSON.stringify(diff.newValue));
@@ -129,9 +129,9 @@ function demonstrateMultipleInspectors() {
   registerInspector('plugin-state', pluginState);
 
   // Get all states
-  stateInspector.inspectAllStates().then((states) => {
+  stateInspector.inspectAllStates().then((states: any) => {
     console.log('All states:');
-    Object.entries(states).forEach(([id, state]) => {
+    Object.entries(states).forEach(([id, state]: [string, any]) => {
       console.log(`  ${id}:`, state);
     });
   });
@@ -213,7 +213,7 @@ function demonstrateManualDiffing() {
   const diffs = stateInspector.compare(oldState, newState);
 
   console.log('Diffs found:', diffs.length);
-  diffs.forEach((diff) => {
+  diffs.forEach((diff: any) => {
     console.log(`  ${diff.path}: ${diff.type}`);
     if (diff.type === 'modified') {
       console.log(`    Old:`, diff.oldValue);
@@ -246,7 +246,7 @@ function demonstrateComplexDiffing() {
   const diffs = stateInspector.compare(oldState, newState);
 
   console.log('Complex diffs found:', diffs.length);
-  diffs.forEach((diff) => {
+  diffs.forEach((diff: any) => {
     console.log(`  ${diff.path}: ${diff.type}`);
   });
 }

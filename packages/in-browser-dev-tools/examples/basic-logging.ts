@@ -4,7 +4,7 @@
  * Demonstrates basic logging functionality with different levels and categories.
  */
 
-import { logger, debug, info, warn, error, LogCategory } from '@superinstance/in-browser-dev-tools';
+import { logger, debug, info, warn, error, LogCategory } from '../src';
 
 // Basic logging at different levels
 function demonstrateBasicLogging() {
@@ -72,7 +72,7 @@ function demonstrateLogStatistics() {
 function demonstrateLogSubscription() {
   console.log('\n=== Log Subscription Demo ===\n');
 
-  const unsubscribe = logger.subscribe((entry) => {
+  const unsubscribe = logger.subscribe((entry: any) => {
     if (entry.level === 'error') {
       console.log(`[ERROR SUBSCRIPTION] New error: ${entry.message}`);
     }
