@@ -1,0 +1,71 @@
+{
+  "name": "@superinstance/proactive-planning-ai-hub",
+  "version": "1.0.0",
+  "description": "Proactive Planning AI Hub - Intelligence system with world modeling, MPC orchestration, and proactive agent activation for autonomous AI behavior",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
+    "./proactive": {
+      "types": "./dist/proactive/index.d.ts",
+      "import": "./dist/proactive/index.js"
+    },
+    "./mpc": {
+      "types": "./dist/mpc/index.d.ts",
+      "import": "./dist/mpc/index.js"
+    },
+    "./world-model": {
+      "types": "./dist/world-model/index.d.ts",
+      "import": "./dist/world-model/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "example": "node dist/examples/basic-usage.js"
+  },
+  "keywords": [
+    "proactive",
+    "planning",
+    "ai",
+    "intelligence",
+    "world-model",
+    "mpc",
+    "model-predictive-control",
+    "orchestration",
+    "multi-agent",
+    "prediction",
+    "simulation",
+    "scenario",
+    "autonomous",
+    "agent-systems",
+    "proactive-behavior",
+    "anticipation"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/Proactive-Planning-AI-Hub"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

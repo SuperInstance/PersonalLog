@@ -1,0 +1,49 @@
+{
+  "name": "@superinstance/mpc-orchestration-optimization",
+  "version": "1.0.0",
+  "description": "Model Predictive Control (MPC) orchestrator for multi-agent optimization with predictive planning and resource management",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mpc",
+    "model-predictive-control",
+    "orchestration",
+    "multi-agent",
+    "optimization",
+    "prediction",
+    "resource-management",
+    "scheduling",
+    "planning",
+    "ai",
+    "agent-systems"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/MPC-Orchestration-Optimization"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
