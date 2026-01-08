@@ -4,7 +4,7 @@
  * Demonstrates basic setup and usage of the vector store.
  */
 
-import { VectorStore } from '@superinstance/in-browser-vector-search'
+import { VectorStore } from '../src'
 
 async function basicUsage() {
   // Initialize the store
@@ -60,7 +60,7 @@ async function basicUsage() {
     threshold: 0.5
   })
 
-  results.forEach((result, index) => {
+  results.forEach((result: any, index: number) => {
     console.log(`\n${index + 1}. Similarity: ${result.similarity.toFixed(3)}`)
     console.log(`   Content: ${result.entry.content}`)
     console.log(`   Tags: ${result.entry.metadata.tags?.join(', ')}`)
@@ -73,7 +73,7 @@ async function basicUsage() {
     limit: 3
   })
 
-  hybridResults.forEach((result, index) => {
+  hybridResults.forEach((result: any, index: number) => {
     console.log(`\n${index + 1}. Similarity: ${result.similarity.toFixed(3)}`)
     console.log(`   Content: ${result.entry.content}`)
   })

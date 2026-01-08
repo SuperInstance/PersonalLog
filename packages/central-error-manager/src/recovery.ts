@@ -5,8 +5,6 @@
  * Provides fallback behaviors and graceful degradation.
  */
 
-// @ts-expect-error - Type used in callback signatures
-import type { ErrorCategory } from './types';
 import {
   WasmError,
   QuotaError,
@@ -14,10 +12,6 @@ import {
   CapabilityError,
   NetworkError,
   TimeoutError,
-  // @ts-expect-error - Type used in callback signatures
-  type RecoveryAction,
-  // @ts-expect-error - Type used in callback signatures
-  type CentralError,
 } from './types';
 import {
   log,

@@ -53,6 +53,7 @@ async function schedulingExample() {
       dataProvider,
     },
     active: true,
+    nextRunAt: new Date(),
   })
 
   console.log(`Daily schedule created: ${dailyScheduleId}`)
@@ -73,6 +74,7 @@ async function schedulingExample() {
       dataProvider,
     },
     active: true,
+    nextRunAt: new Date(),
   })
 
   console.log(`Weekly schedule created: ${weeklyScheduleId}`)
@@ -94,6 +96,7 @@ async function schedulingExample() {
       dataProvider,
     },
     active: true,
+    nextRunAt: new Date(),
   })
 
   console.log(`Custom schedule created: ${customScheduleId}`)

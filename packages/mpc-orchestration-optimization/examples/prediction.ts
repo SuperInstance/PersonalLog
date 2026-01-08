@@ -116,7 +116,7 @@ async function predictionExample() {
 
   for (const [resourceType, prediction] of resourcePredictions) {
     console.log(`   ${resourceType}:`);
-    console.log(`     Expected: ${prediction.usage.value.toFixed(2)} (${prediction.usage.unit || 'units'})`);
+    console.log(`     Expected: ${prediction.usage.value.toFixed(2)} units`);
     console.log(`     Peak: ${prediction.peakUsage.value.toFixed(2)}`);
     console.log(`     Duration: ${prediction.duration.value.toFixed(1)}s`);
     console.log(`     Confidence: ${(prediction.usage.confidence * 100).toFixed(1)}%`);

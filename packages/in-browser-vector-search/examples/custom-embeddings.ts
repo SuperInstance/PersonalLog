@@ -6,7 +6,7 @@
  * you would use a real embedding model or API.
  */
 
-import { VectorStore, EmbeddingGenerator } from '@superinstance/in-browser-vector-search'
+import { VectorStore, EmbeddingGenerator } from '../src'
 
 // Mock embedding generator (replace with real implementation)
 async function mockEmbeddingGenerator(text: string): Promise<number[]> {
@@ -76,6 +76,7 @@ async function customEmbeddingsExample() {
 
   const entries = await store.addEntries([
     {
+      id: 'doc1',
       type: 'document',
       sourceId: 'doc1',
       content: 'Artificial intelligence is transforming technology',
@@ -83,6 +84,7 @@ async function customEmbeddingsExample() {
       editable: true
     },
     {
+      id: 'doc2',
       type: 'document',
       sourceId: 'doc2',
       content: 'Machine learning models learn patterns from data',
@@ -90,6 +92,7 @@ async function customEmbeddingsExample() {
       editable: true
     },
     {
+      id: 'doc3',
       type: 'document',
       sourceId: 'doc3',
       content: 'Neural networks are inspired by biological brains',
@@ -106,7 +109,7 @@ async function customEmbeddingsExample() {
     limit: 3
   })
 
-  results.forEach((result, index) => {
+  results.forEach((result: any, index: number) => {
     console.log(`\n${index + 1}. Similarity: ${result.similarity.toFixed(3)}`)
     console.log(`   Content: ${result.entry.content}`)
   })
@@ -116,7 +119,7 @@ async function customEmbeddingsExample() {
   const entry = await store.getEntry('doc1')
   if (entry?.embedding) {
     console.log(`Embedding dimension: ${entry.embedding.length}`)
-    console.log(`First 5 values: ${entry.embedding.slice(0, 5).map(v => v.toFixed(4)).join(', ')}`)
+    console.log(`First 5 values: ${entry.embedding.slice(0, 5).map((v: number) => v.toFixed(4)).join(', ')}`)
   }
 
   console.log('\n✅ Example complete!')

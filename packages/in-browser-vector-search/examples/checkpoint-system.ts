@@ -4,7 +4,7 @@
  * Demonstrates checkpoint creation, rollback, and management.
  */
 
-import { VectorStore } from '@superinstance/in-browser-vector-search'
+import { VectorStore } from '../src'
 
 async function checkpointExample() {
   const store = new VectorStore()
@@ -16,6 +16,7 @@ async function checkpointExample() {
   console.log('\n📝 Adding initial entries...')
   await store.addEntries([
     {
+      id: 'doc1',
       type: 'document',
       sourceId: 'doc1',
       content: 'Initial document 1',
@@ -23,6 +24,7 @@ async function checkpointExample() {
       editable: true
     },
     {
+      id: 'doc2',
       type: 'document',
       sourceId: 'doc2',
       content: 'Initial document 2',
@@ -45,6 +47,7 @@ async function checkpointExample() {
   console.log('\n📝 Adding more entries...')
   await store.addEntries([
     {
+      id: 'doc3',
       type: 'document',
       sourceId: 'doc3',
       content: 'Additional document 3',
@@ -52,6 +55,7 @@ async function checkpointExample() {
       editable: true
     },
     {
+      id: 'doc4',
       type: 'document',
       sourceId: 'doc4',
       content: 'Additional document 4',
@@ -74,7 +78,7 @@ async function checkpointExample() {
   // List all checkpoints
   console.log('\n📋 All checkpoints:')
   const checkpoints = await store.getCheckpoints()
-  checkpoints.forEach((cp, index) => {
+  checkpoints.forEach((cp: any, index: number) => {
     console.log(`\n${index + 1}. ${cp.name}`)
     console.log(`   ID: ${cp.id}`)
     console.log(`   Entries: ${cp.entryCount}`)
@@ -102,16 +106,11 @@ async function checkpointExample() {
   // Star/unstar a checkpoint
   console.log('\n⭐ Starring checkpoint...')
   await store.setCheckpointStarred(checkpoint2.id, true)
-  const updated = await store.getCheckpoint(checkpoint2.id)
+  const allCheckpoints = await store.getCheckpoints()
+  const updated = allCheckpoints.find((cp: any) => cp.id === checkpoint2.id)
   console.log(`Checkpoint "${updated?.name}" is now starred: ${updated?.isStarred}`)
 
   console.log('\n✅ Example complete!')
-}
-
-// Helper function to get checkpoint by ID
-async function getCheckpoint(store: VectorStore, id: string) {
-  const checkpoints = await store.getCheckpoints()
-  return checkpoints.find(cp => cp.id === id) || null
 }
 
 checkpointExample().catch(console.error)

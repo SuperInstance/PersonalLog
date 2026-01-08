@@ -14,7 +14,7 @@ import {
   usePersonalizedContent,
   usePersonalizedSetting,
   useLearningState
-} from '@superinstance/private-ml-personalization/react'
+} from '../src/react'
 
 // ============================================================================
 // Example 1: Theme Toggle Component

@@ -38,28 +38,31 @@ async function automaticInstrumentation() {
 
   // Measure an async code block
   console.log('\n2. Measuring async code block...');
-  await measureAsync('async-operation', 'api', async () => {
+  const asyncOperation = async () => {
     await new Promise(resolve => setTimeout(resolve, 100));
     return 'completed';
-  });
+  };
+  await measureAsync('async-operation', 'api', asyncOperation);
 
   // Wrap a function
   console.log('\n3. Wrapping function with tracking...');
-  const fetchData = trackFunction('fetch-data', 'network', (url: string) => {
+  const fetchDataFn = (url: string) => {
     console.log(`Fetching data from ${url}...`);
     return { data: 'sample data' };
-  });
+  };
+  const fetchData = trackFunction('fetch-data', 'network', fetchDataFn);
 
   const data = fetchData('https://api.example.com');
   console.log(`Data: ${data.data}`);
 
   // Wrap an async function
   console.log('\n4. Wrapping async function with tracking...');
-  const asyncFetch = trackAsyncFunction('async-fetch', 'api', async (url: string) => {
+  const asyncFetchFn = async (url: string) => {
     console.log(`Async fetching from ${url}...`);
     await new Promise(resolve => setTimeout(resolve, 50));
     return { response: 'sample response' };
-  });
+  };
+  const asyncFetch = trackAsyncFunction('async-fetch', 'api', asyncFetchFn);
 
   const response = await asyncFetch('https://api.example.com');
   console.log(`Response: ${response.response}`);
