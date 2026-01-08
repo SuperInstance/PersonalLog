@@ -323,7 +323,7 @@ function ErrorDashboard() {
           <ul>
             {Object.entries(errorsByCategory).map(([category, count]) => (
               <li key={category}>
-                {category}: {count}
+                {category}: {count as number}
               </li>
             ))}
           </ul>
