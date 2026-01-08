@@ -1,0 +1,61 @@
+{
+  "name": "@superinstance/dynamic-theming",
+  "version": "1.0.0",
+  "description": "Dynamic theming system with WCAG accessibility compliance, CSS variable generation, and theme management",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react.js",
+      "types": "./dist/react.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "theme",
+    "theming",
+    "dark-mode",
+    "css-variables",
+    "accessibility",
+    "wcag",
+    "color",
+    "design-system",
+    "ui"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/Dynamic-Theming.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/Dynamic-Theming/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/Dynamic-Theming#readme",
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
+}
