@@ -42,7 +42,8 @@ async function automaticInstrumentation() {
     await new Promise(resolve => setTimeout(resolve, 100));
     return 'completed';
   };
-  await measureAsync('async-operation', 'api', asyncOperation);
+  const result2 = await measure('async-operation', 'api', asyncOperation);
+  console.log(`Result: ${result2}`);
 
   // Wrap a function
   console.log('\n3. Wrapping function with tracking...');
@@ -50,7 +51,7 @@ async function automaticInstrumentation() {
     console.log(`Fetching data from ${url}...`);
     return { data: 'sample data' };
   };
-  const fetchData = trackFunction('fetch-data', 'network', fetchDataFn);
+  const fetchData = trackFunction('fetch-data', 'network', fetchDataFn as any);
 
   const data = fetchData('https://api.example.com');
   console.log(`Data: ${data.data}`);
@@ -62,7 +63,7 @@ async function automaticInstrumentation() {
     await new Promise(resolve => setTimeout(resolve, 50));
     return { response: 'sample response' };
   };
-  const asyncFetch = trackAsyncFunction('async-fetch', 'api', asyncFetchFn);
+  const asyncFetch = trackAsyncFunction('async-fetch', 'api', asyncFetchFn as any);
 
   const response = await asyncFetch('https://api.example.com');
   console.log(`Response: ${response.response}`);
