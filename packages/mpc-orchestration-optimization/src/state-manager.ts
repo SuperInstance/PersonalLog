@@ -58,8 +58,8 @@ export class MPCStateManager {
   /** State history for learning patterns */
   private stateHistory: MPCState[] = [];
 
-  /** Maximum history size */
-  private maxHistorySize: number = 1000;
+  /** Maximum history size - reduced from 1000 to 100 for memory optimization */
+  private maxHistorySize: number = 100;
 
   /** State transitions log */
   private transitions: StateTransition[] = [];
@@ -101,7 +101,7 @@ export class MPCStateManager {
     }
   ): Promise<void> {
     this.hardwareProfile = hardwareProfile;
-    this.maxHistorySize = config?.maxHistorySize ?? 1000;
+    this.maxHistorySize = config?.maxHistorySize ?? 100;
     this.anomalyThreshold = config?.anomalyThreshold ?? 0.7;
 
     // Initialize state

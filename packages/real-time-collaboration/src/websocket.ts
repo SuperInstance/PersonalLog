@@ -24,6 +24,9 @@ export interface WebSocketConfig {
   maxReconnectAttempts?: number
 }
 
+const MAX_MESSAGE_SIZE = 1024 * 1024 // 1MB max message size
+const ERROR_LOG_THROTTLE_MS = 1000 // Throttle error logging to once per second
+
 export class CollaborationWebSocket {
   private ws: WebSocket | null = null
   private config: Required<WebSocketConfig>
@@ -33,6 +36,7 @@ export class CollaborationWebSocket {
   private heartbeatTimer: number | null = null
   private isIntentionalClose = false
   private connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error' = 'disconnected'
+  private lastErrorLogTime = 0 // Performance: throttle error logging
 
   constructor(config: WebSocketConfig) {
     this.config = {
@@ -63,10 +67,30 @@ export class CollaborationWebSocket {
 
         this.ws.onmessage = (event) => {
           try {
+            // Performance: Add message size limit to prevent DoS
+            if (event.data.length > MAX_MESSAGE_SIZE) {
+              throw new Error(`Message size exceeds limit (${event.data.length} > ${MAX_MESSAGE_SIZE})`)
+            }
+
             const message = JSON.parse(event.data) as WebSocketMessage
+
+            // Performance: Basic validation before processing
+            if (!message || typeof message !== 'object') {
+              throw new Error('Invalid message: not an object')
+            }
+
+            if (!message.type || !message.timestamp) {
+              throw new Error('Invalid message: missing required fields')
+            }
+
             this.handleMessage(message)
           } catch (error) {
-            console.error('[CollaborationWebSocket] Failed to parse message:', error)
+            // Performance: Throttle error logging to prevent log spam
+            const now = Date.now()
+            if (now - this.lastErrorLogTime > ERROR_LOG_THROTTLE_MS) {
+              console.error('[CollaborationWebSocket] Failed to parse message:', error)
+              this.lastErrorLogTime = now
+            }
           }
         }
 
