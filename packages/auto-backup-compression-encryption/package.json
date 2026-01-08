@@ -1,0 +1,57 @@
+{
+  "name": "@superinstance/auto-backup-compression-encryption",
+  "version": "1.0.0",
+  "description": "Automatic backup system with compression and encryption for browser-based applications",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "keywords": [
+    "backup",
+    "compression",
+    "encryption",
+    "gzip",
+    "aes-256",
+    "indexeddb",
+    "browser",
+    "storage",
+    "archive",
+    "restore",
+    "scheduling"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/Auto-Backup-Compression-Encryption"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/Auto-Backup-Compression-Encryption/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/Auto-Backup-Compression-Encryption#readme",
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
