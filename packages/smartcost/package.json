@@ -1,0 +1,83 @@
+{
+  "name": "@superinstance/smartcost",
+  "version": "1.0.0",
+  "description": "AI cost optimizer that saves 50-90% on LLM API costs through intelligent routing, semantic caching, and real-time cost tracking",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src --ext .ts",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run test && npm run build"
+  },
+  "keywords": [
+    "ai",
+    "llm",
+    "cost-optimization",
+    "cost-tracking",
+    "intelligent-routing",
+    "semantic-caching",
+    "budget-management",
+    "token-optimization",
+    "openai",
+    "anthropic",
+    "claude",
+    "gpt",
+    "ollama",
+    "cohere",
+    "api-optimization",
+    "cost-reduction",
+    "ai-costs",
+    "llm-costs",
+    "prompt-optimization",
+    "cache-optimization",
+    "smart-routing",
+    "query-analysis",
+    "token-estimation",
+    "budget-tracking",
+    "cost-monitoring",
+    "real-time-analytics",
+    "ai-efficiency",
+    "developer-tools",
+    "machine-learning",
+    "ai-tools"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/SmartCost.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/SmartCost/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/SmartCost#readme",
+  "dependencies": {
+    "eventemitter3": "^5.0.1"
+  },
+  "optionalDependencies": {
+    "@superinstance/cascade-router": "^1.0.0",
+    "@superinstance/in-browser-vector-search": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2",
+    "vitest": "^1.0.4",
+    "@vitest/coverage-v8": "^1.0.4"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
