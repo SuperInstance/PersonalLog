@@ -65,7 +65,7 @@
     "@vitejs/plugin-react": "^4.2.0",
     "@vitest/ui": "^1.0.0",
     "axe-core": "^4.8.0",
-    "axe-playwright": "^1.2.0",
+    "axe-playwright": "^2.2.2",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
     "jsdom": "^23.0.0",
