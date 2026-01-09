@@ -93,7 +93,8 @@ async function longTermLearningDemo() {
       data: {
         interests: ['AI', 'machine learning', 'webgpu', 'rust', 'neural networks'],
         dislikes: ['politics', 'celebrity news']
-      } as UserPreference,
+      } as UserPreference
+    },
     {
       agentId: 'learning-agent',
       tags: ['user-preference', 'topics', 'session-3'],

@@ -59,7 +59,7 @@ export class MultiAgentMemory extends EventEmitter {
   private shortTerm: ShortTermMemory;
   private longTerm: LongTermMemory;
   private config: MultiAgentMemoryConfig;
-  private shareRecords: Map<string, MemoryShare>;  // memoryId -> share record
+  public shareRecords: Map<string, MemoryShare>;  // memoryId -> share record
   private shareRequests: Map<string, ShareRequest>;  // requestId -> request
   private agentCapabilities: Map<string, Set<string>>;  // agentId -> capabilities
   private syncTimer?: NodeJS.Timeout;
