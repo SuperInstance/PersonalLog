@@ -1,0 +1,140 @@
+/**
+ * Retry Manager
+ *
+ * Handles automatic retry with fallback strategies for failed function calls.
+ *
+ * @module retry
+ */
+
+import { RetryConfig, ExecutionResult, ExecutionStatus } from '../types.js';
+
+/**
+ * Default retry configuration
+ */
+const DEFAULT_RETRY_CONFIG: Required<RetryConfig> = {
+  maxAttempts: 3,
+  initialDelay: 100,
+  maxDelay: 5000,
+  backoffMultiplier: 2,
+  retryableErrors: ['ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET', 'NetworkError'],
+  jitter: true
+};
+
+/**
+ * Retry manager for handling function execution retries
+ */
+export class RetryManager {
+  private config: Required<RetryConfig>;
+
+  constructor(config: Partial<RetryConfig> = {}) {
+    this.config = { ...DEFAULT_RETRY_CONFIG, ...config };
+  }
+
+  /**
+   * Execute a function with retry logic
+   */
+  async execute<T>(
+    fn: () => Promise<T> | T,
+    context?: { toolName?: string; params?: Record<string, any> }
+  ): Promise<ExecutionResult<T>> {
+    let lastError: Error | undefined;
+    let attempt = 0;
+
+    while (attempt < this.config.maxAttempts) {
+      attempt++;
+      const startTime = Date.now();
+
+      try {
+        const result = await fn();
+        return {
+          status: ExecutionStatus.SUCCESS,
+          result,
+          retryCount: attempt - 1,
+          executionTime: Date.now() - startTime,
+          functionName: context?.toolName
+        };
+      } catch (error) {
+        lastError = error as Error;
+
+        // Check if error is retryable
+        if (!this.isRetryable(lastError, attempt)) {
+          return {
+            status: ExecutionStatus.FAILED,
+            error: lastError,
+            retryCount: attempt - 1,
+            executionTime: Date.now() - startTime,
+            functionName: context?.toolName
+          };
+        }
+
+        // Don't wait after last attempt
+        if (attempt < this.config.maxAttempts) {
+          const delay = this.calculateDelay(attempt);
+          await this.sleep(delay);
+        }
+      }
+    }
+
+    return {
+      status: ExecutionStatus.FAILED,
+      error: lastError,
+      retryCount: this.config.maxAttempts - 1,
+      functionName: context?.toolName
+    };
+  }
+
+  /**
+   * Check if an error is retryable
+   */
+  private isRetryable(error: Error, attempt: number): boolean {
+    // Check if error message contains retryable error codes
+    for (const code of this.config.retryableErrors) {
+      if (error.message.includes(code) || (error as any).code === code) {
+        return true;
+      }
+    }
+
+    // Check if error is a network error
+    if (error.name === 'NetworkError' || error.name === 'TypeError') {
+      return error.message.includes('fetch') || error.message.includes('network');
+    }
+
+    return false;
+  }
+
+  /**
+   * Calculate delay before next retry with exponential backoff
+   */
+  private calculateDelay(attempt: number): number {
+    const baseDelay = this.config.initialDelay * Math.pow(this.config.backoffMultiplier, attempt - 1);
+    const cappedDelay = Math.min(baseDelay, this.config.maxDelay);
+
+    // Add jitter to prevent thundering herd
+    if (this.config.jitter) {
+      return cappedDelay * (0.5 + Math.random() * 0.5);
+    }
+
+    return cappedDelay;
+  }
+
+  /**
+   * Sleep for specified milliseconds
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Update retry configuration
+   */
+  updateConfig(updates: Partial<RetryConfig>): void {
+    this.config = { ...this.config, ...updates };
+  }
+
+  /**
+   * Get current configuration
+   */
+  getConfig(): Readonly<Required<RetryConfig>> {
+    return { ...this.config };
+  }
+}
