@@ -1,0 +1,89 @@
+{
+  "name": "@superinstance/memorypalace",
+  "version": "0.1.0",
+  "description": "Hierarchical three-tier memory system for AI agents with automatic consolidation and semantic retrieval",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./storage": {
+      "import": "./dist/storage/index.js",
+      "types": "./dist/storage/index.d.ts"
+    },
+    "./retrieval": {
+      "import": "./dist/retrieval/index.js",
+      "types": "./dist/retrieval/index.d.ts"
+    },
+    "./sharing": {
+      "import": "./dist/sharing/index.js",
+      "types": "./dist/sharing/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "agent-memory",
+    "hierarchical-memory",
+    "persistent-memory",
+    "semantic-retrieval",
+    "memory-consolidation",
+    "working-memory",
+    "short-term-memory",
+    "long-term-memory",
+    "multi-agent-memory",
+    "memory-sharing",
+    "vector-search",
+    "memory-optimization",
+    "agent-intelligence",
+    "knowledge-retention",
+    "context-management"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/MemoryPalace"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/MemoryPalace/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/MemoryPalace#readme",
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "dependencies": {
+    "eventemitter3": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
