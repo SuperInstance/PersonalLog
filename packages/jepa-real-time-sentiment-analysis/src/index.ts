@@ -43,6 +43,14 @@ export type {
   // Error types
   SentimentAnalysisError,
   SentimentErrorCode,
+
+  // WebGPU types
+  WebGPUConfig,
+  WebGPUDeviceInfo,
+  WebGPUPerformanceMetrics,
+  WebGPUComputePipeline,
+  WebGPUMemoryBuffers,
+  WebGPUInferenceResult,
 } from './types'
 
 // ============================================================================
@@ -59,6 +67,17 @@ export {
   isHighArousal,
   getSentimentIntensity,
 } from './text-sentiment-analyzer'
+
+// ============================================================================
+// WEBGPU SENTIMENT ANALYSIS EXPORTS
+// ============================================================================
+
+export {
+  WebGPUSentimentAnalyzer,
+  isWebGPUAvailable,
+  createWebGPUSentimentAnalyzer,
+  detectSentimentGPU,
+} from './webgpu-sentiment-analyzer'
 
 // ============================================================================
 // VERSION

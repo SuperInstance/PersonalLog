@@ -353,3 +353,104 @@ export type SentimentErrorCode =
   | 'INVALID_AUDIO_FORMAT'
   | 'STORAGE_ERROR'
   | 'QUERY_FAILED'
+  | 'WEBGPU_NOT_SUPPORTED'
+  | 'WEBGPU_INIT_FAILED'
+  | 'FALLBACK_TO_CPU'
+
+// ============================================================================
+// WEBGPU TYPES
+// ============================================================================
+
+/**
+ * WebGPU device and memory information
+ */
+export interface WebGPUDeviceInfo {
+  /** GPU adapter name */
+  adapter: string
+  /** GPU vendor */
+  vendor: string
+  /** Architecture description */
+  architecture: string
+  /** Available device memory in bytes */
+  availableMemory: number
+  /** WebGPU feature support */
+  features: string[]
+}
+
+/**
+ * WebGPU backend configuration
+ */
+export interface WebGPUConfig {
+  /** Preferred device (default: first available) */
+  devicePreference?: 'discrete-gpu' | 'integrated-gpu' | 'cpu'
+  /** Enable timestamp queries for performance tracking */
+  enableTimestamps?: boolean
+  /** Maximum buffer size in bytes (default: 256MB) */
+  maxBufferSize?: number
+  /** Enable memory mapping for faster transfers */
+  useMappedBuffers?: boolean
+  /** Force CPU fallback even if WebGPU is available */
+  forceCPUFallback?: boolean
+}
+
+/**
+ * WebGPU performance metrics
+ */
+export interface WebGPUPerformanceMetrics {
+  /** Total GPU execution time in milliseconds */
+  gpuExecutionTime: number
+  /** Total CPU execution time in milliseconds */
+  cpuExecutionTime: number
+  /** Memory transfer time in milliseconds */
+  memoryTransferTime: number
+  /** Speedup factor (GPU time / CPU time) */
+  speedupFactor: number
+  /** Peak memory usage in bytes */
+  peakMemoryUsage: number
+  /** Average throughput (samples per second) */
+  throughput: number
+  /** Device utilization (0-1) */
+  deviceUtilization: number
+}
+
+/**
+ * WebGPU compute pipeline for sentiment analysis
+ */
+export interface WebGPUComputePipeline {
+  /** Compute pipeline handle */
+  pipeline: any // GPUComputePipeline
+  /** Bind group layout */
+  bindGroupLayout: any // GPUBindGroupLayout
+  /** Pipeline layout */
+  pipelineLayout: any // GPUPipelineLayout
+  /** Compute shader module */
+  shaderModule: any // GPUShaderModule
+}
+
+/**
+ * WebGPU memory buffers for sentiment inference
+ */
+export interface WebGPUMemoryBuffers {
+  /** Input text tokens buffer */
+  inputBuffer: any // GPUBuffer
+  /** Keyword weights buffer */
+  keywordWeightsBuffer: any // GPUBuffer
+  /** Emoji weights buffer */
+  emojiWeightsBuffer: any // GPUBuffer
+  /** Output sentiment scores buffer */
+  outputBuffer: any // GPUBuffer
+  /** Temporary computation buffer */
+  tempBuffer: any // GPUBuffer
+}
+
+/**
+ * WebGPU inference result with performance data
+ */
+export interface WebGPUInferenceResult extends TextSentimentDetection {
+  /** Performance metrics */
+  performance?: WebGPUPerformanceMetrics
+  /** Whether GPU was used for this inference */
+  usedGPU: boolean
+  /** Device information (if GPU was used) */
+  deviceInfo?: WebGPUDeviceInfo
+}

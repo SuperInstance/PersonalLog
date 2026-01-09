@@ -61,8 +61,10 @@ export class VectorSearchError extends Error {
       });
     }
 
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof (Error as any).captureStackTrace === 'function') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (Error as any).captureStackTrace(this, this.constructor);
     }
   }
 }

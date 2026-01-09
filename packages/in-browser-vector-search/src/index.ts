@@ -27,6 +27,13 @@
 // Main export
 export { VectorStore } from './vector-store'
 
+// WebGPU accelerated search
+export {
+  WebGPUVectorSearch,
+  WebGPUUnsupportedError,
+  WebGPUInitializationError,
+} from './webgpu-vector-search'
+
 // Types
 export type {
   KnowledgeEntry,
@@ -36,6 +43,13 @@ export type {
   KnowledgeSearchResult,
   EmbeddingGenerator
 } from './vector-store'
+
+export type {
+  WebGPUSearchOptions,
+  SearchResult,
+  BatchSearchResult,
+  PerformanceMetrics,
+} from './webgpu-vector-search'
 
 // Utilities
 export {

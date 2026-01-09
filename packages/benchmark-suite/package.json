@@ -1,0 +1,64 @@
+{
+  "name": "@superinstance/benchmark-suite",
+  "version": "1.0.0",
+  "description": "Comprehensive performance benchmarking suite for Phase 1 tools",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "bench": "node dist/cli.js",
+    "bench:gpu-profiler": "node dist/cli.js --filter gpu-profiler",
+    "bench:vector-search": "node dist/cli.js --filter vector-search",
+    "bench:jepa-sentiment": "node dist/cli.js --filter jepa-sentiment",
+    "bench:integration": "node dist/cli.js --filter integration",
+    "bench:compare": "node dist/cli.js --compare",
+    "bench:baseline": "node dist/cli.js --save baseline",
+    "bench:report": "node dist/cli.js --report",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "benchmark",
+    "performance",
+    "profiling",
+    "testing",
+    "metrics",
+    "gpu-benchmark",
+    "vector-search-benchmark",
+    "sentiment-analysis-benchmark",
+    "integration-benchmark",
+    "performance-testing",
+    "load-testing",
+    "stress-testing",
+    "benchmarking-suite",
+    "performance-measurement",
+    "benchmark-framework"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/benchmark-suite.git"
+  },
+  "dependencies": {
+    "cli-table3": "^0.6.3",
+    "commander": "^11.1.0",
+    "picocolors": "^1.0.0",
+    "ora": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "benchmarks",
+    "README.md",
+    "LICENSE"
+  ]
+}

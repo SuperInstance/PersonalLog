@@ -1,0 +1,161 @@
+# npm publish ignore file
+# Files listed here will NOT be included in npm package
+
+# Source files (we ship dist/ instead)
+src/
+ts/
+lib/
+*.ts
+*.tsx
+!*.d.ts
+
+# Tests and testing
+test/
+tests/
+__tests__/
+spec/
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+coverage/
+.nyc_output/
+*.test.ts
+*.test.js
+
+# Development files
+.eslintrc*
+.prettierrc*
+.editorconfig
+.eslintcache
+
+# Build configs (keep tsconfig.json for type checking)
+rollup.config.js
+webpack.config.js
+vite.config.ts
+vue.config.js
+gulpfile.js
+gruntfile.js
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+appveyor.yml
+codeship-services.yml
+azure-pipelines.yml
+
+# Documentation (keep README.md and LICENSE)
+docs/
+*.md
+!README.md
+!CHANGELOG.md
+!LICENSE
+!LICENSE.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+.SLAUGHTERHOUSE.md
+DEVELOPMENT.md
+
+# Examples and demos
+examples/
+demo/
+sandbox/
+playground/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Git
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.secrets/
+credentials.json
+
+# Logs and databases
+*.log
+logs/
+*.sql
+*.sqlite
+*.db
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Misc
+*.bak
+*.tmp
+*.temp
+.cache/
+temp/
+tmp/
+
+# Development scripts
+scripts/
+!dist/
+tools/
+.devcontainer/
+
+# Benchmarks
+benchmark/
+benchmarks/
+perf/
+
+# Storybook
+.storybook/
+*.stories.js
+*.stories.ts
+
+# Monorepo (if applicable)
+lerna.json
+nx.json
+turbo.json
+
+# Package manager locks (keep package.json, package-lock.json)
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+
+# Node modules (always excluded)
+node_modules/
+
+# Build artifacts (keep dist/ if that's what you ship)
+build/
+dist-tmp/
+*.tgz
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc config files
+.prettierignore
+.stylelintrc
+.babelrc
+
+# Keep these files for npm consumers
+!dist/
+!package.json
+!package-lock.json
+!README.md
+!CHANGELOG.md
+!LICENSE
+!LICENSE.md

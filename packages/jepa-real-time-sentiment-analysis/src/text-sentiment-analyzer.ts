@@ -29,7 +29,7 @@ export type EmotionType = SentimentCategory
 // SENTIMENT PATTERNS DATABASE
 // ============================================================================
 
-const SENTIMENT_PATTERNS: Record<SentimentCategory, SentimentPattern> = {
+export const SENTIMENT_PATTERNS: Record<SentimentCategory, SentimentPattern> = {
   // Positive High-Arousal Sentiments
   happy: {
     keywords: [
