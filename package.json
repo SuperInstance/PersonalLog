@@ -71,9 +71,9 @@
     "axe-core": "^4.8.0",
     "axe-playwright": "^2.2.2",
     "eslint": "^9",
-    "eslint-config-next": "16.1.1",
-    "jsdom": "^23.0.0",
-    "sharp": "^0.34.5",
+    "eslint-config-next": "15.3.5",
+    "jsdom": "^27.4.0",
+    "sharp": "^0.33.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "4.0.16"
