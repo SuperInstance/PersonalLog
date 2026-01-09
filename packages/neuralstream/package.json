@@ -1,0 +1,77 @@
+{
+  "name": "@superinstance/neuralstream",
+  "version": "0.1.0",
+  "description": "60 FPS browser LLM inference with WebGPU acceleration",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./shaders": {
+      "types": "./dist/shaders/index.d.ts",
+      "import": "./dist/shaders/index.js"
+    },
+    "./workers": {
+      "types": "./dist/workers/index.d.ts",
+      "import": "./dist/workers/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "webgpu",
+    "llm",
+    "inference",
+    "browser",
+    "gpu",
+    "acceleration",
+    "transformers",
+    "machine-learning",
+    "local-ai",
+    "offline-ai",
+    "60fps",
+    "streaming"
+  ],
+  "author": "SuperInstance",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuperInstance/NeuralStream"
+  },
+  "bugs": {
+    "url": "https://github.com/SuperInstance/NeuralStream/issues"
+  },
+  "homepage": "https://github.com/SuperInstance/NeuralStream#readme",
+  "dependencies": {
+    "@webgpu/types": "^0.1.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0"
+  },
+  "peerDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
