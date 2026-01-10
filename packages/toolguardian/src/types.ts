@@ -39,20 +39,39 @@ export enum SchemaType {
 
 /**
  * Property schema definition
+ *
+ * Defines validation rules for a single property in a function schema.
+ * Supports type checking, constraints, and nested structures.
  */
 export interface PropertySchema {
+  /** The expected type(s) for this property */
   type: SchemaType | SchemaType[];
+  /** Human-readable description of what this property represents */
   description?: string;
-  required?: boolean;
+  /** Whether this property is required (true) or optional (false/undefined) */
+  required?: boolean | string[];
+  /** Minimum string length (for string types) */
   minLength?: number;
+  /** Maximum string length (for string types) */
   maxLength?: number;
+  /** Minimum numeric value (for number types) */
   minimum?: number;
+  /** Maximum numeric value (for number types) */
   maximum?: number;
-  pattern?: RegExp;
+  /** Regular expression pattern that string values must match (can be RegExp or string) */
+  pattern?: RegExp | string;
+  /** Array of allowed values for this property */
   enum?: any[];
+  /** Nested property definitions for object types */
   properties?: Record<string, PropertySchema>;
+  /** Schema for array item types */
   items?: PropertySchema;
+  /** Default value if not provided */
   default?: any;
+  /** Minimum number of items for array types */
+  minItems?: number;
+  /** Maximum number of items for array types */
+  maxItems?: number;
 }
 
 /**

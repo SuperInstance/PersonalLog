@@ -11,6 +11,18 @@ import { SchemaType, PropertySchema, ValidationError, FunctionSchema } from '../
 
 /**
  * Schema validator for function inputs/outputs
+ *
+ * Provides comprehensive schema validation for function inputs and outputs,
+ * including type checking, constraint validation, and nested object validation.
+ *
+ * @example
+ * ```typescript
+ * const validator = new SchemaValidator();
+ * const errors = validator.validate(
+ *   { name: 'John', age: 30 },
+ *   { input: { name: { type: SchemaType.STRING, required: true } } }
+ * );
+ * ```
  */
 export class SchemaValidator {
   private strictMode: boolean;
@@ -21,6 +33,14 @@ export class SchemaValidator {
 
   /**
    * Validate input against schema
+   *
+   * Checks that all required fields are present and that each field
+   * matches its schema definition (type, constraints, pattern, etc.)
+   *
+   * @param input - The input data to validate
+   * @param schema - The function schema containing input definitions
+   * @param requiredFields - Optional array of required field names (deprecated, use inputRequired in schema)
+   * @returns Array of validation errors (empty if validation passes)
    */
   validate(input: any, schema: FunctionSchema, requiredFields?: string[]): ValidationError[] {
     const errors: ValidationError[] = [];
@@ -29,8 +49,25 @@ export class SchemaValidator {
       return errors; // No schema means any input is valid
     }
 
-    // Check required fields
-    const required = schema.inputRequired || [];
+    // Build the list of required fields from schema.inputRequired, schema.input, or requiredFields parameter
+    // Priority: schema.inputRequired > requiredFields parameter > fields NOT marked as optional
+    let required: string[] = [];
+
+    if (schema.inputRequired && schema.inputRequired.length > 0) {
+      required = [...schema.inputRequired];
+    } else if (requiredFields && requiredFields.length > 0) {
+      required = [...requiredFields];
+    } else {
+      // If no explicit required fields, check each field's required/optional property
+      for (const [field, fieldSchema] of Object.entries(schema.input)) {
+        const isRequired = fieldSchema.required === true || !(fieldSchema as any).optional;
+        if (isRequired) {
+          required.push(field);
+        }
+      }
+    }
+
+    // Check required fields - verify they exist and are not null/undefined
     for (const field of required) {
       if (!(field in input) || input[field] === undefined || input[field] === null) {
         errors.push({
@@ -42,11 +79,12 @@ export class SchemaValidator {
       }
     }
 
-    // Validate each field
+    // Validate each field in the schema
     for (const [field, fieldSchema] of Object.entries(schema.input)) {
       const value = input[field];
 
       // Skip validation if field is not required and not provided
+      // But only skip if it's truly not provided (undefined or null)
       if (!required.includes(field) && (value === undefined || value === null)) {
         continue;
       }
@@ -55,7 +93,7 @@ export class SchemaValidator {
       errors.push(...fieldErrors);
     }
 
-    // In strict mode, check for extra fields
+    // In strict mode, check for extra fields not defined in schema
     if (this.strictMode) {
       for (const field of Object.keys(input)) {
         if (!(field in schema.input)) {
@@ -150,13 +188,19 @@ export class SchemaValidator {
           expected: `length <= ${schema.maxLength}`
         });
       }
-      if (schema.pattern && !schema.pattern.test(value)) {
-        errors.push({
-          path,
-          message: `String does not match required pattern`,
-          value,
-          expected: `pattern: ${schema.pattern.toString()}`
-        });
+      // Handle pattern validation - pattern can be RegExp or string
+      if (schema.pattern) {
+        const regex = schema.pattern instanceof RegExp
+          ? schema.pattern
+          : new RegExp(schema.pattern as string);
+        if (!regex.test(value)) {
+          errors.push({
+            path,
+            message: `String does not match required pattern`,
+            value,
+            expected: `pattern: ${regex.toString()}`
+          });
+        }
       }
     }
 
@@ -182,6 +226,25 @@ export class SchemaValidator {
 
     // Array validations
     if (types.includes(SchemaType.ARRAY) && Array.isArray(value)) {
+      // Check minItems constraint
+      if (schema.minItems !== undefined && value.length < schema.minItems) {
+        errors.push({
+          path,
+          message: `Array length ${value.length} < minimum ${schema.minItems}`,
+          value,
+          expected: `length >= ${schema.minItems}`
+        });
+      }
+      // Check maxItems constraint
+      if (schema.maxItems !== undefined && value.length > schema.maxItems) {
+        errors.push({
+          path,
+          message: `Array length ${value.length} > maximum ${schema.maxItems}`,
+          value,
+          expected: `length <= ${schema.maxItems}`
+        });
+      }
+      // Validate each item in the array
       if (schema.items) {
         for (let i = 0; i < value.length; i++) {
           const itemErrors = this.validateField(value[i], schema.items!, `${path}[${i}]`);
@@ -193,9 +256,33 @@ export class SchemaValidator {
     // Object validations
     if (types.includes(SchemaType.OBJECT) && typeof value === 'object' && value !== null && !Array.isArray(value)) {
       if (schema.properties) {
+        // Check for required nested properties if specified in schema
+        // The 'required' property can be an array of property names that must be present
+        const objectRequiredProperties = Array.isArray(schema.required)
+          ? schema.required as string[]
+          : [];
+
         for (const [prop, propSchema] of Object.entries(schema.properties)) {
-          const propErrors = this.validateField(value[prop], propSchema, `${path}.${prop}`);
-          errors.push(...propErrors);
+          const propValue = value[prop];
+
+          // Check if this property is required in the nested object
+          if (objectRequiredProperties.includes(prop)) {
+            if (propValue === undefined || propValue === null) {
+              errors.push({
+                path: `${path}.${prop}`,
+                message: `Required property '${prop}' is missing from object`,
+                expected: 'defined value',
+                value: propValue
+              });
+              continue; // Skip further validation for missing required property
+            }
+          }
+
+          // Only validate non-undefined/non-null values, or required properties
+          if (propValue !== undefined && propValue !== null || objectRequiredProperties.includes(prop)) {
+            const propErrors = this.validateField(value[prop], propSchema, `${path}.${prop}`);
+            errors.push(...propErrors);
+          }
         }
       }
     }
@@ -240,15 +327,31 @@ export class SchemaValidator {
   }
 
   /**
-   * Create a human-readable error message
+   * Create a human-readable error message from validation errors
+   *
+   * Formats an array of validation errors into a readable string.
+   * Handles both ValidationError objects (with 'path') and legacy format (with 'field').
+   *
+   * @param errors - Array of validation errors to format
+   * @returns Formatted error message string
    */
   formatErrors(errors: ValidationError[]): string {
     if (errors.length === 0) return '';
-    return errors.map(e => `  - ${e.path}: ${e.message}`).join('\n');
+    return errors.map(e => {
+      // Support both 'path' (ValidationError) and 'field' (legacy/test format)
+      const field = (e as any).field || e.path;
+      return `  - ${field}: ${e.message}`;
+    }).join('\n');
   }
 
   /**
-   * Convert schema to JSON Schema format
+   * Convert internal FunctionSchema to JSON Schema format
+   *
+   * Converts the internal schema representation to standard JSON Schema format.
+   * Automatically determines required fields based on presence of 'optional' marker.
+   *
+   * @param functionSchema - The internal function schema to convert
+   * @returns JSON Schema compatible object
    */
   toJsonSchema(functionSchema: FunctionSchema): Record<string, any> {
     const jsonSchema: Record<string, any> = {};
@@ -256,8 +359,24 @@ export class SchemaValidator {
     if (functionSchema.input) {
       jsonSchema.type = 'object';
       jsonSchema.properties = this.propertiesToJsonSchema(functionSchema.input);
+
+      // Build required array:
+      // 1. Use inputRequired if provided
+      // 2. Otherwise, infer from fields that don't have 'optional: true'
       if (functionSchema.inputRequired && functionSchema.inputRequired.length > 0) {
         jsonSchema.required = functionSchema.inputRequired;
+      } else {
+        // Infer required fields from schema
+        const required: string[] = [];
+        for (const [name, propSchema] of Object.entries(functionSchema.input)) {
+          // Field is required if not explicitly marked as optional
+          if (!(propSchema as any).optional) {
+            required.push(name);
+          }
+        }
+        if (required.length > 0) {
+          jsonSchema.required = required;
+        }
       }
     }
 

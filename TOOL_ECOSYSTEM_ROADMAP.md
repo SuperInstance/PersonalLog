@@ -257,7 +257,7 @@
 - Enhance README files with more examples
 - Create API documentation
 - Add JSDoc comments
-- Create video tutorials (optional)
+- Create Tutorials for each Tool
 - Add Storybook stories for UI components
 
 **Agents:** 5 agents in parallel

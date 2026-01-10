@@ -75,7 +75,7 @@ export type {
 } from './types/dashboard';
 
 // Styles
-export './styles/globals.css';
+import './styles/globals.css';
 
 // Version
 export const VERSION = '1.0.0';

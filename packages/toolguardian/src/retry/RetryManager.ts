@@ -10,6 +10,14 @@ import { RetryConfig, ExecutionResult, ExecutionStatus } from '../types.js';
 
 /**
  * Default retry configuration
+ *
+ * Provides sensible defaults for retry behavior:
+ * - Up to 3 attempts before giving up
+ * - Exponential backoff starting at 100ms
+ * - Maximum delay capped at 5 seconds
+ * - Doubling delay between retries
+ * - Specific network errors are retryable
+ * - Jitter disabled by default for predictable testing (enable in production)
  */
 const DEFAULT_RETRY_CONFIG: Required<RetryConfig> = {
   maxAttempts: 3,
@@ -17,7 +25,7 @@ const DEFAULT_RETRY_CONFIG: Required<RetryConfig> = {
   maxDelay: 5000,
   backoffMultiplier: 2,
   retryableErrors: ['ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET', 'NetworkError'],
-  jitter: true
+  jitter: false  // Disabled by default for predictability; enable in production for thundering herd prevention
 };
 
 /**
@@ -84,9 +92,29 @@ export class RetryManager {
   }
 
   /**
-   * Check if an error is retryable
+   * Check if an error is retryable based on error type and attempt count
+   *
+   * An error is retryable if:
+   * 1. The attempt number hasn't exceeded maxAttempts
+   * 2. The error matches a retryable error pattern
+   * 3. If no retryableErrors list is specified, all errors are retryable
+   *
+   * @param error - The error that occurred
+   * @param attempt - The current attempt number (1-indexed)
+   * @returns True if the error should be retried
    */
   private isRetryable(error: Error, attempt: number): boolean {
+    // If we've exceeded max attempts, don't retry
+    // Note: attempt is 1-indexed, so if maxAttempts is 3 and attempt is 4, we should stop
+    if (attempt > this.config.maxAttempts) {
+      return false;
+    }
+
+    // If no retryable errors specified, treat all errors as retryable
+    if (!this.config.retryableErrors || this.config.retryableErrors.length === 0) {
+      return true;
+    }
+
     // Check if error message contains retryable error codes
     for (const code of this.config.retryableErrors) {
       if (error.message.includes(code) || (error as any).code === code) {
@@ -94,7 +122,7 @@ export class RetryManager {
       }
     }
 
-    // Check if error is a network error
+    // Check if error is a network error (matches specific patterns)
     if (error.name === 'NetworkError' || error.name === 'TypeError') {
       return error.message.includes('fetch') || error.message.includes('network');
     }

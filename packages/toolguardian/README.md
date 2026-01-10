@@ -1,8 +1,23 @@
 # ToolGuardian
 
+[![npm version](https://badge.fury.io/js/%40superinstance%2Ftoolguardian.svg)](https://www.npmjs.com/package/@superinstance/toolguardian)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-blue)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E=18.0.0-green)](https://nodejs.org/)
+
 > Reliable function calling with validation, retry, and monitoring for AI agents and LLM applications.
 
 ToolGuardian provides a comprehensive reliability layer for function execution, combining schema validation, automatic retry with exponential backoff, execution sandboxing, and real-time monitoring. Perfect for AI agents, LLM function calling, and any application requiring reliable tool execution.
+
+## Why ToolGuardian?
+
+Building AI agents and LLM-powered applications requires reliable function execution. ToolGuardian solves common challenges:
+
+- **Invalid Parameters**: Schema validation catches bad inputs before execution
+- **Network Failures**: Automatic retry with exponential backoff handles transient errors
+- **Timeout Issues**: Execution sandboxing prevents runaway functions
+- **Monitoring Gaps**: Built-in metrics and history tracking for observability
+- **Tool Dependencies**: Prerequisite checking ensures tools execute in the right order
 
 ## Features
 
@@ -15,6 +30,7 @@ ToolGuardian provides a comprehensive reliability layer for function execution, 
 - **Intent Parsing**: Natural language to function call extraction
 - **Lifecycle Hooks**: Before/after/onError hooks for custom logic
 - **TypeScript First**: Fully typed with comprehensive TypeScript support
+- **Zero Dependencies**: Lightweight core with optional peer dependencies
 
 ## Installation
 
@@ -27,6 +43,8 @@ yarn add @superinstance/toolguardian
 ```
 
 ## Quick Start
+
+Get started in under 5 minutes with this simple example:
 
 ```typescript
 import { ToolGuardian, SchemaType } from '@superinstance/toolguardian';
@@ -72,7 +90,7 @@ const tools = {
       input: {
         endpoint: {
           type: SchemaType.STRING,
-          pattern: '^https?://'
+          pattern: /^https?:\/\//
         }
       }
     }
@@ -98,10 +116,11 @@ const result = await guardian.execute('calculate', {
   operation: 'multiply'
 });
 
-console.log(result); // { status: 'success', result: 50, executionTime: 2, ... }
+console.log(result);
+// { status: 'success', result: 50, executionTime: 2, ... }
 ```
 
-## Usage
+## Usage Examples
 
 ### Parallel Execution
 
@@ -198,15 +217,15 @@ ToolGuardian extends EventEmitter for real-time event handling:
 
 ```typescript
 guardian.on('execution:complete', (data) => {
-  console.log(`✓ ${data.toolName} completed in ${data.duration}ms`);
+  console.log(`${data.toolName} completed in ${data.duration}ms`);
 });
 
 guardian.on('execution:failed', (data) => {
-  console.log(`✗ ${data.toolName} failed:`, data.error?.message);
+  console.log(`${data.toolName} failed:`, data.error?.message);
 });
 
 guardian.on('execution:slow', (data) => {
-  console.log(`⚠ ${data.toolName} is slow: ${data.duration}ms`);
+  console.log(`${data.toolName} is slow: ${data.duration}ms`);
 });
 ```
 
@@ -276,16 +295,33 @@ interface ExecutionOptions {
 }
 ```
 
+## Use Cases
+
+- **AI Agents**: Reliable tool execution for autonomous agents
+- **LLM Function Calling**: Validation and retry for OpenAI/Anthropic function calls
+- **API Orchestration**: Chain multiple API calls with error handling
+- **Data Processing Pipelines**: Robust ETL with monitoring
+- **Microservice Communication**: Reliable inter-service communication
+- **Automation Workflows**: Build resilient automation scripts
+
+## Documentation
+
+- [Architecture](./docs/ARCHITECTURE.md) - System design and data flow
+- [User Guide](./docs/USER_GUIDE.md) - Comprehensive usage guide
+- [API Reference](./docs/API.md) - Complete API documentation
+- [Examples](./examples/) - 10 production-ready examples
+
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guidelines](./docs/CONTRIBUTING.md) before submitting PRs.
+
 ## License
 
 MIT © [SuperInstance](https://github.com/SuperInstance)
 
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
-
 ## Links
 
 - [GitHub](https://github.com/SuperInstance/ToolGuardian)
-- [Documentation](https://github.com/SuperInstance/ToolGuardian#readme)
-- [Examples](./examples)
+- [npm](https://www.npmjs.com/package/@superinstance/toolguardian)
+- [Examples](./examples/)
+- [SuperInstance](https://github.com/SuperInstance)

@@ -28,8 +28,9 @@ import { Monitor } from '../monitoring/Monitor.js';
 
 /**
  * Default execution options
+ * @internal
  */
-const DEFAULT_EXECUTION_OPTIONS: ExecutionOptions = {
+const DEFAULT_EXECUTION_OPTIONS: Readonly<ExecutionOptions> = Object.freeze({
   validateBeforeCall: true,
   retryOnFailure: true,
   sandbox: true,
@@ -37,7 +38,23 @@ const DEFAULT_EXECUTION_OPTIONS: ExecutionOptions = {
   monitoring: true,
   throwOnError: false,
   context: {}
-};
+});
+
+/**
+ * Hook registry key type for optimized lookups
+ * @internal
+ */
+type HookType = 'before' | 'after' | 'onError';
+
+/**
+ * Combined hooks container for efficient iteration
+ * @internal
+ */
+interface CombinedHooks {
+  before: Function[];
+  after: Function[];
+  onError: Function[];
+}
 
 /**
  * ToolGuardian - Reliable function calling with validation and retry
@@ -51,12 +68,24 @@ export class ToolGuardian extends EventEmitter {
   private preHooks: PreExecutionHook[];
   private postHooks: PostExecutionHook[];
   private strictValidation: boolean;
+  private hooksRegistry: Map<string, Map<HookType, Function[]>>;
+  private isDisposed: boolean = false;
+
+  // Cached hook lookup results to avoid repeated iterations
+  private hookCache: Map<string, CombinedHooks> = new Map();
+  private cacheInvalidated: boolean = true;
+
+  // Separate arrays for wildcard hooks (most common case optimization)
+  private wildcardBeforeHooks: Function[] = [];
+  private wildcardAfterHooks: Function[] = [];
+  private wildcardErrorHooks: Function[] = [];
+
   public readonly hooks: {
     before: (toolName: string | '*', fn: (params: any, context: any) => Promise<void> | void) => void;
     after: (toolName: string | '*', fn: (result: any, params: any, context: any) => Promise<void> | void) => void;
     onError: (toolName: string | '*', fn: (error: Error, params: any, context?: any) => Promise<void> | void) => void;
-    remove: (type: 'before' | 'after' | 'onError', toolName: string) => void;
-    getHooks: (type: 'before' | 'after' | 'onError', toolName: string) => Array<Function>;
+    remove: (type: HookType, toolName: string) => void;
+    getHooks: (type: HookType, toolName: string) => readonly Function[];
   };
 
   constructor(config: ToolGuardianConfig = {}) {
@@ -64,76 +93,36 @@ export class ToolGuardian extends EventEmitter {
 
     this.tools = config.tools ?? {};
     this.strictValidation = config.strictValidation ?? false;
+    this.preHooks = config.preHooks ?? [];
+    this.postHooks = config.postHooks ?? [];
+
+    // Initialize optimized hook registry
+    this.hooksRegistry = new Map();
 
     // Initialize components
     this.validator = new SchemaValidator(this.strictValidation);
     this.retryManager = new RetryManager(config.defaultRetryConfig);
     this.sandbox = new ExecutionSandbox(config.defaultSandboxConfig);
     this.monitor = new Monitor(config.maxHistorySize ?? 1000);
-    this.preHooks = config.preHooks ?? [];
-    this.postHooks = config.postHooks ?? [];
 
-    // Create hooks registry for easy access
-    const hooksRegistry: Map<string, Map<'before' | 'after' | 'onError', Function[]>> = new Map();
-
+    // Create hooks API with optimized implementations
     this.hooks = {
-      before: (toolName: string | '*', fn: (params: any, context: any) => Promise<void> | void) => {
-        const key = typeof toolName === 'string' ? toolName : '*';
-        if (!hooksRegistry.has(key)) {
-          hooksRegistry.set(key, new Map());
-        }
-        if (!hooksRegistry.get(key)!.has('before')) {
-          hooksRegistry.get(key)!.set('before', []);
-        }
-        hooksRegistry.get(key)!.get('before')!.push(fn);
+      before: (toolName: string | '*', fn: Function) => {
+        this.addHook('before', toolName, fn);
       },
-      after: (toolName: string | '*', fn: (result: any, params: any, context: any) => Promise<void> | void) => {
-        const key = typeof toolName === 'string' ? toolName : '*';
-        if (!hooksRegistry.has(key)) {
-          hooksRegistry.set(key, new Map());
-        }
-        if (!hooksRegistry.get(key)!.has('after')) {
-          hooksRegistry.get(key)!.set('after', []);
-        }
-        hooksRegistry.get(key)!.get('after')!.push(fn);
+      after: (toolName: string | '*', fn: Function) => {
+        this.addHook('after', toolName, fn);
       },
-      onError: (toolName: string | '*', fn: (error: Error, params: any, context?: any) => Promise<void> | void) => {
-        const key = typeof toolName === 'string' ? toolName : '*';
-        if (!hooksRegistry.has(key)) {
-          hooksRegistry.set(key, new Map());
-        }
-        if (!hooksRegistry.get(key)!.has('onError')) {
-          hooksRegistry.get(key)!.set('onError', []);
-        }
-        hooksRegistry.get(key)!.get('onError')!.push(fn);
+      onError: (toolName: string | '*', fn: Function) => {
+        this.addHook('onError', toolName, fn);
       },
-      remove: (type: 'before' | 'after' | 'onError', toolName: string) => {
-        if (hooksRegistry.has(toolName)) {
-          hooksRegistry.get(toolName)!.delete(type);
-        }
+      remove: (type: HookType, toolName: string) => {
+        this.removeHook(type, toolName);
       },
-      getHooks: (type: 'before' | 'after' | 'onError', toolName: string) => {
-        const hooks: Function[] = [];
-        // Get tool-specific hooks
-        if (hooksRegistry.has(toolName)) {
-          const typeHooks = hooksRegistry.get(toolName)!.get(type);
-          if (typeHooks) {
-            hooks.push(...typeHooks);
-          }
-        }
-        // Get wildcard hooks
-        if (hooksRegistry.has('*')) {
-          const wildcardHooks = hooksRegistry.get('*')!.get(type);
-          if (wildcardHooks) {
-            hooks.push(...wildcardHooks);
-          }
-        }
-        return hooks;
+      getHooks: (type: HookType, toolName: string) => {
+        return this.getCombinedHooks(type, toolName);
       }
     };
-
-    // Store hooks registry for internal use
-    (this as any)._hooksRegistry = hooksRegistry;
 
     // Set up monitoring
     if (config.enableMonitoring) {
@@ -141,6 +130,133 @@ export class ToolGuardian extends EventEmitter {
         this.emit('alert', data);
       });
     }
+  }
+
+  /**
+   * Add a hook to the registry (optimized)
+   * @internal
+   */
+  private addHook(type: HookType, toolName: string | '*', fn: Function): void {
+    if (this.isDisposed) return;
+
+    if (toolName === '*') {
+      // Wildcard hooks - use direct arrays for performance
+      switch (type) {
+        case 'before':
+          this.wildcardBeforeHooks.push(fn);
+          break;
+        case 'after':
+          this.wildcardAfterHooks.push(fn);
+          break;
+        case 'onError':
+          this.wildcardErrorHooks.push(fn);
+          break;
+      }
+    } else {
+      // Tool-specific hooks
+      if (!this.hooksRegistry.has(toolName)) {
+        this.hooksRegistry.set(toolName, new Map());
+      }
+      const toolHooks = this.hooksRegistry.get(toolName)!;
+      if (!toolHooks.has(type)) {
+        toolHooks.set(type, []);
+      }
+      toolHooks.get(type)!.push(fn);
+    }
+    this.cacheInvalidated = true;
+  }
+
+  /**
+   * Remove hooks for a tool and type
+   * @internal
+   */
+  private removeHook(type: HookType, toolName: string): void {
+    if (this.hooksRegistry.has(toolName)) {
+      this.hooksRegistry.get(toolName)!.delete(type);
+    }
+    this.cacheInvalidated = true;
+  }
+
+  /**
+   * Get combined hooks (tool-specific + wildcard) with caching
+   * @internal
+   */
+  private getCombinedHooks(type: HookType, toolName: string): readonly Function[] {
+    const cacheKey = `${toolName}:${type}`;
+
+    if (!this.cacheInvalidated && this.hookCache.has(cacheKey)) {
+      return this.hookCache.get(cacheKey)![type];
+    }
+
+    const hooks: Function[] = [];
+
+    // Get tool-specific hooks
+    if (this.hooksRegistry.has(toolName)) {
+      const typeHooks = this.hooksRegistry.get(toolName)!.get(type);
+      if (typeHooks) {
+        hooks.push(...typeHooks);
+      }
+    }
+
+    // Get wildcard hooks (direct array access - fastest)
+    switch (type) {
+      case 'before':
+        if (this.wildcardBeforeHooks.length > 0) {
+          hooks.push(...this.wildcardBeforeHooks);
+        }
+        break;
+      case 'after':
+        if (this.wildcardAfterHooks.length > 0) {
+          hooks.push(...this.wildcardAfterHooks);
+        }
+        break;
+      case 'onError':
+        if (this.wildcardErrorHooks.length > 0) {
+          hooks.push(...this.wildcardErrorHooks);
+        }
+        break;
+    }
+
+    return hooks;
+  }
+
+  /**
+   * Get all hook types for a tool at once (optimized)
+   * @internal
+   */
+  private getAllHooksForTool(toolName: string): CombinedHooks {
+    const cacheKey = toolName;
+
+    if (!this.cacheInvalidated && this.hookCache.has(cacheKey)) {
+      return this.hookCache.get(cacheKey)!;
+    }
+
+    const result: CombinedHooks = {
+      before: [...this.wildcardBeforeHooks],
+      after: [...this.wildcardAfterHooks],
+      onError: [...this.wildcardErrorHooks]
+    };
+
+    // Get tool-specific hooks and prepend them
+    if (this.hooksRegistry.has(toolName)) {
+      const toolHooks = this.hooksRegistry.get(toolName)!;
+
+      if (toolHooks.has('before')) {
+        result.before.unshift(...toolHooks.get('before')!);
+      }
+      if (toolHooks.has('after')) {
+        result.after.unshift(...toolHooks.get('after')!);
+      }
+      if (toolHooks.has('onError')) {
+        result.onError.unshift(...toolHooks.get('onError')!);
+      }
+    }
+
+    // Cache the result
+    this.hookCache.set(cacheKey, result);
+    this.cacheInvalidated = false;
+
+    return result;
   }
 
   /**
@@ -178,10 +294,32 @@ export class ToolGuardian extends EventEmitter {
   }
 
   /**
-   * Get all registered tools
+   * Get all registered tools (returns reference for performance - freeze if immutability needed)
    */
-  getTools(): Record<string, Tool> {
-    return { ...this.tools };
+  getTools(): Readonly<ToolRegistry> {
+    return this.tools;
+  }
+
+  /**
+   * Dispose of resources and clean up
+   */
+  dispose(): void {
+    if (this.isDisposed) return;
+
+    this.isDisposed = true;
+
+    // Clean up hooks
+    this.hooksRegistry.clear();
+    this.wildcardBeforeHooks = [];
+    this.wildcardAfterHooks = [];
+    this.wildcardErrorHooks = [];
+    this.hookCache.clear();
+
+    // Clean up monitor (which may have timers)
+    this.monitor.dispose?.();
+
+    // Remove all event listeners
+    this.removeAllListeners();
   }
 
   /**
@@ -192,6 +330,14 @@ export class ToolGuardian extends EventEmitter {
     parameters: Record<string, any>,
     options: ExecutionOptions = {}
   ): Promise<ExecutionResult> {
+    if (this.isDisposed) {
+      return {
+        status: ExecutionStatus.FAILED,
+        error: new Error('ToolGuardian has been disposed'),
+        functionName: toolName
+      };
+    }
+
     const mergedOptions = { ...DEFAULT_EXECUTION_OPTIONS, ...options };
 
     // Check if tool exists and is enabled
@@ -217,21 +363,11 @@ export class ToolGuardian extends EventEmitter {
     // Emit starting event
     this.emit('execution:starting', { toolName, parameters, startTime });
 
-    // Get hooks from registry
-    const hooksRegistry = (this as any)._hooksRegistry as Map<string, Map<'before' | 'after' | 'onError', Function[]>>;
+    // Get all hooks at once (optimized)
+    const hooks = this.getAllHooksForTool(toolName);
 
-    // Call before hooks (tool-specific + wildcard)
-    const beforeHooks: Function[] = [];
-    if (hooksRegistry?.has(toolName)) {
-      const toolHooks = hooksRegistry.get(toolName)!.get('before');
-      if (toolHooks) beforeHooks.push(...toolHooks);
-    }
-    if (hooksRegistry?.has('*')) {
-      const wildcardHooks = hooksRegistry.get('*')!.get('before');
-      if (wildcardHooks) beforeHooks.push(...wildcardHooks);
-    }
-
-    for (const hook of beforeHooks) {
+    // Call before hooks
+    for (const hook of hooks.before) {
       try {
         await hook(parameters, { toolName });
       } catch (error) {
@@ -263,7 +399,10 @@ export class ToolGuardian extends EventEmitter {
 
     // Validate input if requested
     if (mergedOptions.validateBeforeCall && tool.schema) {
-      const validationErrors = this.validator.validate(parameters, tool.schema);
+      // Apply default values before validation and execution
+      const parametersWithDefaults = this.applyDefaults(parameters, tool.schema);
+
+      const validationErrors = this.validator.validate(parametersWithDefaults, tool.schema);
       if (validationErrors.length > 0) {
         const result: ExecutionResult = {
           status: ExecutionStatus.VALIDATION_ERROR,
@@ -280,6 +419,9 @@ export class ToolGuardian extends EventEmitter {
 
         return result;
       }
+
+      // Use parameters with defaults for execution
+      parameters = parametersWithDefaults;
     }
 
     // Check prerequisites
@@ -355,18 +497,8 @@ export class ToolGuardian extends EventEmitter {
       }
     }
 
-    // Call after hooks
-    const afterHooks: Function[] = [];
-    if (hooksRegistry?.has(toolName)) {
-      const toolHooks = hooksRegistry.get(toolName)!.get('after');
-      if (toolHooks) afterHooks.push(...toolHooks);
-    }
-    if (hooksRegistry?.has('*')) {
-      const wildcardHooks = hooksRegistry.get('*')!.get('after');
-      if (wildcardHooks) afterHooks.push(...wildcardHooks);
-    }
-
-    for (const hook of afterHooks) {
+    // Call after hooks (using cached hooks from before)
+    for (const hook of hooks.after) {
       try {
         await hook(result, parameters, { toolName });
       } catch (error) {
@@ -597,6 +729,39 @@ export class ToolGuardian extends EventEmitter {
     }
 
     return { success: true };
+  }
+
+  /**
+   * Apply default values from schema to parameters
+   *
+   * For each field in the schema that has a default value and is not
+   * provided in the input parameters, apply the default value.
+   *
+   * @param parameters - The input parameters
+   * @param schema - The function schema containing default values
+   * @returns Parameters with defaults applied
+   */
+  private applyDefaults<T = Record<string, any>>(
+    parameters: T,
+    schema: { input?: Record<string, any> }
+  ): T {
+    if (!schema.input) {
+      return parameters;
+    }
+
+    // Create a shallow copy to avoid mutating the original
+    const result = { ...parameters };
+
+    for (const [fieldName, fieldSchema] of Object.entries(schema.input)) {
+      // Only apply default if field is not provided and has a default value
+      if (!(fieldName in result) || result[fieldName] === undefined) {
+        if (fieldSchema.default !== undefined) {
+          result[fieldName] = fieldSchema.default;
+        }
+      }
+    }
+
+    return result;
   }
 
   /**

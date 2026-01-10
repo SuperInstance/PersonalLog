@@ -51,6 +51,7 @@ export class Monitor extends EventEmitter {
   private retentionPeriod: number = 3600000; // 1 hour default
   private thresholds: ThresholdConfig;
   private alertThresholds: AlertThresholds = {};
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(maxHistorySize: number = 1000, thresholds?: Partial<ThresholdConfig>) {
     super();
@@ -76,8 +77,20 @@ export class Monitor extends EventEmitter {
       errorRates: {}
     };
 
-    // Clean up old entries periodically
-    setInterval(() => this.cleanupOldEntries(), 60000);
+    // Clean up old entries periodically (stored reference for cleanup)
+    this.cleanupInterval = setInterval(() => this.cleanupOldEntries(), 60000);
+  }
+
+  /**
+   * Dispose of the monitor and clear intervals
+   */
+  dispose(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    this.history = [];
+    this.removeAllListeners();
   }
 
   /**
@@ -222,7 +235,7 @@ export class Monitor extends EventEmitter {
   }
 
   /**
-   * Get execution history
+   * Get execution history (optimized to avoid unnecessary array copies)
    */
   getHistory(options?: {
     limit?: number;
@@ -232,26 +245,37 @@ export class Monitor extends EventEmitter {
     startTime?: number;
     endTime?: number;
   }): ExecutionHistory[] {
-    let filtered = [...this.history];
+    let filtered: ExecutionHistory[];
+
+    // Build filter predicates for single-pass filtering
+    const predicates: Array<(h: ExecutionHistory) => boolean> = [];
 
     if (options?.toolName) {
-      filtered = filtered.filter(h => h.toolName === options.toolName);
+      predicates.push(h => h.toolName === options.toolName);
     }
 
     if (options?.status) {
-      filtered = filtered.filter(h => h.result.status === options.status);
+      predicates.push(h => h.result.status === options.status);
     }
 
     if (options?.since !== undefined) {
-      filtered = filtered.filter(h => h.timestamp >= options.since!);
+      predicates.push(h => h.timestamp >= options.since!);
     }
 
     if (options?.startTime !== undefined) {
-      filtered = filtered.filter(h => h.timestamp >= options.startTime!);
+      predicates.push(h => h.timestamp >= options.startTime!);
     }
 
     if (options?.endTime !== undefined) {
-      filtered = filtered.filter(h => h.timestamp <= options.endTime!);
+      predicates.push(h => h.timestamp <= options.endTime!);
+    }
+
+    // Apply all filters in single pass
+    if (predicates.length > 0) {
+      filtered = this.history.filter(h => predicates.every(p => p(h)));
+    } else {
+      // No filters, still need a copy for reverse
+      filtered = this.history.slice();
     }
 
     // Return most recent first
