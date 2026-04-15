@@ -393,3 +393,176 @@ Built with:
 **Built with ❤️ by the PersonalLog team**
 
 *For more information, visit [GitHub](https://github.com/SuperInstance/PersonalLog)*
+
+---
+
+## 📐 Internal Architecture
+
+### Directory Structure
+
+```
+personalLog/
+├── src/
+│   ├── components/
+│   │   ├── messenger/          # AI chat UI (ChatArea, MessageBubble, ConversationList)
+│   │   ├── agents/             # AI agent system (spreader, DAG, multi-model)
+│   │   ├── knowledge/          # Knowledge base UI
+│   │   ├── jepa/               # Emotion analysis & audio visualization
+│   │   ├── providers/          # App-level context providers
+│   │   ├── backup/             # Backup & recovery UI
+│   │   ├── marketplace/        # Agent marketplace UI
+│   │   └── ui/                 # Reusable UI primitives
+│   ├── lib/
+│   │   ├── agents/             # Agent logic (spreader, communication, tasks)
+│   │   ├── plugin/             # Plugin system (loader, sandbox, registry, permissions)
+│   │   ├── jepa/               # Emotion analysis, STT/ASR, language detection
+│   │   ├── optimization/       # Auto-tuner, profiler, feature flags, recommendations
+│   │   ├── notifications/      # Smart notification engine
+│   │   └── prediction/         # Agent transition prediction
+│   ├── packages/               # Publishable packages
+│   │   ├── ai-smart-notifications/  # Notification engine
+│   │   ├── in-browser-dev-tools/    # Developer tools
+│   │   ├── benchmark-suite/         # Performance benchmarks
+│   │   ├── universal-import-export/  # Data portability
+│   │   └── vibe-code-agent-gen/     # Agent code generation
+│   └── app/                     # Next.js App Router pages
+├── native/rust/                # WASM module (vector operations, embeddings)
+├── tests/
+│   ├── e2e/                    # Playwright end-to-end tests
+│   ├── smoke/                  # Smoke tests (15 suites)
+│   ├── performance/            # Bundle size & performance regression
+│   └── api/                    # API endpoint tests
+├── docs/                       # User & developer documentation
+└── examples/plugins/           # Plugin examples
+```
+
+### Data Flow
+
+```
+User Input
+    │
+    ▼
+┌──────────────┐    ┌──────────────────┐    ┌────────────────┐
+│  Chat UI     │───▶│  Agent Spreader  │───▶│  AI Providers  │
+│  (React)     │    │  (Multi-Model)   │    │  (10+ LLMs)    │
+└──────────────┘    └──────┬───────────┘    └───────┬────────┘
+                           │                         │
+                    ┌──────▼─────────────────────────▼──────┐
+                    │        Context Manager                │
+                    │  (Knowledge + Files + History)         │
+                    └──────────────────┬────────────────────┘
+                                       │
+                    ┌──────────────────▼────────────────────┐
+                    │     WASM Vector Engine (Rust)         │
+                    │  Embeddings · Similarity · Search      │
+                    └──────────────────────────────────────┘
+```
+
+### Key Subsystems
+
+| Subsystem | Purpose | Technology |
+|-----------|---------|------------|
+| **Agent Spreader** | Distributes queries across multiple AI models for consensus | TypeScript, DAG executor |
+| **Plugin System** | Extensible architecture for custom workflows | Sandbox, dynamic loader |
+| **WASM Engine** | High-performance vector operations (3-4x faster) | Rust → wasm-pack |
+| **Intelligence** | Hardware detection, feature flags, A/B testing | Custom framework |
+| **JEPA Engine** | Emotion analysis, STT, language detection | ONNX Runtime, Whisper |
+
+---
+
+## 📋 Data Format
+
+### Conversation Entry
+
+```json
+{
+  "id": "uuid-v4",
+  "type": "message",
+  "role": "user | assistant",
+  "content": "string",
+  "timestamp": "ISO-8601",
+  "agentId": "string | null",
+  "metadata": {
+    "model": "gpt-4o | claude-3.5-sonnet | ...",
+    "provider": "openai | anthropic | ...",
+    "tokens": { "input": 150, "output": 320 },
+    "duration": 2400,
+    "confidence": 0.95
+  }
+}
+```
+
+### Knowledge Entry
+
+```json
+{
+  "id": "uuid-v4",
+  "title": "string",
+  "content": "markdown string",
+  "tags": ["tag1", "tag2"],
+  "collection": "string | null",
+  "embedding": "Float32Array (vector)",
+  "source": { "type": "manual | import | ai-generated", "origin": "string" },
+  "checkpoint": { "version": 1, "previousId": "uuid | null" },
+  "createdAt": "ISO-8601",
+  "updatedAt": "ISO-8601"
+}
+```
+
+### AI Contact (Agent)
+
+```json
+{
+  "id": "uuid-v4",
+  "name": "string",
+  "personality": "string",
+  "expertise": ["domain1", "domain2"],
+  "model": "gpt-4o",
+  "provider": "openai",
+  "systemPrompt": "string",
+  "avatar": "string | null",
+  "isDefault": false,
+  "stats": {
+    "conversationsCount": 42,
+    "totalMessages": 380,
+    "lastUsedAt": "ISO-8601"
+  }
+}
+```
+
+### Export Format
+
+PersonalLog supports export in multiple formats:
+- **JSON** — Full structured data (conversations, knowledge, contacts)
+- **Markdown** — Human-readable formatted export
+- **CSV** — Tabular data for spreadsheet import
+- **Backup** — Encrypted binary backup with one-click restore
+
+---
+
+## 🔧 Plugin System
+
+Plugins extend PersonalLog with custom functionality:
+
+```
+example-plugin/
+├── manifest.json       # Plugin metadata (name, version, permissions)
+├── src/
+│   └── main.ts         # Plugin entry point
+└── package.json        # Dependencies
+```
+
+```typescript
+// manifest.json
+{
+  "name": "my-plugin",
+  "version": "1.0.0",
+  "description": "Custom plugin for PersonalLog",
+  "permissions": ["knowledge:read", "conversation:write"],
+  "entry": "src/main.ts"
+}
+```
+
+---
+
+<img src="callsign1.jpg" width="128" alt="callsign">
