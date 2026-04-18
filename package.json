@@ -62,7 +62,7 @@
     "@testing-library/jest-dom": "^6.1.0",
     "@testing-library/react": "^16.3.1",
     "@types/js-yaml": "4.0.9",
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/semver": "7.7.1",
