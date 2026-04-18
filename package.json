@@ -67,7 +67,7 @@
     "@types/react-dom": "^19",
     "@types/semver": "7.7.1",
     "@vitejs/plugin-react": "^4.2.0",
-    "@vitest/ui": "^1.0.0",
+    "@vitest/ui": "^4.0.16",
     "axe-core": "^4.8.0",
     "axe-playwright": "^1.2.0",
     "eslint": "^9",
