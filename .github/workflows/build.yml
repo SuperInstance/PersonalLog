@@ -91,7 +91,7 @@ jobs:
         run: npm ci
 
       - name: Download WASM artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: wasm-module
           path: native/rust/pkg/
@@ -224,7 +224,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: build-output
           path: .next/
@@ -278,7 +278,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: build-output
           path: .next/
