@@ -291,7 +291,7 @@ jobs:
           echo "url=https://preview-deployment-url.com" >> $GITHUB_OUTPUT
 
       - name: Comment PR with preview URL
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         if: github.event_name == 'pull_request'
         with:
           script: |
