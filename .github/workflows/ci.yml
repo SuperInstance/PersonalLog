@@ -11,47 +11,35 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 8
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-      - run: pnpm install
-      - run: pnpm lint
+      - run: npm install
+      - run: npm run lint
 
   type-check:
     name: Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 8
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-      - run: pnpm install
-      - run: pnpm type-check
+      - run: npm install
+      - run: npm run type-check
 
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 8
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-      - run: pnpm install
-      - run: pnpm build
-      - uses: actions/upload-artifact@v6
+      - run: npm install
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
         with:
           name: dist
           path: .next/
