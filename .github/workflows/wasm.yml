@@ -114,7 +114,7 @@ jobs:
           echo "✓ All WASM artifacts generated successfully"
 
       - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-package
           path: native/rust/pkg/
