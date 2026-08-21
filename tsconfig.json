@@ -27,6 +27,7 @@
     "node_modules",
     "docs/**",
     "examples/**",
+    "packages/**",
     // Intelligence module test files (non-blocking type issues)
     "src/lib/intelligence/__tests__/world-model.test.ts",
     "src/lib/intelligence/__tests__/proactive.test.ts",

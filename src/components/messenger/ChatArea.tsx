@@ -461,7 +461,7 @@ export default function ChatArea({
           onClose={() => setShowNewChatDialog(false)}
           onNewChatCreated={(newId) => {
             setShowNewChatDialog(false)
-            router.push(`/messenger/${newId}`)
+            router.push(`/messenger/conversation/${newId}`)
           }}
         />
       )}
