@@ -7,51 +7,9 @@
 
 import type { AgentDefinition } from './types';
 import { StorageError, NotFoundError, ValidationError } from '@/lib/errors';
+import { getDB } from '@/lib/storage/db';
 
-const DB_NAME = 'PersonalLogMessenger';
-const DB_VERSION = 1;
 const STORE_USER_AGENTS = 'user-agents';
-
-let db: IDBDatabase | null = null;
-
-/**
- * Get IndexedDB instance
- *
- * Opens or returns existing database connection.
- * Shares the same database as conversations for consistency.
- */
-async function getDB(): Promise<IDBDatabase> {
-  if (db) return db;
-
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () =>
-      reject(
-        new StorageError('Failed to open database', {
-          technicalDetails: `DB: ${DB_NAME}, Version: ${DB_VERSION}`,
-          context: { dbName: DB_NAME, version: DB_VERSION },
-        })
-      );
-
-    request.onsuccess = () => {
-      db = request.result;
-      resolve(db);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const database = (event.target as IDBOpenDBRequest).result;
-
-      // Create user agents store if it doesn't exist
-      if (!database.objectStoreNames.contains(STORE_USER_AGENTS)) {
-        const agentStore = database.createObjectStore(STORE_USER_AGENTS, { keyPath: 'id' });
-        agentStore.createIndex('category', 'category', { unique: false });
-        agentStore.createIndex('createdAt', 'metadata.createdAt', { unique: false });
-        agentStore.createIndex('author', 'metadata.author', { unique: false });
-      }
-    };
-  });
-}
 
 /**
  * Save a user-created agent

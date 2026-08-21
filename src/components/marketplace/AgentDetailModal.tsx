@@ -7,7 +7,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Download, Star, Calendar, User, ExternalLink, Github, FileText, History, MessageSquare, Loader2 } from 'lucide-react';
+import { X, Download, Star, Calendar, User, ExternalLink, Code, FileText, History, MessageSquare, Loader2 } from 'lucide-react';
 import type { MarketplaceAgent, AgentRating, RatingStats } from '@/lib/marketplace/types';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -199,7 +199,7 @@ export function AgentDetailModal({
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
               >
-                <Github className="w-4 h-4" />
+                <Code className="w-4 h-4" />
                 Repository
                 <ExternalLink className="w-3 h-3" />
               </a>

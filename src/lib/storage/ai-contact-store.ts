@@ -5,8 +5,8 @@
  */
 
 import { AIAgent, AIProvider, AgentId, createAgentId } from '@/types/conversation'
+import { getDB } from '@/lib/storage/db'
 
-const DB_NAME = 'PersonalLogMessenger'
 const STORE_AGENTS = 'ai-agents'
 
 // ============================================================================
@@ -97,15 +97,6 @@ export const DEFAULT_AGENTS: Partial<AIAgent>[] = [
 // ============================================================================
 // DATABASE OPERATIONS
 // ============================================================================
-
-async function getDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1)
-
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
-  })
-}
 
 export async function listAgents(): Promise<AIAgent[]> {
   const database = await getDB()
