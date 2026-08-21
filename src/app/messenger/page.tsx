@@ -120,7 +120,7 @@ export default function MessengerPage() {
       const newConv = await createConversation('New Conversation', 'personal')
       setConversations(prev => [newConv, ...prev])
       setSelectedConversation(newConv)
-      router.push(`/messenger/${newConv.id}`)
+      router.push(`/messenger/conversation/${newConv.id}`)
     } catch (error) {
       console.error('Failed to create conversation:', error)
     }
@@ -128,7 +128,7 @@ export default function MessengerPage() {
 
   const handleSelectConversation = useCallback((conversation: Conversation) => {
     setSelectedConversation(conversation)
-    router.push(`/messenger/${conversation.id}`)
+    router.push(`/messenger/conversation/${conversation.id}`)
   }, [router])
 
   const handleUpdateConversation = useCallback((updated: Conversation) => {

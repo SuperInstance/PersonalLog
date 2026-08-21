@@ -23,6 +23,7 @@ import { KeyboardNavigationProvider } from "@/components/providers/KeyboardNavig
 import { LiveAnnouncerProvider } from "@/components/ui/LiveAnnouncer";
 import { OfflineIndicator } from "@/components/mobile/OfflineIndicator";
 import { PWAInstallPrompt } from "@/components/mobile/InstallPrompt";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
 
 export const dynamic = 'force-dynamic'
@@ -193,15 +194,17 @@ export default function RootLayout({
                 showLoader={true}
                 initTimeout={5000}
               >
-                <AppNav />
-                {/* Main content landmark for accessibility */}
-                <main id="main-content" role="main" tabIndex={-1} className="pb-16 md:pb-0">
-                  {children}
-                </main>
+                <ToastProvider>
+                  <AppNav />
+                  {/* Main content landmark for accessibility */}
+                  <main id="main-content" role="main" tabIndex={-1} className="pb-16 md:pb-0">
+                    {children}
+                  </main>
 
-                {/* Mobile-specific components */}
-                <OfflineIndicator />
-                <PWAInstallPrompt />
+                  {/* Mobile-specific components */}
+                  <OfflineIndicator />
+                  <PWAInstallPrompt />
+                </ToastProvider>
               </AppProviders>
             </LiveAnnouncerProvider>
           </KeyboardNavigationProvider>
