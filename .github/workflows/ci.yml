@@ -2,29 +2,67 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, production-round2-2026-07-09]
   pull_request:
     branches: [main]
 
 jobs:
-  test:
-    name: Build & Test
+  python:
+    name: Python package & tests
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install package
+        run: pip install -e '.[dev]'
+
+      - name: Run Python tests
+        run: pytest -v
+
+  rust:
+    name: Rust native tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Run Rust tests
+        working-directory: native/rust
+        run: cargo test
+
+  node:
+    name: Node.js type check, lint & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Type check
-        run: npx tsc --noEmit
-        continue-on-error: true
+        run: pnpm type-check
 
       - name: Lint
-        run: npx eslint . --ext .ts,.tsx
-        continue-on-error: true
+        run: pnpm lint
+
+      - name: Build Next.js app
+        run: pnpm build
+
+      # Note: pnpm test:unit is intentionally omitted. The Vitest suite currently
+      # hangs / fails en-masse because jsdom lacks mocks for IndexedDB, canvas,
+      # and other browser APIs. It needs a dedicated test-hardening pass before
+      # it can be required in CI.
