@@ -63,11 +63,6 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // Copy WASM files to public directory for client-side loading
-    if (!isServer) {
-      config.output.publicPath = '/_next/static/chunks/';
-    }
-
     // Production optimizations
     if (!dev) {
       // Optimize bundle size

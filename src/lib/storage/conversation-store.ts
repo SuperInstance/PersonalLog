@@ -15,60 +15,11 @@ import {
   CompactStrategy,
 } from '@/types/conversation'
 import { StorageError, NotFoundError, ValidationError } from '@/lib/errors'
+import { getDB } from '@/lib/storage/db'
 
-const DB_NAME = 'PersonalLogMessenger'
-const DB_VERSION = 1
 const STORE_CONVERSATIONS = 'conversations'
 const STORE_MESSAGES = 'messages'
 const STORE_AGENTS = 'ai-agents'
-
-// ============================================================================
-// DATABASE INITIALIZATION
-// ============================================================================
-
-let db: IDBDatabase | null = null
-
-async function getDB(): Promise<IDBDatabase> {
-  if (db) return db
-
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION)
-
-    request.onerror = () => reject(new StorageError('Failed to open database', {
-      technicalDetails: `DB: ${DB_NAME}, Version: ${DB_VERSION}`,
-      context: { dbName: DB_NAME, version: DB_VERSION }
-    }))
-    request.onsuccess = () => {
-      db = request.result
-      resolve(db)
-    }
-
-    request.onupgradeneeded = (event) => {
-      const database = (event.target as IDBOpenDBRequest).result
-
-      // Conversations store
-      if (!database.objectStoreNames.contains(STORE_CONVERSATIONS)) {
-        const convStore = database.createObjectStore(STORE_CONVERSATIONS, { keyPath: 'id' })
-        convStore.createIndex('updatedAt', 'updatedAt', { unique: false })
-        convStore.createIndex('pinned', 'metadata.pinned', { unique: false })
-        convStore.createIndex('archived', 'metadata.archived', { unique: false })
-      }
-
-      // Messages store
-      if (!database.objectStoreNames.contains(STORE_MESSAGES)) {
-        const msgStore = database.createObjectStore(STORE_MESSAGES, { keyPath: 'id' })
-        msgStore.createIndex('conversationId', 'conversationId', { unique: false })
-        msgStore.createIndex('timestamp', 'timestamp', { unique: false })
-      }
-
-      // AI Agents store
-      if (!database.objectStoreNames.contains(STORE_AGENTS)) {
-        const agentStore = database.createObjectStore(STORE_AGENTS, { keyPath: 'id' })
-        agentStore.createIndex('name', 'name', { unique: false })
-      }
-    }
-  })
-}
 
 // ============================================================================
 // CONVERSATION OPERATIONS

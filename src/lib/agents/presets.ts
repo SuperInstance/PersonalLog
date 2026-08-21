@@ -210,6 +210,12 @@ export function registerPresetAgents(): void {
   const { agentRegistry: registry } = require('./registry');
 
   PRESET_AGENTS.forEach((agent) => {
+    // Skip if already registered (can happen with React StrictMode
+    // double-mount or multiple components calling init)
+    if (registry.getAgent(agent.id)) {
+      return;
+    }
+
     try {
       registry.registerAgent(agent);
       console.log(`[AgentRegistry] Registered preset agent: ${agent.id}`);
