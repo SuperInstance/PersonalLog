@@ -13,12 +13,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
 
-  // ESLint configuration
-  eslint: {
-    // Allow production builds with warnings
-    ignoreDuringBuilds: true,
-  },
-
   // Production optimizations
   compress: true,
   poweredByHeader: false,
@@ -61,11 +55,6 @@ const nextConfig: NextConfig = {
         path: false,
         crypto: false,
       };
-    }
-
-    // Copy WASM files to public directory for client-side loading
-    if (!isServer) {
-      config.output.publicPath = '/_next/static/chunks/';
     }
 
     // Production optimizations
