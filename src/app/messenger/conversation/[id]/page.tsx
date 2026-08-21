@@ -61,7 +61,7 @@ export default function ConversationPage() {
     const newConv = await createConversation('New Conversation', 'personal')
     setConversations(prev => [newConv, ...prev])
     setSelectedConversation(newConv)
-    router.push(`/messenger/${newConv.id}`)
+    router.push(`/messenger/conversation/${newConv.id}`)
   }
 
   const handleUpdateConversation = (updated: Conversation) => {
@@ -110,7 +110,7 @@ export default function ConversationPage() {
           <ConversationList
             conversations={conversations}
             selectedConversation={selectedConversation}
-            onSelectConversation={(conv) => router.push(`/messenger/${conv.id}`)}
+            onSelectConversation={(conv) => router.push(`/messenger/conversation/${conv.id}`)}
             onUpdateConversation={handleUpdateConversation}
           />
         </div>
