@@ -56,13 +56,18 @@ describe('Conversation Store', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset IndexedDB mock
+    const openRequest: any = {
+      onsuccess: null,
+      onerror: null,
+      onupgradeneeded: null,
+      result: mockDB,
+    };
+    // Fire success AFTER the caller has attached its handler (the old mock
+    // fired synchronously at construction, before onsuccess was assigned,
+    // so getDB() hung forever)
+    setTimeout(() => openRequest.onsuccess?.({ target: openRequest }), 0);
     global.indexedDB = {
-      open: vi.fn(() => ({
-        onsuccess: null,
-        onerror: null,
-        onupgradeneeded: null,
-        result: mockDB,
-      })),
+      open: vi.fn(() => openRequest),
     } as any
   })
 
@@ -75,7 +80,7 @@ describe('Conversation Store', () => {
 
       mockStore.add.mockImplementation(() => {
         const request = { ...mockRequest, result: { id: 'conv-1' } }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
@@ -102,7 +107,7 @@ describe('Conversation Store', () => {
 
       mockStore.add.mockImplementation(() => {
         const request = { ...mockRequest, result: { id: 'conv-1' } }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
@@ -144,7 +149,7 @@ describe('Conversation Store', () => {
 
       mockStore.get.mockImplementation(() => {
         const request = { ...mockRequest, result: mockConversation }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
@@ -161,7 +166,7 @@ describe('Conversation Store', () => {
 
       mockStore.get.mockImplementation(() => {
         const request = { ...mockRequest, result: undefined }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
@@ -208,13 +213,13 @@ describe('Conversation Store', () => {
       // Mock getConversation
       mockStore.get.mockImplementation(() => {
         const request = { ...mockRequest, result: existing }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
       mockStore.put.mockImplementation(() => {
         const request = { ...mockRequest }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
@@ -234,7 +239,7 @@ describe('Conversation Store', () => {
 
       mockStore.get.mockImplementation(() => {
         const request = { ...mockRequest, result: null }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
@@ -276,13 +281,13 @@ describe('Conversation Store', () => {
 
       mockStore.get.mockImplementation(() => {
         const request = { ...mockRequest, result: existing }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
       mockStore.put.mockImplementation(() => {
         const request = { ...mockRequest }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
@@ -324,13 +329,13 @@ describe('Conversation Store', () => {
 
       mockStore.get.mockImplementation(() => {
         const request = { ...mockRequest, result: existing }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
       mockStore.put.mockImplementation(() => {
         const request = { ...mockRequest }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
@@ -383,19 +388,19 @@ describe('Conversation Store', () => {
       let callCount = 0
       mockStore.add.mockImplementation(() => {
         const request = { ...mockRequest, result: mockMessage }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
       mockStore.get.mockImplementation(() => {
         const request = { ...mockRequest, result: mockConversation }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         return request
       })
 
       mockStore.put.mockImplementation(() => {
         const request = { ...mockRequest }
-        if (request.onsuccess) request.onsuccess({ target: request } as any)
+        queueMicrotask(() => request.onsuccess?.({ target: request } as any))
         callCount++
         return request
       })
@@ -462,20 +467,23 @@ describe('Conversation Store', () => {
 
       const mockIndex = {
         openCursor: vi.fn(() => {
-          const request = { ...mockRequest }
-          if (request.onsuccess) {
-            // Simulate cursor returning results then ending
-            let cursorCalled = false
-            request.onsuccess({
-              target: {
-                result: cursorCalled ? null : {
-                  value: mockConversations[0],
-                  continue: vi.fn(),
-                },
-              },
-            } as any)
-            cursorCalled = true
-          }
+          // listConversations iterates newest-first via cursor; deliver one
+          // conversation then end. Fire asynchronously (setTimeout) so the
+          // caller has attached its onsuccess handler first.
+          let calls = 0
+          const request = {
+            ...mockRequest,
+            get onsuccess() { return this._onsuccess },
+            set onsuccess(fn) { this._onsuccess = fn },
+            _onsuccess: null as ((e: any) => void) | null,
+          } as any
+          setTimeout(() => {
+            const fire = (cursor: any) => request._onsuccess?.({ target: { result: cursor } })
+            fire({
+              value: mockConversations[0],
+              continue: () => setTimeout(() => fire(null), 0),
+            })
+          }, 0)
           return request
         }),
       }

@@ -391,13 +391,22 @@ export async function addMessage(
 ): Promise<Message> {
   const database = await getDB()
 
+  // Guarantee chronological order: two messages added in the same millisecond
+  // would otherwise sort ambiguously (equal timestamps), breaking threading
+  // display. Bump the timestamp past the conversation's latest message.
+  const existing = await getMessages(conversationId).catch(() => [] as Message[])
+  const lastTimestamp = existing.length
+    ? new Date(existing[existing.length - 1].timestamp).getTime()
+    : 0
+  const baseTimestamp = Math.max(Date.now(), lastTimestamp + 1)
+
   const message: Message = {
     id: createMessageId(),
     conversationId,
     type,
     author,
     content: content as Message['content'],
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(baseTimestamp).toISOString(),
     replyTo,
     metadata: {},
   }

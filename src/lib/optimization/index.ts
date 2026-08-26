@@ -37,6 +37,8 @@
 // CORE ENGINE
 // ============================================================================
 
+import { createOptimizationEngine, allRules } from './engine';
+
 export {
   OptimizationEngine,
   createOptimizationEngine,
@@ -276,10 +278,7 @@ export type {
 export function createEngineWithDefaults(
   config?: Partial<import('./types').OptimizationEngineConfig>
 ) {
-  const { createOptimizationEngine, allRules } = require('./engine');
-  const { createOptimizationEngine: createEngine } = require('./engine');
-
-  const engine = createEngine(config);
+  const engine = createOptimizationEngine(config);
 
   // Register all default rules
   for (const rule of allRules) {
@@ -340,7 +339,6 @@ let globalEngine: import('./engine').OptimizationEngine | null = null;
 
 export function getOptimizationEngine() {
   if (!globalEngine) {
-    const { createOptimizationEngine } = require('./engine');
     globalEngine = createOptimizationEngine();
   }
   return globalEngine;
