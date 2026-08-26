@@ -16,6 +16,7 @@ import {
   compareBanditAlgorithms,
   recommendBanditAlgorithm,
   type BanditAlgorithm,
+  type BanditSelection,
 } from '../multi-armed-bandit';
 import type { Variant } from '../types';
 
@@ -86,16 +87,17 @@ describe('MultiArmedBandit', () => {
         decayRate: 0.9,
       });
 
-      const selections: BanditAlgorithm[] = [];
+      const selections: BanditSelection[] = [];
 
       for (let i = 0; i < 100; i++) {
         const selection = egBandit.selectVariant(variants);
-        selections.push(selection.algorithm);
+        selections.push(selection);
       }
 
-      // Exploration should decrease over time
-      const earlyExploration = selections.slice(0, 30).filter(s => s === 'epsilon-greedy').length;
-      const lateExploration = selections.slice(70).filter(s => s === 'epsilon-greedy').length;
+      // Exploration should decrease over time (proxy: the `explored` flag -
+      // `algorithm` is always 'epsilon-greedy' for this bandit)
+      const earlyExploration = selections.slice(0, 30).filter(s => s.explored).length;
+      const lateExploration = selections.slice(70).filter(s => s.explored).length;
 
       expect(lateExploration).toBeLessThan(earlyExploration);
     });
@@ -161,6 +163,11 @@ describe('MultiArmedBandit', () => {
 
       // Pull variant B once
       ucbBandit.updateReward('B', 0.5);
+
+      // Pull variant C once too, so every arm is explored at least once -
+      // UCB1 prioritizes never-pulled arms, which would otherwise always
+      // pick C over the intended comparison of A vs B
+      ucbBandit.updateReward('C', 0.5);
 
       const selection = ucbBandit.selectVariant(variants);
 
@@ -501,7 +508,9 @@ describe('MultiArmedBandit', () => {
     });
 
     it('should handle all rewards equal', () => {
-      for (let i = 0; i < 20; i++) {
+      // 20 pulls per variant so every arm clears minPullsPerVariant (10) -
+      // getBestVariant() returns null for arms below the minimum sample
+      for (let i = 0; i < 60; i++) {
         const selection = bandit.selectVariant(variants);
         bandit.updateReward(selection.variantId, 0.5);
       }

@@ -20,46 +20,48 @@ import {
 import type { Experiment, ExperimentConfig } from '../types';
 
 // Mock dependencies
+// NOTE: these must be real classes - `new (vi.fn().mockImplementation(...))`
+// throws "not a constructor", which broke every test in this file.
 vi.mock('../assignment', () => ({
-  AssignmentEngine: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn(() => Promise.resolve()),
-    assignVariant: vi.fn(() => ({
+  AssignmentEngine: class {
+    initialize = vi.fn(() => Promise.resolve());
+    assignVariant = vi.fn(() => ({
       experimentId: 'exp-1',
       userId: 'user-1',
       variantId: 'variant-1',
       assignedAt: Date.now(),
       sessionId: '',
       exposed: false,
-    })),
-    getAssignment: vi.fn(() => undefined),
-    hashUserId: vi.fn(() => 50),
-    exportAssignments: vi.fn(() => ({})),
-    importAssignments: vi.fn(),
-  })),
+    }));
+    getAssignment = vi.fn(() => undefined);
+    hashUserId = vi.fn(() => 50);
+    exportAssignments = vi.fn(() => ({}));
+    importAssignments = vi.fn();
+  },
 }));
 
 vi.mock('../metrics', () => ({
-  MetricsTracker: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn(() => Promise.resolve()),
-    track: vi.fn(),
-    getExperimentMetrics: vi.fn(() => []),
-    clearExperimentData: vi.fn(),
-    exportMetrics: vi.fn(() => []),
-    importMetrics: vi.fn(),
-  })),
+  MetricsTracker: class {
+    initialize = vi.fn(() => Promise.resolve());
+    track = vi.fn();
+    getExperimentMetrics = vi.fn(() => []);
+    clearExperimentData = vi.fn();
+    exportMetrics = vi.fn(() => []);
+    importMetrics = vi.fn();
+  },
 }));
 
 vi.mock('../statistics', () => ({
-  StatisticalAnalyzer: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn(() => Promise.resolve()),
-    analyze: vi.fn(() => ({
+  StatisticalAnalyzer: class {
+    initialize = vi.fn(() => Promise.resolve());
+    analyze = vi.fn(() => ({
       winner: { variantId: 'variant-1' },
       overallConfidence: 0.95,
       totalSampleSize: 1000,
-    })),
-    exportBanditStates: vi.fn(() => []),
-    importBanditStates: vi.fn(),
-  })),
+    }));
+    exportBanditStates = vi.fn(() => []);
+    importBanditStates = vi.fn();
+  },
 }));
 
 describe('ExperimentManager', () => {
@@ -1243,7 +1245,7 @@ describe('ExperimentManager', () => {
     });
 
     it('should not track when disabled', () => {
-      // manager.updateConfig({ trackMetrics: false });
+      manager.updateConfig({ trackMetrics: false });
 
       manager.createExperiment({
         name: 'Test',
@@ -1506,13 +1508,13 @@ describe('ExperimentManager', () => {
     });
 
     it('should update config at runtime', () => {
-      // manager.updateConfig({ debug: true });
+      manager.updateConfig({ debug: true });
 
       expect(manager['config'].debug).toBe(true);
     });
 
     it('should respect enabled flag', () => {
-      // manager.updateConfig({ enabled: false });
+      manager.updateConfig({ enabled: false });
 
       expect(manager['config'].enabled).toBe(false);
     });

@@ -433,6 +433,16 @@ export class ExperimentManager implements IExperimentManager {
     return this.assignmentEngine.getAssignment(experimentId, userId);
   }
 
+  /**
+   * Update configuration at runtime (merges partial config)
+   */
+  updateConfig(config: Partial<ExperimentConfig>): void {
+    this.config = { ...this.config, ...config };
+    if (this.config.debug) {
+      console.log('[Experiments] Config updated:', config);
+    }
+  }
+
   trackMetric(
     experimentId: string,
     variantId: string,
