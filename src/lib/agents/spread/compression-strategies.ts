@@ -53,8 +53,10 @@ export function calculateJaccardSimilarity(msg1: Message, msg2: Message): number
   const text1 = msg1.content.text?.toLowerCase() || ''
   const text2 = msg2.content.text?.toLowerCase() || ''
 
-  const words1 = new Set(text1.split(/\s+/).filter(w => w.length > 2))
-  const words2 = new Set(text2.split(/\s+/).filter(w => w.length > 2))
+  // Keep digit-bearing tokens ('1', 'v2'): dropping them made
+  // 'Unique message 1' and 'Unique message 2' identical word sets.
+  const words1 = new Set(text1.split(/\s+/).filter(w => w.length > 2 || /\d/.test(w)))
+  const words2 = new Set(text2.split(/\s+/).filter(w => w.length > 2 || /\d/.test(w)))
 
   if (words1.size === 0 && words2.size === 0) return 1
   if (words1.size === 0 || words2.size === 0) return 0
@@ -88,8 +90,8 @@ export function calculateCosineSimilarity(msg1: Message, msg2: Message): number 
   const text1 = msg1.content.text?.toLowerCase() || ''
   const text2 = msg2.content.text?.toLowerCase() || ''
 
-  const words1 = text1.split(/\s+/).filter(w => w.length > 2)
-  const words2 = text2.split(/\s+/).filter(w => w.length > 2)
+  const words1 = text1.split(/\s+/).filter(w => w.length > 2 || /\d/.test(w))
+  const words2 = text2.split(/\s+/).filter(w => w.length > 2 || /\d/.test(w))
 
   if (words1.length === 0 && words2.length === 0) return 1
   if (words1.length === 0 || words2.length === 0) return 0
@@ -145,8 +147,12 @@ export function calculateSimilarity(msg1: Message, msg2: Message): number {
   const jaccard = calculateJaccardSimilarity(msg1, msg2)
   const cosine = calculateCosineSimilarity(msg1, msg2)
 
-  // Weighted average (Jaccard is stricter, so give it more weight)
-  return (jaccard * 0.6 + cosine * 0.4)
+  // Ensemble: take the stronger signal rather than averaging. Averaging
+  // dragged near-duplicates under detection thresholds — Jaccard punishes
+  // length differences and morphological variants ("auth" vs
+  // "authentication") that cosine handles, so the blend under-counted
+  // obvious redundancy.
+  return Math.max(jaccard, cosine)
 }
 
 // ============================================================================

@@ -150,10 +150,13 @@ describe('calculateImportance', () => {
 })
 
 describe('calculateRecency', () => {
+  // Convention (matches calculateImportance callers and the optimizer's
+  // scoreRecency): messages are chronological — index 0 is the OLDEST,
+  // index total-1 is the NEWEST.
   it('should give highest score to most recent message', () => {
-    const score1 = calculateRecency(9, 10) // Oldest
+    const score1 = calculateRecency(0, 10) // Oldest
     const score2 = calculateRecency(5, 10) // Middle
-    const score3 = calculateRecency(0, 10) // Newest
+    const score3 = calculateRecency(9, 10) // Newest
 
     expect(score3).toBeGreaterThan(score2)
     expect(score2).toBeGreaterThan(score1)
@@ -165,11 +168,13 @@ describe('calculateRecency', () => {
   })
 
   it('should use exponential decay', () => {
-    const score1 = calculateRecency(0, 10)
-    const score2 = calculateRecency(10, 20)
+    // Newest message (last index) scores near the top
+    const newest = calculateRecency(19, 20)
+    // A message 10 slots from the end has decayed below half
+    const older = calculateRecency(10, 20)
 
-    expect(score1).toBeCloseTo(1, 1)
-    expect(score2).toBeLessThan(0.5)
+    expect(newest).toBeGreaterThan(0.9)
+    expect(older).toBeLessThan(0.5)
   })
 })
 
