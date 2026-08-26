@@ -316,6 +316,9 @@ export function EmotionTimelineEnhanced({
       <div className="relative">
         <svg
           ref={svgRef}
+          role="img"
+          aria-label="Emotion timeline chart"
+          tabIndex={0}
           width="100%"
           height={height}
           className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700"
