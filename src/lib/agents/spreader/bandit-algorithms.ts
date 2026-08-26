@@ -129,8 +129,10 @@ export function selectArmEpsilonGreedy(
   const histories = state.histories
 
   // Decay epsilon over time
+  // `??` not `||`: epsilon = 0 (pure exploitation) is a valid setting and
+  // must not fall through to the 0.1 default
   const currentEpsilon =
-    (epsilon || 0.1) * Math.pow(epsilonDecay || 1, state.totalPulls)
+    (epsilon ?? 0.1) * Math.pow(epsilonDecay ?? 1, state.totalPulls)
 
   // Find best arm (exploit)
   let bestStrategy: CompactionStrategy | null = null
@@ -153,6 +155,32 @@ export function selectArmEpsilonGreedy(
   const shouldExplore = Math.random() < currentEpsilon
 
   if (shouldExplore || !bestStrategy) {
+    // ε=0 demands pure exploitation: never force a random exploration
+    // step when any arm has data, even below minPullsBeforeExploit.
+    if (!shouldExplore) {
+      let fallback: CompactionStrategy | null = null
+      let fallbackReward = -Infinity
+      for (const [strategy, history] of histories.entries()) {
+        const reward =
+          history.recentRewards.length >= 3
+            ? history.recentAverage
+            : history.averageReward
+        if (history.totalPulls > 0 && reward > fallbackReward) {
+          fallbackReward = reward
+          fallback = strategy
+        }
+      }
+      if (fallback) {
+        return {
+          strategy: fallback,
+          algorithm: 'epsilon_greedy',
+          exploreExploit: 'exploit',
+          confidence: 1 - currentEpsilon,
+          reason: `Exploiting best available strategy (ε=${currentEpsilon.toFixed(3)})`
+        }
+      }
+    }
+
     // Explore: select random arm (prefer under-explored arms)
     const armPulls = Array.from(histories.values()).map(h => h.totalPulls)
     const minPulls = Math.min(...armPulls)
