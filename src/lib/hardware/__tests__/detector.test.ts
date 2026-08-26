@@ -49,7 +49,7 @@ describe('HardwareDetector', () => {
       expect(result.profile?.display.width).toBeGreaterThan(0);
       expect(result.profile?.display.height).toBeGreaterThan(0);
       expect(result.profile?.display.pixelRatio).toBeGreaterThan(0);
-      expect(result.profile?.display.colorDepth).toBe(8 | 16 | 24 | 32 | 48);
+      expect([8, 16, 24, 32, 48]).toContain(result.profile?.display.colorDepth);
     });
   });
 
