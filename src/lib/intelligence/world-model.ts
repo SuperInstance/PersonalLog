@@ -26,7 +26,7 @@ import {
   isValidPredictionHorizon,
   isValidConfidence,
 } from './world-model-types';
-import { encodeState, decodeState, stateSimilarity, findMostSimilar } from './state-encoder';
+import { encodeState, decodeState, stateSimilarity } from './state-encoder';
 import type { EncodedState } from './world-model-types';
 import {
   recordTransition,
@@ -282,21 +282,20 @@ export class WorldModel {
     const currentEncoded = this.encodedStates.get(currentState.id);
     if (!currentEncoded) return predictions;
 
-    // Find similar states in history
-    const similarStates = findMostSimilar(
-      currentEncoded,
-      Array.from(this.encodedStates.values()).filter((e) => e.timestamp !== currentEncoded.timestamp),
-      5
-    );
+    // Find similar states in history. EncodedState has no state id (its
+    // timestamp is the encoding time, not the state id), so pair each encoded
+    // vector back to its originating state by index — a lookup keyed on
+    // id === timestamp.toString() can never match.
+    const allEncoded = this.state.states.map((st) => this.encodedStates.get(st.id)!).filter(Boolean);
+    const similarStates = this.state.states
+      .map((st, idx) => ({ state: st, idx, sim: stateSimilarity(currentEncoded, allEncoded[idx]) }))
+      .filter((x) => x.state.id !== currentState.id)
+      .sort((a, b) => b.sim.similarity - a.sim.similarity)
+      .slice(0, 5);
 
-    for (const { state: similarEncoded, similarity } of similarStates) {
+    for (const { state: similarState, idx: similarIdx, sim: similarity } of similarStates) {
       if (similarity.similarity < 0.7) continue; // Threshold
 
-      // Find what state came after this similar state
-      const similarState = this.state.states.find((s) => s.id === similarEncoded.timestamp.toString());
-      if (!similarState) continue;
-
-      const similarIdx = this.state.states.indexOf(similarState);
       const nextIdx = similarIdx + step;
 
       if (nextIdx < this.state.states.length) {

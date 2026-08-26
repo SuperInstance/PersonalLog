@@ -326,12 +326,10 @@ function applyAction(state: ConversationState, action: SimulatedAction): Convers
 function estimateActionCost(action: SimulatedAction): { tokens: number; timeMs: number } {
   const key = actionTypeToKey(action.type) as keyof typeof simConfig.costEstimates;
   const baseCost = simConfig.costEstimates[key] || { tokens: 100, timeMs: 100 };
-  const estimated = action.estimatedCost || { tokens: 0, timeMs: 0 };
 
-  return {
-    tokens: baseCost.tokens + estimated.tokens,
-    timeMs: baseCost.timeMs + estimated.timeMs,
-  };
+  // An explicit estimate IS the cost — adding the base on top double-counts.
+  // Fall back to the type-level base cost only when no estimate was given.
+  return action.estimatedCost ?? baseCost;
 }
 
 /**

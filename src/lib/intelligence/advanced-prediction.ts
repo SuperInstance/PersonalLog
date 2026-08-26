@@ -24,7 +24,7 @@ import type {
 } from './world-model-types';
 import { DEFAULT_HORIZONS } from './world-model-types';
 import { WorldModel } from './world-model';
-import { encodeState, stateSimilarity, findMostSimilar } from './state-encoder';
+import { encodeState, stateSimilarity } from './state-encoder';
 import {
   predictTransitions,
   getTransitionProbability,
@@ -167,6 +167,12 @@ const predictionHistory: Array<{
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
+
+/**
+ * Shared world model used by defaultPredictEnsemble calls — persists
+ * observed states across calls instead of a throwaway empty model.
+ */
+const sharedWorldModel = new WorldModel();
 
 /**
  * Initialize advanced prediction system
@@ -320,17 +326,18 @@ async function predictBySimilarity(
   const allStates = worldModel.getAllStates();
   const allEncoded = allStates.map((s) => encodeState(s));
 
-  // Find similar states
-  const similarStates = findMostSimilar(currentEncoded, allEncoded.filter((e) => e.timestamp !== currentEncoded.timestamp), 10);
+  // Find similar states. EncodedState has no state id (its timestamp is the
+  // encoding time, not the state id), so pair encoded vectors back to their
+  // originating states by index instead of a lookup key that never matches.
+  const similarStates = allStates
+    .map((state, idx) => ({ state, idx, sim: stateSimilarity(currentEncoded, allEncoded[idx]) }))
+    .filter((x) => x.state.id !== currentState.id)
+    .sort((a, b) => b.sim.similarity - a.sim.similarity)
+    .slice(0, 10);
 
-  for (const { state: similarEncoded, similarity } of similarStates) {
+  for (const { state: similarState, idx: similarIdx, sim: similarity } of similarStates) {
     if (similarity.similarity < 0.6) continue; // Threshold
 
-    // Find what happened after this similar state
-    const similarState = allStates.find((s) => s.id === similarEncoded.timestamp.toString());
-    if (!similarState) continue;
-
-    const similarIdx = allStates.indexOf(similarState);
 
     // Predict future states
     for (let step = 1; step <= horizon.steps; step++) {
@@ -533,8 +540,13 @@ export async function predictEnsemble(
 ): Promise<EnsemblePrediction> {
   const startTime = performance.now();
 
-  // Use singleton world model if not provided
-  const model = worldModel || new WorldModel();
+  // Use the shared world model if not provided. Constructing a fresh WorldModel
+  // per call threw away all observed history, so every predictor saw an empty
+  // model and ensemble confidence was always 0.
+  const model = worldModel || sharedWorldModel;
+
+  // Observe the current state so future predictions can learn from it
+  model.addState(currentState);
 
   // Run all predictors in parallel
   const results = await Promise.all([
@@ -637,6 +649,11 @@ function calculateOverallConfidence(results: PredictorResult[], weights: Ensembl
   let totalWeight = 0;
 
   for (const result of results) {
+    // Predictors with no predictions have no support — averaging in their
+    // zero confidence drags the ensemble toward 0 even when a predictor with
+    // real evidence is highly confident.
+    if (result.predictions.length === 0) continue;
+
     const weight = getWeightForMethod(result.method, weights);
     totalWeightedConfidence += result.confidence * weight;
     totalWeight += weight;
