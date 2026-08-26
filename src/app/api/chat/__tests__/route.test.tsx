@@ -21,11 +21,37 @@ import {
   mockEnvKeys,
 } from '@/__tests__/helpers/api-helpers'
 
-// Mock providers
+// Mock providers — bare vi.fn() constructors left instances with no
+// isAvailable/chat/chatStream, so every request 500'd. These implement the
+// AIProvider interface the route actually calls.
+const { createMockProviderInstance } = vi.hoisted(() => ({
+  createMockProviderInstance: () => ({
+    isAvailable: vi.fn().mockResolvedValue(true),
+    chat: vi.fn().mockResolvedValue({
+      content: 'Mocked provider response',
+      model: 'mock-model',
+      tokens: { input: 5, output: 7, total: 12 },
+      finishReason: 'stop',
+    }),
+    chatStream: vi.fn().mockImplementation(
+      async (_request: unknown, onChunk: (chunk: string) => void) => {
+        onChunk('Mocked ')
+        onChunk('stream response')
+      }
+    ),
+  }),
+}))
+
 vi.mock('@/lib/ai/provider', () => ({
-  OpenAIProvider: vi.fn(),
-  AnthropicProvider: vi.fn(),
-  LocalAIProvider: vi.fn(),
+  OpenAIProvider: vi.fn().mockImplementation(function () {
+    return createMockProviderInstance()
+  }),
+  AnthropicProvider: vi.fn().mockImplementation(function () {
+    return createMockProviderInstance()
+  }),
+  LocalAIProvider: vi.fn().mockImplementation(function () {
+    return createMockProviderInstance()
+  }),
 }))
 
 // Mock filter settings
