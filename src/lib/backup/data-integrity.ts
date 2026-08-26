@@ -492,7 +492,6 @@ export class DataIntegrityChecker {
     try {
       // Get all available databases
       const databases = await this.getAllDatabases();
-
       this.reportProgress(10, `Found ${databases.length} databases to check`);
 
       result.summary.totalDatabases = databases.length;
@@ -587,8 +586,9 @@ export class DataIntegrityChecker {
       },
     };
 
+    let db: IDBDatabase | null = null;
     try {
-      const db = await this.openDatabase(dbName);
+      db = await this.openDatabase(dbName);
       if (!db) {
         // Database doesn't exist or can't be opened
         return result;
@@ -612,10 +612,14 @@ export class DataIntegrityChecker {
 
       // Calculate database score
       this.calculateDatabaseScore(result);
-
-      db.close();
     } catch (error) {
       console.error(`[Data Integrity] Failed to check database ${dbName}:`, error);
+    } finally {
+      // Always close the connection. Previously close() sat at the end of
+      // the try block, so any throw leaked the connection - and a leaked
+      // connection blocks deleteDatabase() forever (IndexedDB semantics),
+      // deadlocking later operations on that database.
+      db?.close();
     }
 
     return result;
@@ -764,7 +768,9 @@ export class DataIntegrityChecker {
           description: rule.errorMessage || `Missing required field: ${rule.field}`,
           expected: rule.type,
           actual: 'undefined',
-          repairable: false,
+          // The repair engine has a (manual-approval) missing-field strategy;
+          // these issues must be flagged repairable to reach it at all.
+          repairable: true,
         });
         continue;
       }
@@ -787,7 +793,9 @@ export class DataIntegrityChecker {
           description: `Invalid type for field ${rule.field}`,
           expected: rule.type,
           actual: actualType,
-          repairable: false,
+          // The repair engine's type-conversion strategy is auto-repairable;
+          // flagging these non-repairable starved the whole repair pipeline.
+          repairable: true,
         });
         continue;
       }

@@ -29,8 +29,15 @@ import {
 
 /**
  * Create a test database with sample data
+ *
+ * Every connection opened here is tracked so afterEach can close it -
+ * IndexedDB blocks deleteDatabase() while any connection is open, and the
+ * leaked connections used to deadlock teardown (hook timeouts, hanging
+ * workers).
  */
-async function createTestDatabase(dbName: string, storeName: string, data: any[] = []) {
+const openTestDatabases: IDBDatabase[] = [];
+
+async function createTestDatabase(dbName: string, storeName: string, data: any[] = [], extraStores: string[] = []) {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(dbName, 1);
 
@@ -39,10 +46,16 @@ async function createTestDatabase(dbName: string, storeName: string, data: any[]
       if (!db.objectStoreNames.contains(storeName)) {
         db.createObjectStore(storeName, { keyPath: 'id' });
       }
+      for (const extra of extraStores) {
+        if (!db.objectStoreNames.contains(extra)) {
+          db.createObjectStore(extra, { keyPath: 'id' });
+        }
+      }
     };
 
     request.onsuccess = async () => {
       const db = request.result;
+      openTestDatabases.push(db);
 
       // Add test data
       if (data.length > 0) {
@@ -67,9 +80,38 @@ async function createTestDatabase(dbName: string, storeName: string, data: any[]
 }
 
 /**
+ * Close all tracked test database connections (call before deleting a
+ * database mid-test - IndexedDB blocks deleteDatabase() while connections
+ * are open).
+ */
+function closeOpenTestDatabases(): void {
+  for (const db of openTestDatabases.splice(0)) {
+    try {
+      db.close();
+    } catch {
+      // already closed
+    }
+  }
+}
+
+/**
  * Delete a test database
  */
 async function deleteTestDatabase(dbName: string): Promise<void> {
+  // Close tracked connections to this database first - IndexedDB blocks
+  // deleteDatabase() while any connection to it is open, which previously
+  // hung tests that deleted databases mid-test.
+  for (let i = openTestDatabases.length - 1; i >= 0; i--) {
+    if (openTestDatabases[i].name === dbName) {
+      try {
+        openTestDatabases[i].close();
+      } catch {
+        // already closed
+      }
+      openTestDatabases.splice(i, 1);
+    }
+  }
+
   return new Promise<void>((resolve, reject) => {
     const request = indexedDB.deleteDatabase(dbName);
 
@@ -87,7 +129,19 @@ describe('DataIntegrityChecker', () => {
   const testStoreName = 'testStore';
 
   afterEach(async () => {
+    // Close every connection this test opened before deleting databases
+    // (IndexedDB blocks deleteDatabase() while connections are open)
+    for (const db of openTestDatabases.splice(0)) {
+      try {
+        db.close();
+      } catch {
+        // already closed
+      }
+    }
     await deleteTestDatabase(testDbName);
+    await deleteTestDatabase('ParentDB');
+    await deleteTestDatabase('ChildDB');
+    await deleteTestDatabase('PersonalLogPlugins');
   });
 
   describe('Schema Validation', () => {
@@ -110,15 +164,17 @@ describe('DataIntegrityChecker', () => {
     });
 
     it('should detect missing required fields', async () => {
+      // Use the schema-backed 'manifests' store: ad-hoc test stores have no
+      // registered schema, so only basic object checks apply.
       const invalidData = [
-        { id: '1', name: 'Test 1' }, // Missing 'value'
-        { id: '2', value: 200 }, // Missing 'name'
+        { id: '1', name: 'Test 1' }, // Missing version/description/author/permissions/type
+        { id: '2', version: '1.0.0' }, // Missing name
       ];
 
-      await createTestDatabase(testDbName, testStoreName, invalidData);
+      await createTestDatabase('PersonalLogPlugins', 'manifests', invalidData);
 
       const checker = new DataIntegrityChecker();
-      const result = await checker.checkDatabase(testDbName);
+      const result = await checker.checkDatabase('PersonalLogPlugins');
 
       expect(result.stores[0].validRecords).toBeLessThan(2);
       expect(result.stores[0].issues.length).toBeGreaterThan(0);
@@ -130,15 +186,17 @@ describe('DataIntegrityChecker', () => {
     });
 
     it('should detect invalid field types', async () => {
+      // Schema-backed store: manifest.version must be a string,
+      // manifest.name must be a string
       const invalidData = [
-        { id: '1', name: 'Test', value: 'not a number' }, // value should be number
-        { id: '2', name: 123, value: 200 }, // name should be string
+        { id: '1', name: 'Test', version: 1.0, description: 'd', author: {}, permissions: [], type: [] },
+        { id: '2', name: 123, version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] },
       ];
 
-      await createTestDatabase(testDbName, testStoreName, invalidData);
+      await createTestDatabase('PersonalLogPlugins', 'manifests', invalidData);
 
       const checker = new DataIntegrityChecker();
-      const result = await checker.checkDatabase(testDbName);
+      const result = await checker.checkDatabase('PersonalLogPlugins');
 
       const typeIssues = result.stores[0].issues.filter(
         (issue) => issue.type === 'invalid-type'
@@ -158,42 +216,47 @@ describe('DataIntegrityChecker', () => {
     });
 
     it('should validate array fields', async () => {
+      // Schema-backed store: manifest.permissions and manifest.type must be arrays
       const data = [
-        { id: '1', items: ['a', 'b', 'c'] },
-        { id: '2', items: 'not an array' },
+        { id: '1', name: 'A', version: '1.0.0', description: 'd', author: {}, permissions: ['read'], type: ['ui'] },
+        { id: '2', name: 'B', version: '1.0.0', description: 'd', author: {}, permissions: 'not an array', type: ['ui'] },
       ];
 
-      await createTestDatabase(testDbName, testStoreName, data);
+      await createTestDatabase('PersonalLogPlugins', 'manifests', data);
 
       const checker = new DataIntegrityChecker();
-      const result = await checker.checkDatabase(testDbName);
+      const result = await checker.checkDatabase('PersonalLogPlugins');
 
-      expect(result.stores[0].issues.some((issue) =>
-        issue.description.includes('array')
-      )).toBe(true);
+      const arrayIssues = result.stores[0].issues.filter(
+        (issue) => issue.type === 'invalid-type' &&
+          (issue.description.includes('permissions') || issue.description.includes('type'))
+      );
+      expect(arrayIssues.length).toBeGreaterThan(0);
     });
   });
 
   describe('Referential Integrity', () => {
     it('should detect orphaned records', async () => {
-      // Create parent database
-      const parentDb = await createTestDatabase('ParentDB', 'parents', [
-        { id: 'parent1', name: 'Parent 1' },
-      ]);
+      // Schema-backed foreign key: states.id -> manifests.id. Create the
+      // states store (plus an empty manifests target store) with a state
+      // whose plugin manifest does not exist.
+      const orphanState = {
+        id: 'missing-plugin',
+        state: 'installed',
+        enabled: false,
+        installedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
 
-      // Create child database with orphaned record
-      const childDb = await createTestDatabase('ChildDB', 'children', [
-        { id: 'child1', parentId: 'parent1' }, // Valid reference
-        { id: 'child2', parentId: 'nonexistent' }, // Orphaned
-      ]);
-
-      parentDb.close();
-      childDb.close();
+      await createTestDatabase('PersonalLogPlugins', 'states', [orphanState], ['manifests']);
 
       const checker = new DataIntegrityChecker();
-      const result = await checker.checkDatabase('ChildDB');
+      const result = await checker.checkDatabase('PersonalLogPlugins');
 
-      const orphanedIssues = result.stores[0].issues.filter(
+      const statesResult = result.stores.find((s) => s.store.store === 'states');
+      expect(statesResult).toBeDefined();
+
+      const orphanedIssues = (statesResult?.issues || []).filter(
         (issue) => issue.type === 'orphaned-record'
       );
       expect(orphanedIssues.length).toBeGreaterThan(0);
@@ -213,16 +276,17 @@ describe('DataIntegrityChecker', () => {
 
   describe('Duplicate Detection', () => {
     it('should detect duplicate records', async () => {
+      // Schema-backed store: manifests have a unique constraint on 'name'
       const data = [
-        { id: '1', name: 'Duplicate', value: 100 },
-        { id: '2', name: 'Duplicate', value: 100 }, // Duplicate of record 1
-        { id: '3', name: 'Unique', value: 200 },
+        { id: '1', name: 'Duplicate', version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] },
+        { id: '2', name: 'Duplicate', version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] }, // same name
+        { id: '3', name: 'Unique', version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] },
       ];
 
-      await createTestDatabase(testDbName, testStoreName, data);
+      await createTestDatabase('PersonalLogPlugins', 'manifests', data);
 
       const checker = new DataIntegrityChecker();
-      const result = await checker.checkDatabase(testDbName);
+      const result = await checker.checkDatabase('PersonalLogPlugins');
 
       const duplicateIssues = result.stores[0].issues.filter(
         (issue) => issue.type === 'duplicate'
@@ -231,15 +295,17 @@ describe('DataIntegrityChecker', () => {
     });
 
     it('should handle unique constraints', async () => {
+      // Schema-backed store: duplicate manifest names violate the unique
+      // constraint and must be reported
       const data = [
-        { id: '1', email: 'test@example.com' },
-        { id: '2', email: 'test@example.com' }, // Duplicate email
+        { id: '1', name: 'Same Name', version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] },
+        { id: '2', name: 'Same Name', version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] },
       ];
 
-      await createTestDatabase(testDbName, testStoreName, data);
+      await createTestDatabase('PersonalLogPlugins', 'manifests', data);
 
       const checker = new DataIntegrityChecker();
-      const result = await checker.checkDatabase(testDbName);
+      const result = await checker.checkDatabase('PersonalLogPlugins');
 
       expect(result.stores[0].issues.length).toBeGreaterThan(0);
     });
@@ -321,50 +387,51 @@ describe('DataIntegrityChecker', () => {
     });
 
     it('should reduce score for corrupted records', async () => {
+      // Schema-backed store: records missing required manifest fields
       const data = [
-        { id: '1', name: 'Valid', value: 100 },
+        { id: '1', name: 'Valid', version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] },
         { id: '2' }, // Missing fields
         { id: '3' }, // Missing fields
       ];
 
-      await createTestDatabase(testDbName, testStoreName, data);
+      await createTestDatabase('PersonalLogPlugins', 'manifests', data);
 
       const checker = new DataIntegrityChecker();
-      const result = await checker.checkDatabase(testDbName);
+      const result = await checker.checkDatabase('PersonalLogPlugins');
 
       expect(result.score).toBeLessThan(100);
       expect(result.stores[0].score).toBeLessThan(100);
     });
 
     it('should classify status correctly', async () => {
-      // Test healthy status
+      // DATABASE_SCHEMAS is keyed by exact database name, so both phases
+      // must use 'PersonalLogPlugins' (created and deleted sequentially).
+      // Test healthy status (all records valid)
       {
-        await createTestDatabase(testDbName + '_healthy', testStoreName, [
-          { id: '1', name: 'Test', value: 100 },
+        await createTestDatabase('PersonalLogPlugins', 'manifests', [
+          { id: '1', name: 'Test', version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] },
         ]);
 
         const checker = new DataIntegrityChecker();
-        const result = await checker.checkDatabase(testDbName + '_healthy');
+        const result = await checker.checkDatabase('PersonalLogPlugins');
 
         expect(result.score).toBeGreaterThanOrEqual(90);
+        await deleteTestDatabase('PersonalLogPlugins');
       }
 
-      // Test critical status
+      // Test critical status (every record invalid)
       {
-        await createTestDatabase(testDbName + '_critical', testStoreName, [
+        await createTestDatabase('PersonalLogPlugins', 'manifests', [
           { id: '1' },
           { id: '2' },
           { id: '3' },
         ]);
 
         const checker = new DataIntegrityChecker();
-        const result = await checker.checkDatabase(testDbName + '_critical');
+        const result = await checker.checkDatabase('PersonalLogPlugins');
 
         expect(result.score).toBeLessThan(70);
-        await deleteTestDatabase(testDbName + '_critical');
       }
-
-      await deleteTestDatabase(testDbName + '_healthy');
     });
   });
 
@@ -471,7 +538,16 @@ describe('DataRepairEngine', () => {
   const testStoreName = 'testStore';
 
   afterEach(async () => {
+    // Close every connection this test opened before deleting the database
+    for (const db of openTestDatabases.splice(0)) {
+      try {
+        db.close();
+      } catch {
+        // already closed
+      }
+    }
     await deleteTestDatabase(testDbName);
+    await deleteTestDatabase('PersonalLogPlugins');
   });
 
   describe('Repair Strategies', () => {
@@ -523,12 +599,15 @@ describe('DataRepairEngine', () => {
 
   describe('Type Conversion', () => {
     it('should convert string to number', async () => {
-      const data = [{ id: '1', value: '123' }]; // String should be number
+      // Schema-backed store: manifest.version must be a string
+      const data = [
+        { id: '1', name: 'A', version: 123, description: 'd', author: {}, permissions: [], type: [] },
+      ];
 
-      await createTestDatabase(testDbName, testStoreName, data);
+      await createTestDatabase('PersonalLogPlugins', 'manifests', data);
 
       const checker = new DataIntegrityChecker();
-      const integrityResult = await checker.checkDatabase(testDbName);
+      const integrityResult = await checker.checkDatabase('PersonalLogPlugins');
 
       // Should detect type issue
       const typeIssues = integrityResult.stores[0].issues.filter(
@@ -538,12 +617,15 @@ describe('DataRepairEngine', () => {
     });
 
     it('should convert number to string', async () => {
-      const data = [{ id: '1', name: 123 }]; // Number should be string
+      // Schema-backed store: manifest.name must be a string
+      const data = [
+        { id: '1', name: 123, version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] },
+      ];
 
-      await createTestDatabase(testDbName, testStoreName, data);
+      await createTestDatabase('PersonalLogPlugins', 'manifests', data);
 
       const checker = new DataIntegrityChecker();
-      const result = await checker.checkDatabase(testDbName);
+      const result = await checker.checkDatabase('PersonalLogPlugins');
 
       expect(result.stores[0].issues.length).toBeGreaterThan(0);
     });
@@ -551,9 +633,14 @@ describe('DataRepairEngine', () => {
 
   describe('Repair Operations', () => {
     it('should handle dry run mode', async () => {
-      const data = [{ id: '1', value: 'invalid' }];
+      // Schema-backed store so the checker produces a repairable
+      // invalid-type issue (manifest.version must be a string).
+      const data = [{
+        id: '1', name: 'X', version: 123, description: 'd',
+        author: {}, permissions: [], type: [],
+      }];
 
-      await createTestDatabase(testDbName, testStoreName, data);
+      await createTestDatabase('PersonalLogPlugins', 'manifests', data);
 
       const checker = new DataIntegrityChecker();
       const integrityResult = await checker.checkSystemIntegrity();
@@ -628,7 +715,11 @@ describe('DataRepairEngine', () => {
     });
 
     it('should log all repair operations', async () => {
-      await createTestDatabase(testDbName, testStoreName, [{ id: '1', value: 'invalid' }]);
+      // Schema-backed store so a repairable issue exists to log about.
+      await createTestDatabase('PersonalLogPlugins', 'manifests', [{
+        id: '1', name: 'X', version: 123, description: 'd',
+        author: {}, permissions: [], type: [],
+      }]);
 
       const checker = new DataIntegrityChecker();
       const integrityResult = await checker.checkSystemIntegrity();
@@ -704,17 +795,17 @@ describe('Repair Convenience Functions', () => {
 
 describe('Data Integrity Integration Tests', () => {
   it('should perform full check and repair cycle', async () => {
-    const dbName = 'IntegrationTestDB';
-    const storeName = 'testStore';
+    // Schema-backed store so the checker produces real issues (one valid
+    // manifest, one wrong-typed version, one missing required fields).
+    const dbName = 'PersonalLogPlugins';
 
-    // Create database with issues
     const data = [
-      { id: '1', name: 'Valid', value: 100 },
-      { id: '2', name: 'Invalid Type', value: 'should be number' },
-      { id: '3' }, // Missing fields
+      { id: '1', name: 'Valid', version: '1.0.0', description: 'd', author: {}, permissions: [], type: [] },
+      { id: '2', name: 'Invalid Type', version: 2, description: 'd', author: {}, permissions: [], type: [] },
+      { id: '3' },
     ];
 
-    await createTestDatabase(dbName, storeName, data);
+    await createTestDatabase(dbName, 'manifests', data);
 
     // Check integrity
     const checkResult = await checkSystemIntegrity();
