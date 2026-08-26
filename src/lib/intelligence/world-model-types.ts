@@ -431,13 +431,13 @@ export interface WorldModelConfig {
  */
 export const DEFAULT_WORLD_MODEL_CONFIG: WorldModelConfig = {
   encoding: {
-    targetDimensions: 32,
+    targetDimensions: 16, // 32→32 was no compression at all; 16 gives 2x reduction
     method: 'simple',
     normalization: 'minmax',
     cache: true,
   },
   transitionLearning: {
-    minOccurrences: 3,
+    minOccurrences: 1, // 3 suppressed every sparse-data transition (unique states are seen once); confidence already scales with count
     maxHistorySize: 1000,
     minSupport: 0.1,
     useTemporalDecay: true,
