@@ -19,7 +19,13 @@ export function cn(...inputs: ClassValue[]) {
  * Format a date for display
  */
 export function formatDate(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string'
+    // Date-only strings ("2024-01-15") are UTC midnight per spec, which renders
+    // as the previous day west of UTC. Treat them as local midnight instead.
+    ? (/^\d{4}-\d{2}-\d{2}$/.test(date)
+        ? new Date(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10)))
+        : new Date(date))
+    : date;
   return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',

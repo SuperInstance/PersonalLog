@@ -156,6 +156,9 @@ describe('getAuthorColor', () => {
     const color1 = getAuthorColor(author1)
     const color2 = getAuthorColor(author2)
     // Colors may be the same by chance, but should generally differ
-    expect([color1, color2]).toContain(expect.any(String))
+    expect(typeof color1).toBe('string')
+    expect(typeof color2).toBe('string')
+    expect(color1).toMatch(/^bg-(purple|green|orange|pink|teal|indigo|red|cyan)-500$/)
+    expect(color2).toMatch(/^bg-(purple|green|orange|pink|teal|indigo|red|cyan)-500$/)
   })
 })
