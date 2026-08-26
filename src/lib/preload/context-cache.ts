@@ -192,8 +192,10 @@ export interface AgentCacheStats {
 interface CacheEntry {
   /** Agent type */
   agentType: string;
-  /** Compressed context data */
+  /** Compressed context data (raw JSON when format is 'raw') */
   compressed: string;
+  /** How `compressed` is encoded */
+  format?: 'lz-utf16' | 'raw';
   /** Timestamp */
   timestamp: number;
   /** Metadata */
@@ -212,6 +214,8 @@ const STORE_NAME = 'contexts';
 const CACHE_VERSION = 1;
 const DEFAULT_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_CACHE_SIZE = 50 * 1024 * 1024; // 50MB
+/** Above this serialized size, skip lz-string compression (too slow) */
+const MAX_COMPRESS_SIZE = 2 * 1024 * 1024; // 2MB
 
 // ============================================================================
 // CONTEXT CACHE CLASS
@@ -307,7 +311,9 @@ export class AgentContextCache {
     }
 
     try {
-      const startTime = Date.now();
+      // performance.now() gives sub-millisecond resolution - Date.now() rounds
+    // fast retrievals to 0ms and breaks avgRetrievalTime stats
+    const startTime = performance.now();
 
       // Deduplicate context with shared context
       const deduplicatedContext = this.deduplicateContext(context);
@@ -325,9 +331,20 @@ export class AgentContextCache {
         stale: false,
       };
 
-      // Serialize and compress
+      // Serialize and compress. lz-string compression is CPU-bound and
+      // takes minutes on very large payloads - for oversized contexts the
+      // cache write latency budget matters more than the space savings, so
+      // store them raw.
       const serialized = JSON.stringify(deduplicatedContext);
-      const compressed = compressToUTF16(serialized);
+      let compressed: string;
+      let format: 'lz-utf16' | 'raw';
+      if (serialized.length > MAX_COMPRESS_SIZE) {
+        compressed = serialized;
+        format = 'raw';
+      } else {
+        compressed = compressToUTF16(serialized);
+        format = 'lz-utf16';
+      }
 
       metadata.compressedSize = compressed.length;
       metadata.compressionRatio = metadata.totalSize / metadata.compressedSize;
@@ -336,6 +353,7 @@ export class AgentContextCache {
       const entry: CacheEntry = {
         agentType,
         compressed,
+        format,
         timestamp: Date.now(),
         metadata,
         ttl: Date.now() + ttl,
@@ -376,7 +394,9 @@ export class AgentContextCache {
       await this.initialize();
     }
 
-    const startTime = Date.now();
+    // Sub-millisecond resolution - fast retrievals rounded to 0ms with
+    // Date.now(), breaking avgRetrievalTime statistics
+    const startTime = performance.now();
 
     try {
       const entry = await this.db!.get(STORE_NAME, agentType) as CacheEntry | undefined;
@@ -401,8 +421,14 @@ export class AgentContextCache {
       }
 
       // Decompress and deserialize
-      const decompressed = decompressFromUTF16(entry.compressed);
+      const decompressed = entry.format === 'raw'
+        ? entry.compressed
+        : decompressFromUTF16(entry.compressed);
       const context: AgentContext = JSON.parse(decompressed);
+      // Surface the cache-maintained metadata (compression ratio, stale
+      // flag, access stats) on the returned context - the payload's own
+      // metadata snapshot is stale the moment it is cached
+      context.metadata = { ...context.metadata, ...entry.metadata };
 
       // Update metadata
       entry.metadata.lastAccess = Date.now();
@@ -442,6 +468,11 @@ export class AgentContextCache {
     }
 
     try {
+      const existing = await this.db!.get(STORE_NAME, agentType);
+      if (!existing) {
+        // Nothing to invalidate - report that no context was removed
+        return false;
+      }
       await this.db!.delete(STORE_NAME, agentType);
       console.log(`[ContextCache] Invalidated context for ${agentType}`);
       return true;
@@ -522,7 +553,8 @@ export class AgentContextCache {
         totalRetrievalTime += stats.totalTime;
         totalSize += entry.metadata.compressedSize;
 
-        if (Date.now() > entry.ttl) {
+        // A context is stale when explicitly marked OR past its TTL
+        if (entry.metadata.stale || Date.now() > entry.ttl) {
           staleCount++;
         }
 

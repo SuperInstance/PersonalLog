@@ -207,7 +207,8 @@ describe('Context Caching', () => {
     await cache.cacheAgentContext(agentType, context2);
 
     const retrieved = await cache.getAgentContext(agentType);
-    expect(retrieved?.docs[1].size).toBe(2000); // Updated size
+    // docs[0] carries the requested size (docs[1] is 2x by fixture design)
+    expect(retrieved?.docs[0].size).toBe(2000); // Updated size
   });
 
   it('should handle large contexts', async () => {

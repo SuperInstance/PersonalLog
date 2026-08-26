@@ -139,12 +139,16 @@ export class CacheWarmer {
       throw new Error('[CacheWarmer] Context builder not initialized. Call initialize() first.');
     }
 
+    // Merge caller config over defaults - `background` was previously
+    // hardcoded to true, so foreground (blocking) warm requests were
+    // silently downgraded to background warming and returned 'warming'
     const fullConfig: WarmingConfig = {
       autoWarmOnStartup: true,
       refreshInterval: 60 * 60 * 1000, // 1 hour
       background: true,
       agentTypes,
       maxWarmingTime: 5 * 60 * 1000, // 5 minutes
+      ...config,
       onProgress: config.onProgress,
     };
 
@@ -362,6 +366,17 @@ export class CacheWarmer {
 
         // Cache context
         await cache.cacheAgentContext(agentType, context);
+
+        // Re-check the time limit AFTER the build: a slow builder that
+        // blows past maxWarmingTime must not count as warmed
+        if (Date.now() - startTime > config.maxWarmingTime) {
+          console.warn('[CacheWarmer] Max warming time exceeded');
+          this.currentProgress!.errors.push({
+            agentType,
+            error: 'Max warming time exceeded',
+          });
+          break;
+        }
 
         this.currentProgress!.warmedAgents++;
         this.currentProgress!.progress = Math.round(

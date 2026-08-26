@@ -519,7 +519,7 @@ describe('Error Handling', () => {
 
   it('should continue warming after partial failures', async () => {
     const partialBuilder = async (agentType: string) => {
-      if (agentType === 'agent-fail') {
+      if (agentType.startsWith('agent-fail')) {
         throw new Error('Fail');
       }
       return createMockContext(agentType);
