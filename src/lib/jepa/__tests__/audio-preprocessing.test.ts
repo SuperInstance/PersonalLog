@@ -427,8 +427,15 @@ describe('Audio Preprocessing', () => {
       const filtered = highPassFilter(buffer, 80)
       const filteredData = filtered.getChannelData(0)
 
-      // Filtered signal should be different
-      expect(filteredData[0]).not.toBe(data[0])
+      // Filtered signal should be different (sample 0 is excluded: a causal
+      // filter necessarily outputs y[0] = c·x[0], and x[0] = sin(0) = 0)
+      expect(filteredData[1]).not.toBe(data[1])
+
+      // A high-pass at 80 Hz must attenuate a 50 Hz sine (steady-state gain
+      // ≈ 0.53, so well under 80% of the input RMS)
+      const rms = (arr: Float32Array) =>
+        Math.sqrt(arr.reduce((s, v) => s + v * v, 0) / arr.length)
+      expect(rms(filteredData)).toBeLessThan(rms(data) * 0.8)
     })
 
     it('should preserve audio length', () => {

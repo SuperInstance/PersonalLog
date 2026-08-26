@@ -88,6 +88,11 @@ Object.defineProperty(global, 'crypto', {
   writable: true,
 })
 
+// Web Audio API — jsdom ships none of it; jepa code uses AudioContext/
+// OfflineAudioContext purely as buffer factories, so a faithful in-memory
+// implementation lets the real DSP math run under test.
+import './web-audio-mock'
+
 // Reset mocks before each test
 beforeEach(() => {
   localStorage.clear()
