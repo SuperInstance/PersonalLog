@@ -13,7 +13,7 @@
  * @module components/settings
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Check,
   AlertTriangle,
@@ -261,6 +261,16 @@ export function RecoveryWizard({ backups, onComplete, onCancel, isOpen }: Recove
     }
   };
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Move initial focus into the dialog so keyboard and screen reader users
+  // land inside the modal when it opens.
+  useEffect(() => {
+    if (isOpen) {
+      dialogRef.current?.focus();
+    }
+  }, [isOpen]);
+
   // Get current step number
   const getStepNumber = (): number => {
     const stepOrder: WizardStep[] = ['select', 'preview', 'categories', 'confirm', 'progress', 'complete'];
@@ -270,7 +280,14 @@ export function RecoveryWizard({ backups, onComplete, onCancel, isOpen }: Recove
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Recovery Wizard"
+        tabIndex={-1}
+        ref={dialogRef}
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col outline-none"
+      >
         {/* Header */}
         <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -867,6 +884,7 @@ function CategoriesStep({ preview, selectedCategories, onCategoryToggle, onNext,
           <button
             key={category.id}
             onClick={() => onCategoryToggle(category.id)}
+            aria-pressed={isSelected(category.id)}
             className={`p-4 rounded-lg border-2 text-left transition-all ${
               isSelected(category.id)
                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'

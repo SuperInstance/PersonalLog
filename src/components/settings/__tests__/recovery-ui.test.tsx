@@ -231,7 +231,9 @@ describe('RecoveryWizard', () => {
       )
 
       const searchInput = screen.getByPlaceholderText(/search backups/i)
-      await userEvent.type(searchInput, 'Full')
+      // Note: searching 'Full' alone would also match the incremental
+      // backup's description ('...since last full'); use the full name.
+      await userEvent.type(searchInput, 'Full Backup')
 
       expect(screen.getByText('Full Backup')).toBeInTheDocument()
       expect(screen.queryByText('Incremental Backup')).not.toBeInTheDocument()
@@ -292,7 +294,9 @@ describe('RecoveryWizard', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Items to Restore')).toBeInTheDocument()
-        expect(screen.getByText('1', { selector: '.text-2xl' })).toBeInTheDocument()
+        // Conversations and Messages both restore 1 item; assert at least one
+        // stat tile shows the count instead of expecting a unique match.
+        expect(screen.getAllByText('1', { selector: '.text-2xl' }).length).toBeGreaterThan(0)
       })
     })
 
@@ -310,13 +314,13 @@ describe('RecoveryWizard', () => {
       await userEvent.click(backupCard!)
 
       await waitFor(() => {
-        expect(screen.getByText('Step 2 of 5')).toBeInTheDocument()
+        expect(screen.getByText('Step 2 of 5: Preview & Verify')).toBeInTheDocument()
       })
 
-      const backButton = screen.getByText(/back/i)
+      const backButton = screen.getByRole('button', { name: /back/i })
       await userEvent.click(backButton)
 
-      expect(screen.getByText('Step 1 of 5')).toBeInTheDocument()
+      expect(screen.getByText('Step 1 of 5: Select Backup')).toBeInTheDocument()
     })
   })
 
@@ -336,21 +340,21 @@ describe('RecoveryWizard', () => {
       await userEvent.click(backupCard!)
 
       await waitFor(() => {
-        const continueButton = screen.getAllByText(/continue/i)[1]
-        if (continueButton) {
-          userEvent.click(continueButton)
-        }
+        expect(screen.getByText('Step 2 of 5: Preview & Verify')).toBeInTheDocument()
       })
+
+      const continueButton = screen.getByRole('button', { name: /continue/i })
+      await userEvent.click(continueButton)
 
       await waitFor(() => {
         expect(screen.getByText('Choose What to Restore')).toBeInTheDocument()
       })
 
-      // Click on conversations
-      const conversationsButton = screen.getByText(/conversations/i).closest('button')
-      await userEvent.click(conversationsButton!)
+      // Click on conversations (toggle button with aria-pressed state)
+      const conversationsButton = screen.getByRole('button', { name: /conversations/i })
+      await userEvent.click(conversationsButton)
 
-      expect(within(conversationsButton!).getByRole('checkbox')).toBeChecked()
+      expect(conversationsButton).toHaveAttribute('aria-pressed', 'true')
     })
   })
 
@@ -431,7 +435,9 @@ describe('BackupList', () => {
     )
 
     const searchInput = screen.getByPlaceholderText(/search backups/i)
-    await userEvent.type(searchInput, 'Full')
+    // 'Full' alone would also match the incremental backup's description
+    // ('...since last full'); use the full name.
+    await userEvent.type(searchInput, 'Full Backup')
 
     expect(screen.getByText('1 backup')).toBeInTheDocument()
     expect(screen.getByText('Full Backup')).toBeInTheDocument()
@@ -520,9 +526,14 @@ describe('BackupList', () => {
       />
     )
 
-    // Should be sorted by date descending by default
-    const backupCards = screen.getAllByText(/backup/i)
-    expect(backupCards[0]).toHaveTextContent('Full Backup') // Most recent
+    // Should be sorted by date descending by default: the Full Backup
+    // (Jan 7) must appear before the Incremental Backup (Jan 6) in the
+    // document.
+    const full = screen.getByText('Full Backup')
+    const incremental = screen.getByText('Incremental Backup')
+    expect(
+      full.compareDocumentPosition(incremental) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 })
 

@@ -69,8 +69,15 @@ export class BackupRecovery {
         throw new NotFoundError('backup', backupId)
       }
 
-      return this.createRestorePreview(backup, false, false)
+      // Preview what a DEFAULT restore would do; restoreFromBackup defaults
+      // createPreRestoreBackup to true, so the preview must reflect that.
+      return this.createRestorePreview(backup, false, true)
     } catch (error) {
+      // Preserve the error type for expected failures (callers need to
+      // distinguish 'no such backup' from storage problems)
+      if (error instanceof NotFoundError || error instanceof ValidationError) {
+        throw error
+      }
       throw new StorageError(`Failed to preview restore: ${backupId}`, {
         technicalDetails: error instanceof Error ? error.message : String(error),
         cause: error instanceof Error ? error : undefined
@@ -245,6 +252,12 @@ export class BackupRecovery {
       console.log(`[Backup Recovery] Successfully restored backup: ${backup.name}`)
       return result
     } catch (error) {
+      // A missing backup is a caller error, not an operational failure:
+      // rethrow so callers can distinguish bad IDs from failed restores.
+      if (error instanceof NotFoundError) {
+        throw error
+      }
+
       // Create failure result
       const result: RestoreResult = {
         success: false,
