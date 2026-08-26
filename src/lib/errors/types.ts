@@ -226,12 +226,16 @@ export class QuotaError extends PersonalLogError {
   ) {
     const usedMB = Math.round(usedBytes / (1024 * 1024));
     const totalMB = Math.round(totalBytes / (1024 * 1024));
+    // Sub-megabyte values round to "0MB" and hide the actual numbers —
+    // show exact bytes until they are meaningful in MB.
+    const fmt = (mb: number, bytes: number) =>
+      mb > 0 ? `${mb}MB` : `${bytes} bytes`;
 
     super(`Storage quota exceeded: ${usedMB}MB used of ${totalMB}MB`, {
       category: 'quota',
       severity: 'high',
       recovery: 'recoverable',
-      userMessage: options.userMessage || `Storage almost full (${usedMB}MB used of ${totalMB}MB). Consider clearing old conversations or enabling compaction.`,
+      userMessage: options.userMessage || `Storage almost full (${fmt(usedMB, usedBytes)} used of ${fmt(totalMB, totalBytes)}). Consider clearing old conversations or enabling compaction.`,
       technicalDetails: options.technicalDetails || `Quota: ${totalBytes} bytes, Used: ${usedBytes} bytes`,
       context: { usedBytes, totalBytes, ...options.context },
       cause: options.cause,

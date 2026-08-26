@@ -285,6 +285,7 @@ export class ErrorHandler {
     // Low severity
     if (
       message.includes('timeout') ||
+      message.includes('timed out') ||
       message.includes('deprecated') ||
       name.includes('warning')
     ) {
@@ -313,12 +314,12 @@ export class ErrorHandler {
       return 'Permission required. Please check your browser settings.';
     }
 
-    if (message.includes('timeout')) {
+    if (message.includes('timeout') || message.includes('timed out')) {
       return 'Operation took too long. Please try again.';
     }
 
     if (message.includes('not found')) {
-      return 'The requested resource could not be found.';
+      return 'The requested resource was not found.';
     }
 
     return 'An unexpected error occurred. Please try again.';
@@ -588,6 +589,19 @@ export class ErrorHandler {
             console.log('Clear old data action triggered');
           },
         });
+        break;
+
+      case 'network':
+        // When the browser reports it is actually offline, offer offline mode
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          actions.push({
+            label: 'Go Offline',
+            action: () => {
+              // Enable offline mode
+              console.log('Offline mode enabled');
+            },
+          });
+        }
         break;
 
       case 'offline':
