@@ -31,7 +31,7 @@ describe('cn (className utility)', () => {
 
 describe('formatDate', () => {
   it('should format Date object correctly', () => {
-    const date = new Date('2024-01-15')
+    const date = new Date(2024, 0, 15)
     const result = formatDate(date)
     expect(result).toContain('2024')
     expect(result).toContain('Jan')
