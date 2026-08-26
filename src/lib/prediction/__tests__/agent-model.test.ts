@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   predictionModel,
   transitionTracker,
+  AgentTransitionTracker,
   FeatureExtractor,
   extractFeatures,
   AgentTransition,
@@ -478,7 +479,6 @@ describe('AgentTransitionTracker', () => {
       const evening = new Date('2025-01-07T20:00:00').getTime();
       const night = new Date('2025-01-07T02:00:00').getTime();
 
-      const { AgentTransitionTracker } = require('../agent-transitions');
       expect(AgentTransitionTracker.getTimeOfDay(morning)).toBe(TimeOfDay.MORNING);
       expect(AgentTransitionTracker.getTimeOfDay(afternoon)).toBe(TimeOfDay.AFTERNOON);
       expect(AgentTransitionTracker.getTimeOfDay(evening)).toBe(TimeOfDay.EVENING);
@@ -500,7 +500,6 @@ describe('AgentTransitionTracker', () => {
         ],
       });
 
-      const { AgentTransitionTracker } = require('../agent-transitions');
       const taskType = AgentTransitionTracker.inferTaskType(conversation);
       expect(taskType).toBe(TaskType.DEBUGGING);
     });
@@ -520,7 +519,6 @@ describe('AgentTransitionTracker', () => {
         ],
       });
 
-      const { AgentTransitionTracker } = require('../agent-transitions');
       const taskType = AgentTransitionTracker.inferTaskType(conversation);
       expect(taskType).toBe(TaskType.GENERAL);
     });

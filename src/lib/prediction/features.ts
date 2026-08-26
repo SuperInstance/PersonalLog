@@ -55,7 +55,11 @@ const DEFAULT_FEATURE_CONFIG: FeatureConfig = {
   maxMessageCount: 1000,
   maxConversationLength: 1000000, // 1M characters
   maxActionHistory: 5,
-  numActionTypes: Object.keys(ActionType).length / 2,
+  // String enums have no reverse mappings, so Object.keys() returns exactly
+  // the member names — do NOT halve this (the /2 idiom is for numeric enums
+  // only; halving a 9-member string enum yields 4.5, and new Array(4.5)
+  // throws RangeError on every FeatureExtractor use)
+  numActionTypes: Object.keys(ActionType).length,
   normalizeFeatures: true,
 };
 
