@@ -94,18 +94,25 @@ export function calculateJEPAScore(profile: HardwareProfile): HardwareScoreResul
   const ramScore = calculateRAMScore(profile.memory);
   const storageScore = calculateStorageScore(profile.storage);
 
-  // Calculate weighted scores
-  const gpuScore = Math.min(40,
+  // Weighted scores. The old weights (gpu capped at 40 + full ram/cpu/storage,
+  // max 100) meant any discrete GPU instantly saturated the scale — an RTX
+  // 4050 laptop with 16GB scored 78 ("high-end"). Rebalanced so tiers are
+  // differentiated by the whole system, with uncapped GPU raw scaled at 0.3
+  // so halo hardware can still reach the extreme band.
+  const gpuRaw =
     (gpuCap.computeScore * 0.4) +
     (gpuCap.vramGB * 4) +
-    (gpuCap.hasTensorCores ? 10 : 0)
-  );
+    (gpuCap.hasTensorCores ? 10 : 0);
+  const gpuScore = gpuRaw * 0.33;
+  const ramScoreWeighted = ramScore * 0.4;
+  const cpuScoreWeighted = cpuScore * 0.8;
+  const storageScoreWeighted = storageScore * 0.6;
 
   const totalScore = Math.min(100, Math.round(
     gpuScore +
-    ramScore +
-    cpuScore +
-    storageScore
+    ramScoreWeighted +
+    cpuScoreWeighted +
+    storageScoreWeighted
   ));
 
   // Determine tier
@@ -122,7 +129,9 @@ export function calculateJEPAScore(profile: HardwareProfile): HardwareScoreResul
     tier,
     jepa,
     breakdown: {
-      gpu: Math.round(gpuScore),
+      // Breakdown reports the RAW component scores (documented 0-40/0-30/
+      // 0-20/0-10 scales); weights apply only to the total
+      gpu: Math.round(Math.min(40, gpuRaw)),
       ram: Math.round(ramScore),
       cpu: Math.round(cpuScore),
       storage: Math.round(storageScore),
@@ -137,7 +146,9 @@ export function calculateJEPAScore(profile: HardwareProfile): HardwareScoreResul
 function assessGPUCapability(gpu: GPUInfo): GPUCapability {
   const capability: GPUCapability = {
     hasTensorCores: false,
-    vramGB: (gpu.vramMB || 2048) / 1024, // Convert MB to GB
+    // vramMB || 2048 fabricated 2GB of VRAM for GPU-less systems (falsy-zero
+    // bug). Missing/0 VRAM means 0 unless the renderer implies shared memory.
+    vramGB: (gpu.vramMB ?? 0) / 1024, // Convert MB to GB
     computeScore: 0,
     apis: {
       cuda: false,
@@ -150,13 +161,23 @@ function assessGPUCapability(gpu: GPUInfo): GPUCapability {
   // Detect tensor cores from GPU renderer string
   const renderer = gpu.renderer?.toLowerCase() || '';
 
+  if (!gpu.available) {
+    // No GPU at all — zeroed capability regardless of any stale fields
+    capability.vramGB = 0;
+    return capability;
+  }
+
   // NVIDIA GPUs with tensor cores
   if (renderer.includes('nvidia') || renderer.includes('rtx') || renderer.includes('gtc')) {
     capability.hasTensorCores = true;
     capability.apis.cuda = true;
 
-    // RTX 40 series (latest, best performance)
-    if (renderer.includes('rtx 40')) {
+    // RTX 50 series (latest, best performance)
+    if (renderer.includes('rtx 50')) {
+      capability.computeScore = 110;
+    }
+    // RTX 40 series
+    else if (renderer.includes('rtx 40')) {
       capability.computeScore = 100;
     }
     // RTX 30 series
@@ -229,8 +250,9 @@ function assessGPUCapability(gpu: GPUInfo): GPUCapability {
 function calculateCPUScore(cpu: CPUInfo): number {
   let score = 0;
 
-  // Base score from core count (up to 10 points)
-  score += Math.min(10, (cpu.cores / 8) * 10);
+  // Base score from core count (up to 10 points, scaled across 24 cores —
+  // capping at 8 cores made 8/16/24-core CPUs indistinguishable)
+  score += Math.min(10, (cpu.cores / 24) * 10);
 
   // SIMD support (up to 5 points)
   if (cpu.simd.supported) {

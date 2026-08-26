@@ -39,6 +39,11 @@ describe('HardwareDetector', () => {
     });
 
     it('should detect display information', async () => {
+      // jsdom reports a 0x0 screen — stub realistic display dimensions
+      Object.defineProperty(window.screen, 'width', { value: 1920, configurable: true });
+      Object.defineProperty(window.screen, 'height', { value: 1080, configurable: true });
+      Object.defineProperty(window.screen, 'colorDepth', { value: 24, configurable: true });
+
       const result = await detector.getHardwareInfo();
 
       expect(result.profile?.display.width).toBeGreaterThan(0);
