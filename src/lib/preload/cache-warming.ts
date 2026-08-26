@@ -361,8 +361,23 @@ export class CacheWarmer {
           break;
         }
 
-        // Build context
-        const context = await this.contextBuilder!(agentType);
+        // Build context — raced against the deadline: a builder that
+        // blows past maxWarmingTime must not stall the warm pass either.
+        // The losing promise's eventual result is discarded (never cached).
+        const remaining = config.maxWarmingTime - (Date.now() - startTime);
+        let context: Awaited<ReturnType<NonNullable<typeof this.contextBuilder>>>;
+        if (remaining <= 0) {
+          throw new Error('Max warming time exceeded');
+        }
+        context = (await Promise.race([
+          this.contextBuilder!(agentType),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Max warming time exceeded')),
+              remaining
+            )
+          ),
+        ])) as typeof context;
 
         // Cache context
         await cache.cacheAgentContext(agentType, context);
