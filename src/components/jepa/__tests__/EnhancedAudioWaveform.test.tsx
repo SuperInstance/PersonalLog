@@ -68,6 +68,7 @@ const createMockCanvasContext = (): CanvasRenderingContext2D => {
     lineJoin: 'miter' as CanvasLineJoin,
     setLineDash: vi.fn(),
     beginPath: vi.fn(),
+    closePath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     quadraticCurveTo: vi.fn(),
@@ -77,6 +78,7 @@ const createMockCanvasContext = (): CanvasRenderingContext2D => {
     save: vi.fn(),
     restore: vi.fn(),
     clip: vi.fn(),
+    rect: vi.fn(),
     createLinearGradient: vi.fn(() => ({
       addColorStop: vi.fn(),
     })),
@@ -86,6 +88,15 @@ const createMockCanvasContext = (): CanvasRenderingContext2D => {
     fillText: vi.fn(),
   } as unknown as CanvasRenderingContext2D
 }
+
+// jsdom cannot produce a real 2D rendering context (no canvas backend), so
+// the component's rAF draw loop bails at getContext('2d') === null and
+// clipping detection never runs. Stub the context with the shared no-op mock.
+beforeAll(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+    () => createMockCanvasContext() as unknown as CanvasRenderingContext2D
+  )
+})
 
 // ============================================================================
 // WAVEFORM RENDERER TESTS
@@ -381,8 +392,8 @@ describe('EnhancedAudioWaveform Component', () => {
       const zoomInButton = screen.getByLabelText('Zoom in')
       fireEvent.click(zoomInButton)
 
-      // Verify zoom increased
-      const zoomDisplay = screen.getByText(/1\.0x/)
+      // Verify zoom increased (1.0 -> 2.0)
+      const zoomDisplay = screen.getByText('2.0x')
       expect(zoomDisplay).toBeInTheDocument()
     })
 
@@ -428,7 +439,9 @@ describe('EnhancedAudioWaveform Component', () => {
         />
       )
 
-      expect(screen.getByText('Excited')).toBeInTheDocument()
+      // The label is lowercase in the DOM; presentation capitalization
+      // comes from the `capitalize` CSS class on the span.
+      expect(screen.getByText('excited')).toBeInTheDocument()
     })
 
     it('should display neutral emotion by default', () => {
@@ -439,7 +452,7 @@ describe('EnhancedAudioWaveform Component', () => {
         />
       )
 
-      expect(screen.getByText('Neutral')).toBeInTheDocument()
+      expect(screen.getByText('neutral')).toBeInTheDocument()
     })
   })
 
@@ -562,7 +575,7 @@ describe('EnhancedAudioWaveform Component', () => {
 
     it('should handle empty data gracefully', () => {
       const emptyAnalyser = createMockAnalyser()
-      emptyAnalyser.getFloatTimeDomainData = jest.fn((array: Float32Array) => {
+      emptyAnalyser.getFloatTimeDomainData = vi.fn((array: Float32Array) => {
         array.fill(0)
       })
 
@@ -625,13 +638,14 @@ describe('EnhancedAudioWaveform Integration', () => {
       />
     )
 
-    expect(screen.getByText('Calm')).toBeInTheDocument()
+    // DOM text is lowercase; CSS `capitalize` handles presentation
+    expect(screen.getByText('calm')).toBeInTheDocument()
     expect(screen.getByText('Waveform')).toBeInTheDocument()
   })
 
   it('should integrate with JEPA recording system', () => {
     const mockAnalyser = createMockAnalyser()
-    const onClipping = jest.fn()
+    const onClipping = vi.fn()
 
     render(
       <EnhancedAudioWaveform
