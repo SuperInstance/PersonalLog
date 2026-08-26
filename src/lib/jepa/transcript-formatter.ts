@@ -392,7 +392,7 @@ export function formatCompactDuration(milliseconds: number): string {
  * Detect if text contains CJK characters
  */
 export function isCJKText(text: string): boolean {
-  const cjkRegex = /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]/
+  const cjkRegex = /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u1100-\u11ff]/
   return cjkRegex.test(text)
 }
 

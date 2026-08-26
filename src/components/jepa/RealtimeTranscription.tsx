@@ -424,7 +424,7 @@ export function RealtimeTranscription({
         <div className="space-y-3 max-w-4xl mx-auto">
           {finalizedSegments.map((segment) => {
             const isEditing = editingState.segmentId === segment.id
-            const segmentText = segment.words.map(w => w.word).join('')
+            const segmentText = segment.words.map(w => w.word).join(' ')
 
             return (
               <SegmentDisplay
