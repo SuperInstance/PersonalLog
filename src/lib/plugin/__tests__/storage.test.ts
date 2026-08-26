@@ -310,7 +310,10 @@ describe('PluginStore', () => {
       expect(fileId).toBeDefined();
 
       const retrieved = await store.getFile(pluginId, file.path);
-      expect(retrieved).toEqual(file);
+      // IndexedDB stores with keyPath + autoIncrement inject the generated
+      // key into the stored value (spec behavior), so the record comes back
+      // with an `id` property that the input did not have.
+      expect(retrieved).toEqual({ ...file, id: fileId });
     });
 
     it('should store multiple files', async () => {
@@ -406,7 +409,8 @@ describe('PluginStore', () => {
       expect(versionId).toBeDefined();
 
       const retrieved = await store.getVersion(pluginId, '1.0.0');
-      expect(retrieved).toEqual(version);
+      // keyPath + autoIncrement injects the generated id (IndexedDB spec).
+      expect(retrieved).toEqual({ ...version, id: versionId });
     });
 
     it('should get all versions', async () => {
@@ -458,10 +462,11 @@ describe('PluginStore', () => {
         totalSize: 1000,
       };
 
-      await store.storeVersion(version1);
+      const versionId = await store.storeVersion(version1);
 
       const active = await store.getActiveVersion(pluginId);
-      expect(active).toEqual(version1);
+      // keyPath + autoIncrement injects the generated id (IndexedDB spec).
+      expect(active).toEqual({ ...version1, id: versionId });
     });
 
     it('should set active version', async () => {
@@ -688,18 +693,27 @@ describe('PluginStore', () => {
 
       const logs = await store.getInstallationLogs(manifest.id);
       expect(logs).toHaveLength(2); // started + completed
-      expect(logs[1].status).toBe('completed');
+      // Logs are sorted by timestamp DESC; when both entries land in
+      // different milliseconds the completed entry sorts first, so assert
+      // by status rather than by array index.
+      expect(logs.find(l => l.status === 'completed')).toBeDefined();
+      expect(logs.find(l => l.status === 'started')).toBeDefined();
     });
 
     it('should log installation failure', async () => {
       const manifest = createTestManifest();
 
-      // Try to install with invalid data (will throw)
+      // Trigger a real failure: a file larger than the 50MB maxPluginSize
+      // limit makes storeFiles throw ValidationError inside installPlugin.
+      const oversizedFile = { ...createTestFile(manifest.id), size: 60 * 1024 * 1024 };
+
+      let threw = false;
       try {
-        await store.installPlugin(manifest, [], 'file' as PluginSourceType);
+        await store.installPlugin(manifest, [oversizedFile], 'file' as PluginSourceType);
       } catch (error) {
-        // Expected error
+        threw = true; // Expected error
       }
+      expect(threw).toBe(true);
 
       const logs = await store.getInstallationLogs(manifest.id);
       const failedLog = logs.find(l => l.status === 'failed');
@@ -774,12 +788,17 @@ describe('PluginStore', () => {
         version: '2.0.0',
       });
 
-      // Try to update with invalid data (will throw)
+      // Trigger a real failure mid-update: an oversized file makes
+      // storeFiles throw inside updatePlugin, exercising the rollback path.
+      const oversizedFile = { ...createTestFile(manifest2.id), size: 60 * 1024 * 1024 };
+
+      let threw = false;
       try {
-        await store.updatePlugin(manifest2.id, manifest2, []);
+        await store.updatePlugin(manifest2.id, manifest2, [oversizedFile]);
       } catch (error) {
-        // Expected error
+        threw = true; // Expected error
       }
+      expect(threw).toBe(true);
 
       // Verify old version is still active
       const activeVersion = await store.getActiveVersion(manifest1.id);

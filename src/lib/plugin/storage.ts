@@ -180,6 +180,8 @@ export interface PluginStorageOptions {
 export class PluginStore {
   private db: IDBDatabase | null = null;
   private initPromise: Promise<void> | null = null;
+  /** Set by close(); operations must reject until initialize() is called again. */
+  private closed = false;
   private options: PluginStorageOptions;
 
   constructor(options: PluginStorageOptions = {}) {
@@ -200,6 +202,9 @@ export class PluginStore {
    * Initialize plugin storage database
    */
   async initialize(): Promise<void> {
+    // Explicit (re)initialization clears the sticky closed flag.
+    this.closed = false;
+
     if (this.initPromise) {
       return this.initPromise;
     }
@@ -298,6 +303,11 @@ export class PluginStore {
    * Close storage database
    */
   async close(): Promise<void> {
+    // Make close() sticky: subsequent operations reject until initialize()
+    // is called explicitly. Previously ensureInitialized() silently
+    // re-opened the database, hiding use-after-close bugs from callers.
+    this.closed = true;
+
     if (this.db) {
       this.db.close();
       this.db = null;
@@ -309,6 +319,12 @@ export class PluginStore {
    * Ensure database is initialized
    */
   private async ensureInitialized(): Promise<void> {
+    if (this.closed) {
+      throw new StorageError('Plugin storage has been closed. Call initialize() to reopen it.', {
+        context: { dbName: PLUGIN_DB_NAME },
+      });
+    }
+
     if (!this.db) {
       await this.initialize();
     }
