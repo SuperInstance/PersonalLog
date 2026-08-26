@@ -19,33 +19,12 @@ import 'fake-indexeddb/auto'
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers)
 
-// Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {}
-
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => {
-      store[key] = value.toString()
-    },
-    removeItem: (key: string) => {
-      delete store[key]
-    },
-    clear: () => {
-      store = {}
-    },
-    get length() {
-      return Object.keys(store).length
-    },
-    key: (index: number) => {
-      return Object.keys(store)[index] || null
-    },
-  }
-})()
-
-Object.defineProperty(global, 'localStorage', {
-  value: localStorageMock,
-})
+// NOTE: localStorage is NOT mocked here. jsdom provides a real, spec-
+// compliant localStorage (including key enumeration via Object.keys), which
+// the previous hand-rolled mock broke - Object.keys(localStorage) returned
+// the mock's method names instead of the stored keys, silently breaking any
+// code that enumerates storage. Tests needing a custom localStorage still
+// override it locally with Object.defineProperty.
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {

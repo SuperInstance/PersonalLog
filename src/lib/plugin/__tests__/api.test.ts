@@ -30,45 +30,51 @@ import { getPluginRegistry } from '../registry';
 import { getPluginManager } from '../manager';
 import { getPermissionManager } from '../permissions';
 
-// Mock the managers
+// Mock the managers with STABLE singleton objects. The previous factories
+// (vi.fn(() => ({ ...fresh vi.fn()s }))) returned a brand-new object on every
+// getX() call, so api.ts - which calls getPermissionManager()/etc. inside
+// every operation - never saw the setups tests applied to their own instance.
+const mockRegistry = vi.hoisted(() => ({
+  initialize: vi.fn(),
+  getManifest: vi.fn(),
+  getAllManifests: vi.fn(),
+  deleteManifest: vi.fn(),
+  getRuntimeState: vi.fn(),
+  updateRuntimeState: vi.fn(),
+  deleteRuntimeState: vi.fn(),
+  getPluginSettings: vi.fn(),
+  updatePluginSettings: vi.fn(),
+  deletePluginSettings: vi.fn(),
+  isPluginInstalled: vi.fn(),
+  searchPlugins: vi.fn(),
+  getAllRuntimeStates: vi.fn(),
+}));
+
 vi.mock('../registry', () => ({
-  getPluginRegistry: vi.fn(() => ({
-    initialize: vi.fn(),
-    getManifest: vi.fn(),
-    getAllManifests: vi.fn(),
-    deleteManifest: vi.fn(),
-    getRuntimeState: vi.fn(),
-    updateRuntimeState: vi.fn(),
-    deleteRuntimeState: vi.fn(),
-    getPluginSettings: vi.fn(),
-    updatePluginSettings: vi.fn(),
-    deletePluginSettings: vi.fn(),
-    isPluginInstalled: vi.fn(),
-    searchPlugins: vi.fn(),
-    getAllRuntimeStates: vi.fn(),
-  })),
+  getPluginRegistry: () => mockRegistry,
+}));
+
+const mockManager = vi.hoisted(() => ({
+  getInstalledPlugins: vi.fn(),
+  uninstall: vi.fn(),
+  enable: vi.fn(),
+  disable: vi.fn(),
+  updateSettings: vi.fn(),
 }));
 
 vi.mock('../manager', () => ({
-  getPluginManager: vi.fn(() => ({
-    getInstalledPlugins: vi.fn(),
-    uninstall: vi.fn(),
-    enable: vi.fn(),
-    disable: vi.fn(),
-    updateSettings: vi.fn(),
-  })),
+  getPluginManager: () => mockManager,
+}));
+
+const mockPermissionManager = vi.hoisted(() => ({
+  hasPermission: vi.fn(),
+  grantPermissions: vi.fn(),
+  revokePermission: vi.fn(),
+  requestPermissions: vi.fn(),
 }));
 
 vi.mock('../permissions', () => ({
-  getPermissionManager: vi.fn(() => ({
-    hasPermission: vi.fn(() => true),
-    grantPermissions: vi.fn(),
-    revokePermission: vi.fn(),
-    requestPermissions: vi.fn(async () => ({
-      allGranted: true,
-      results: {},
-    })),
-  })),
+  getPermissionManager: () => mockPermissionManager,
 }));
 
 describe('Plugin API', () => {
@@ -78,6 +84,28 @@ describe('Plugin API', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Re-install default implementations after clearAllMocks so every test
+    // starts from sane behavior (individual tests override as needed).
+    mockPermissionManager.hasPermission.mockImplementation(() => true);
+    mockPermissionManager.requestPermissions.mockImplementation(async () => ({
+      allGranted: true,
+      results: {},
+    }));
+    mockPermissionManager.grantPermissions.mockImplementation(async () => {});
+    mockPermissionManager.revokePermission.mockImplementation(async () => {});
+    mockRegistry.getManifest.mockImplementation(async () => null);
+    mockRegistry.getAllManifests.mockImplementation(async () => []);
+    mockRegistry.getRuntimeState.mockImplementation(async () => null);
+    mockRegistry.getAllRuntimeStates.mockImplementation(async () => []);
+    mockRegistry.searchPlugins.mockImplementation(async () => []);
+    mockRegistry.getPluginSettings.mockImplementation(async () => ({}));
+    mockRegistry.isPluginInstalled.mockImplementation(async () => false);
+    mockManager.getInstalledPlugins.mockImplementation(async () => []);
+    mockManager.uninstall.mockImplementation(async () => {});
+    mockManager.enable.mockImplementation(async () => {});
+    mockManager.disable.mockImplementation(async () => {});
+    mockManager.updateSettings.mockImplementation(async () => {});
   });
 
   afterEach(() => {
@@ -609,15 +637,20 @@ describe('Plugin API', () => {
     it('should handle storage errors gracefully', async () => {
       const api = createPluginAPI(mockPluginId, mockPermissions, mockSettings);
 
-      // Mock localStorage.setItem to throw error
-      const originalSetItem = localStorage.setItem;
-      localStorage.setItem = vi.fn(() => {
-        throw new Error('Storage quota exceeded');
-      });
+      // Make localStorage.setItem throw. jsdom's localStorage lives behind a
+      // getter that rejects own-property assignment, so the spy must go on
+      // Storage.prototype (vi.spyOn(localStorage, 'setItem') is a no-op).
+      const setItemSpy = vi
+        .spyOn(Storage.prototype, 'setItem')
+        .mockImplementation(() => {
+          throw new Error('Storage quota exceeded');
+        });
 
-      await expect(api.storage.set('key', 'value')).rejects.toThrow();
-
-      localStorage.setItem = originalSetItem;
+      try {
+        await expect(api.storage.set('key', 'value')).rejects.toThrow();
+      } finally {
+        setItemSpy.mockRestore();
+      }
     });
 
     it('should handle invalid JSON in storage', async () => {
