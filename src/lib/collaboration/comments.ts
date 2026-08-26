@@ -214,6 +214,7 @@ export async function updateComment(
     content?: string
     highlights?: TextHighlight[]
     attachments?: CommentAttachment[]
+    reactions?: CommentReaction[]
   }
 ): Promise<Comment> {
   const existing = await getComment(id)
@@ -345,12 +346,17 @@ export async function addReaction(
   let updatedReactions: CommentReaction[]
 
   if (existingReaction) {
-    // Add user to existing reaction
+    // Add user to existing reaction (immutably - mutating the fetched
+    // comment's state in place leaked into other readers)
     if (!existingReaction.users.includes(userId)) {
-      existingReaction.users.push(userId)
-      existingReaction.count++
+      updatedReactions = comment.reactions.map(r =>
+        r.emoji === emoji
+          ? { ...r, users: [...r.users, userId], count: r.count + 1 }
+          : r
+      )
+    } else {
+      updatedReactions = [...comment.reactions]
     }
-    updatedReactions = [...comment.reactions]
   } else {
     // Create new reaction
     updatedReactions = [
@@ -363,9 +369,10 @@ export async function addReaction(
     ]
   }
 
+  // Persist the reaction update (previously only content/highlights were
+  // passed, so reactions were computed and then silently dropped)
   return updateComment(commentId, {
-    content: comment.content,
-    highlights: comment.highlights,
+    reactions: updatedReactions,
   })
 }
 
@@ -397,8 +404,7 @@ export async function removeReaction(
     .filter(r => r.count > 0)
 
   return updateComment(commentId, {
-    content: comment.content,
-    highlights: comment.highlights,
+    reactions: updatedReactions,
   })
 }
 
@@ -483,9 +489,14 @@ export async function getCommentStatistics(resourceId: string): Promise<{
     const reactionCount = comment.reactions.reduce((sum, r) => sum + r.count, 0)
     totalReactions += reactionCount
 
-    // Track most reactions
-    if (!mostReactions || reactionCount > mostReactions.count) {
-      mostReactions = { commentId: comment.id, count: reactionCount }
+    // Track most reactions (the single most-used reaction on a comment,
+    // not the sum across different emoji)
+    const maxReactionCount = comment.reactions.reduce(
+      (max, r) => Math.max(max, r.count),
+      0
+    )
+    if (!mostReactions || maxReactionCount > mostReactions.count) {
+      mostReactions = { commentId: comment.id, count: maxReactionCount }
     }
   }
 

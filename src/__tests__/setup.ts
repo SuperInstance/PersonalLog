@@ -59,17 +59,31 @@ global.cancelAnimationFrame = (id: number) => {
 const realCrypto = global.crypto
 Object.defineProperty(global, 'crypto', {
   value: {
+    // Spread only copies own enumerable properties - getRandomValues and
+    // randomUUID live on the prototype and were previously dropped, which
+    // broke any code under test that needs real random bytes (e.g. PBKDF2
+    // salts in collaboration sharing)
     ...realCrypto,
-    subtle: {
-      digest: async (algorithm: string, data: Uint8Array) => {
-        // Simple deterministic mock hash for testing
-        const hash = new Uint8Array(32)
-        for (let i = 0; i < 32; i++) {
-          hash[i] = data[i % data.length] || 0
+    getRandomValues: realCrypto.getRandomValues.bind(realCrypto),
+    randomUUID: realCrypto.randomUUID.bind(realCrypto),
+    // Mock only digest (deterministic for checksum tests); all other
+    // SubtleCrypto methods (deriveBits, importKey, encrypt, ...) pass
+    // through to the real implementation
+    subtle: new Proxy({}, {
+      get(_target, prop: string) {
+        if (prop === 'digest') {
+          return async (_algorithm: string, data: Uint8Array) => {
+            const hash = new Uint8Array(32)
+            for (let i = 0; i < 32; i++) {
+              hash[i] = data[i % data.length] || 0
+            }
+            return hash.buffer
+          }
         }
-        return hash.buffer
+        const real = (realCrypto as any).subtle[prop]
+        return typeof real === 'function' ? real.bind((realCrypto as any).subtle) : real
       },
-    },
+    }),
   },
   writable: true,
 })

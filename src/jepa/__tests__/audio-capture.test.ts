@@ -14,23 +14,34 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { AUDIO_CONFIG, RecordingState, AudioCaptureError, AudioErrorCode } from '../../lib/jepa/types'
 
 // Mock AudioContext and MediaStream API
+const connectable = () => ({ connect: vi.fn(), disconnect: vi.fn() })
 const mockAudioContext = {
-  createMediaStreamSource: vi.fn(),
-  createScriptProcessor: vi.fn(),
+  createMediaStreamSource: vi.fn(() => connectable()),
+  createAnalyser: vi.fn(() => ({ ...connectable(), fftSize: 0, smoothingTimeConstant: 0 })),
+  createScriptProcessor: vi.fn(() => ({ ...connectable(), onaudioprocess: null })),
   close: vi.fn(),
   resume: vi.fn(),
+  suspend: vi.fn(),
   state: 'suspended',
+  destination: {},
 }
 
+// Stable track objects - getTracks() must return the SAME track instances
+// across calls, or assertions on track.stop() never see the disposed tracks
+const mockTracks = [{ stop: vi.fn() }]
 const mockMediaStream = {
-  getTracks: vi.fn(() => [{ stop: vi.fn() }]),
+  getTracks: vi.fn(() => mockTracks),
 }
 
 const mockUserMedia = vi.fn()
 
+// A regular function (not an arrow) so `new AudioContext()` works and
+// returns the shared mock instance
 Object.defineProperty(global, 'AudioContext', {
   writable: true,
-  value: vi.fn(() => mockAudioContext),
+  value: vi.fn(function (this: unknown) {
+    return mockAudioContext
+  }),
 })
 
 Object.defineProperty(navigator, 'mediaDevices', {
@@ -191,6 +202,7 @@ describe('AudioCapture', () => {
 
     it('should pause and resume recording', async () => {
       await audioCapture.initialize()
+      await audioCapture.startRecording()
       await audioCapture.pauseRecording()
 
       // let state = audioCapture.getState()  // TODO: Update for new API
@@ -294,8 +306,9 @@ describe('AudioCapture', () => {
     it('should handle unsupported browser', async () => {
       // Remove AudioContext support
       const originalAudioContext = global.AudioContext
+      // `delete` fails on this non-configurable global - assign undefined
       // @ts-ignore
-      delete global.AudioContext
+      global.AudioContext = undefined
 
       const newCapture = new AudioCapture()
       await expect(newCapture.initialize()).rejects.toThrow()
@@ -378,8 +391,10 @@ describe('AudioCapture', () => {
       })
 
       await audioCapture.initialize()
+      await audioCapture.startRecording()
       await audioCapture.pauseRecording()
       await audioCapture.resumeRecording()
+      audioCapture.stopRecording()
       await audioCapture.dispose()
 
       expect(states).toContain('recording')

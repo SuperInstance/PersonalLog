@@ -255,6 +255,7 @@ export type AudioErrorCode =
   | 'CONTEXT_CLOSED'
   | 'BUFFER_OVERFLOW'
   | 'INVALID_CONFIG'
+  | 'INVALID_STATE'
 
 // ============================================================================
 // EMOTION TYPES
