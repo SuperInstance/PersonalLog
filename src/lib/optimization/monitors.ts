@@ -424,10 +424,7 @@ export class JankMonitor implements Monitor {
 
   getCurrentReading(): MetricReading {
     // Count long tasks in last second
-    const now = performance.now();
-    const recentTasks = this.longTasks.filter(
-      (t) => now - t < 1000
-    ).length;
+    const recentTasks = this.countRecentTasks();
 
     const anomaly = this.isAnomalous();
 
@@ -450,8 +447,14 @@ export class JankMonitor implements Monitor {
   }
 
   isAnomalous(): boolean {
-    const current = this.getCurrentReading().value;
-    return current > this.getBaseline() * 2;
+    // NOTE: must not call getCurrentReading() — that calls isAnomalous()
+    // (mutual recursion blew the stack on every reading)
+    return this.countRecentTasks() > this.getBaseline() * 2;
+  }
+
+  private countRecentTasks(): number {
+    const now = performance.now();
+    return this.longTasks.filter((t) => now - t < 1000).length;
   }
 
   private addLongTask(duration: number): void {

@@ -293,6 +293,21 @@ describe('OptimizationEngine', () => {
       engine.registerRule(createMockRule('rule-2', 'medium'));
       engine.registerRule(createMockRule('rule-3', 'low'));
 
+      // jsdom lacks Chrome's non-standard performance.memory, so the memory
+      // monitor would never collect a reading and no rule condition could
+      // ever be evaluated. Simulate a heap that sat at 50 MB (establishing
+      // the baseline) and then climbed to 95 MB (> the 80 threshold and >30%
+      // over baseline → anomalous → memory-usage issue detected).
+      const memory = { usedJSHeapSize: 50 * 1024 * 1024 };
+      Object.defineProperty(performance, 'memory', {
+        configurable: true,
+        value: memory,
+      });
+      await engine.start();
+      vi.advanceTimersByTime(20000); // ~20 baseline readings (p95 stays at 50 MB)
+      memory.usedJSHeapSize = 95 * 1024 * 1024;
+      vi.advanceTimersByTime(1000); // the anomalous reading
+
       const suggestions = await engine.suggestOptimizations();
 
       expect(suggestions.count).toBe(3);
