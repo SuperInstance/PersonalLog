@@ -596,3 +596,58 @@ export interface AnalyticsExport {
 }
 
 
+
+// Runtime lists mirroring the unions above (for zero-filled aggregates)
+
+export const ALL_EVENT_CATEGORIES: EventCategory[] = [
+  'user_action',
+  'performance',
+  'engagement',
+  'error',
+  'feature_flag',
+  'system',
+]
+
+export const ALL_EVENT_TYPES: EventType[] = [
+  'message_sent',
+  'conversation_created',
+  'conversation_archived',
+  'conversation_deleted',
+  'settings_changed',
+  'ai_contact_created',
+  'ai_contact_modified',
+  'ai_contact_deleted',
+  'search_performed',
+  'export_triggered',
+  'import_triggered',
+  'app_initialized',
+  'api_response',
+  'render_complete',
+  'storage_operation',
+  'memory_measurement',
+  'session_start',
+  'session_end',
+  'feature_used',
+  'feature_abandoned',
+  'page_view',
+  'conversation_viewed',
+  'messenger_opened',
+  'knowledge_viewed',
+  'ai_chat_started',
+  'previous_session_event',
+  'error_occurred',
+  'error_recovered',
+  'feature_enabled',
+  'feature_disabled',
+  'feature_evaluated',
+  'hardware_detected',
+  'benchmark_completed',
+  'data_compacted',
+  'data_exported',
+  'test_event',
+  'test',
+  'test1',
+  'test2',
+  'event1',
+  'event2',
+]
