@@ -13,28 +13,19 @@ import {
 import { JEPAModel, type InferenceResult } from '../model-integration'
 import { EmotionInferencePipeline, FallbackEmotionAnalyzer } from '../emotion-inference'
 
-// Mock AudioBuffer
-async function createMockAudioBuffer(duration: number = 1.0, frequency: number = 440): Promise<AudioBuffer> {
+// Mock AudioBuffer — a 0.5-amplitude sine synthesized directly into the
+// channel data (equivalent to the oscillator+gain OfflineAudioContext graph
+// this helper used before, which jsdom cannot render).
+function createMockAudioBuffer(duration: number = 1.0, frequency: number = 440): AudioBuffer {
   const sampleRate = 44100
   const numSamples = Math.floor(duration * sampleRate)
   const offlineContext = new OfflineAudioContext(1, numSamples, sampleRate)
-
-  // Create oscillator
-  const oscillator = offlineContext.createOscillator()
-  oscillator.type = 'sine'
-  oscillator.frequency.value = frequency
-
-  // Create gain node
-  const gainNode = offlineContext.createGain()
-  gainNode.gain.value = 0.5
-
-  // Connect and start
-  oscillator.connect(gainNode)
-  gainNode.connect(offlineContext.destination)
-  oscillator.start(0)
-  oscillator.stop(duration)
-
-  return await offlineContext.startRendering()
+  const buffer = offlineContext.createBuffer(1, numSamples, sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let i = 0; i < numSamples; i++) {
+    data[i] = 0.5 * Math.sin((2 * Math.PI * frequency * i) / sampleRate)
+  }
+  return buffer
 }
 
 describe('Audio Feature Extraction', () => {

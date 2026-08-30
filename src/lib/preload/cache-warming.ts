@@ -139,12 +139,16 @@ export class CacheWarmer {
       throw new Error('[CacheWarmer] Context builder not initialized. Call initialize() first.');
     }
 
+    // Merge caller config over defaults - `background` was previously
+    // hardcoded to true, so foreground (blocking) warm requests were
+    // silently downgraded to background warming and returned 'warming'
     const fullConfig: WarmingConfig = {
       autoWarmOnStartup: true,
       refreshInterval: 60 * 60 * 1000, // 1 hour
       background: true,
       agentTypes,
       maxWarmingTime: 5 * 60 * 1000, // 5 minutes
+      ...config,
       onProgress: config.onProgress,
     };
 
@@ -357,11 +361,37 @@ export class CacheWarmer {
           break;
         }
 
-        // Build context
-        const context = await this.contextBuilder!(agentType);
+        // Build context — raced against the deadline: a builder that
+        // blows past maxWarmingTime must not stall the warm pass either.
+        // The losing promise's eventual result is discarded (never cached).
+        const remaining = config.maxWarmingTime - (Date.now() - startTime);
+        let context: Awaited<ReturnType<NonNullable<typeof this.contextBuilder>>>;
+        if (remaining <= 0) {
+          throw new Error('Max warming time exceeded');
+        }
+        context = (await Promise.race([
+          this.contextBuilder!(agentType),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Max warming time exceeded')),
+              remaining
+            )
+          ),
+        ])) as typeof context;
 
         // Cache context
         await cache.cacheAgentContext(agentType, context);
+
+        // Re-check the time limit AFTER the build: a slow builder that
+        // blows past maxWarmingTime must not count as warmed
+        if (Date.now() - startTime > config.maxWarmingTime) {
+          console.warn('[CacheWarmer] Max warming time exceeded');
+          this.currentProgress!.errors.push({
+            agentType,
+            error: 'Max warming time exceeded',
+          });
+          break;
+        }
 
         this.currentProgress!.warmedAgents++;
         this.currentProgress!.progress = Math.round(

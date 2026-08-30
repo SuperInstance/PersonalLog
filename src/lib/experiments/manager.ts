@@ -433,6 +433,16 @@ export class ExperimentManager implements IExperimentManager {
     return this.assignmentEngine.getAssignment(experimentId, userId);
   }
 
+  /**
+   * Update configuration at runtime (merges partial config)
+   */
+  updateConfig(config: Partial<ExperimentConfig>): void {
+    this.config = { ...this.config, ...config };
+    if (this.config.debug) {
+      console.log('[Experiments] Config updated:', config);
+    }
+  }
+
   trackMetric(
     experimentId: string,
     variantId: string,
@@ -742,7 +752,12 @@ export class ExperimentManager implements IExperimentManager {
   optOut(experimentId: string, userId: string = 'default'): void {
     const experiment = this.experiments.get(experimentId)
     if (!experiment) {
-      throw new Error(`Experiment not found: ${experimentId}`)
+      // Opting out of an unknown/non-running experiment is a no-op, not an
+      // error - opting out is idempotent from the user's perspective.
+      if (this.config.debug) {
+        console.log('[Experiments] Opt-out for unknown experiment (no-op):', experimentId)
+      }
+      return
     }
 
     // Remove user's assignment

@@ -445,8 +445,12 @@ export class PluginLoader {
    * Store plugin code
    */
   private async storePluginCode(pluginId: PluginId, code: string): Promise<void> {
-    // Store in IndexedDB (using a separate store for code)
-    // For now, we'll use IndexedDB through the registry
+    // Store in IndexedDB via the registry's shared connection. The
+    // 'plugin-code' store is created during database upgrade (see
+    // registry.ts / storage.ts schema) - creating it lazily here via
+    // createObjectStore inside a normal transaction is illegal in real
+    // IndexedDB (versionchange transactions only) and used to make every
+    // plugin install fail.
     const db = (this.registry as any).db;
     if (!db) {
       throw new Error('Registry not initialized');
@@ -454,13 +458,7 @@ export class PluginLoader {
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(['plugin-code'], 'readwrite');
-      let store: IDBObjectStore;
-
-      if (!db.objectStoreNames.contains('plugin-code')) {
-        store = transaction.db.createObjectStore('plugin-code', { keyPath: 'pluginId' });
-      } else {
-        store = transaction.objectStore('plugin-code');
-      }
+      const store = transaction.objectStore('plugin-code');
 
       const request = store.put({ pluginId, code });
 

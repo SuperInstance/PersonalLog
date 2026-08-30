@@ -312,7 +312,9 @@ describe('Model Training Pipeline', () => {
     });
 
     it('should track training time', async () => {
-      const states = createMockStateSequence(50);
+      // N states produce N-1 transition samples; use 51 to clear the
+      // 50-sample minimum
+      const states = createMockStateSequence(51);
       const dataset = buildDataset(states);
 
       const model = await trainModel(dataset);

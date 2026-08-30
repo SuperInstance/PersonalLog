@@ -308,10 +308,12 @@ describe('EmotionTrendTracker', () => {
 
     it('should return sorted results by timestamp', async () => {
       const now = Date.now();
+      // Recordings must land in DIFFERENT hour buckets to produce two
+      // aggregated points (the original 2s offset always collapsed to one)
       const recordings: EmotionRecording[] = [
         {
           id: 'test-2',
-          timestamp: now + 2000,
+          timestamp: now + 2 * 60 * 60 * 1000,
           duration: 10,
           valence: 0.7,
           arousal: 0.6,

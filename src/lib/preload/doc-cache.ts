@@ -133,6 +133,14 @@ export class DocCache {
     hits: 0,
     misses: 0,
   };
+  /** Monotonic tick so same-millisecond LRU accesses stay strictly ordered */
+  private lastTick = 0;
+
+  private nextTick(): number {
+    const now = Date.now();
+    this.lastTick = now > this.lastTick ? now : this.lastTick + 1;
+    return this.lastTick;
+  }
   private initialized = false;
 
   constructor(config: Partial<CacheConfig> = {}) {
@@ -264,7 +272,7 @@ export class DocCache {
         contentType,
         compressed,
         checksum,
-        lastAccessed: Date.now(),
+        lastAccessed: this.nextTick(),
       };
 
       await this.db!.put('documents', entry);
@@ -432,7 +440,7 @@ export class DocCache {
   private async updateAccessTime(id: string): Promise<void> {
     const entry = await this.db!.get('documents', id);
     if (entry) {
-      entry.lastAccessed = Date.now();
+      entry.lastAccessed = this.nextTick();
       await this.db!.put('documents', entry);
     }
   }
@@ -445,8 +453,10 @@ export class DocCache {
    * @private
    */
   private async compress(content: string): Promise<string> {
-    const blob = new Blob([content]);
-    const stream = blob.stream().pipeThrough(
+    // jsdom's Blob has no .stream() - go through TextEncoder + Response,
+    // both available in Node and browsers
+    const bytes = new TextEncoder().encode(content);
+    const stream = new Response(bytes).body!.pipeThrough(
       new CompressionStream('gzip')
     );
     const compressedBlob = await new Response(stream).blob();
@@ -468,8 +478,7 @@ export class DocCache {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    const blob = new Blob([bytes]);
-    const stream = blob.stream().pipeThrough(
+    const stream = new Response(bytes).body!.pipeThrough(
       new DecompressionStream('gzip')
     );
     const decompressedBlob = await new Response(stream).blob();
@@ -498,9 +507,11 @@ export class DocCache {
    */
   private async loadStats(): Promise<void> {
     try {
+      // The metadata store uses out-of-line keys - the value IS the stats
+      // object (the old code read a nonexistent `.value` wrapper)
       const statsData = await this.db!.get('metadata', 'stats');
       if (statsData) {
-        this.stats = statsData.value as { hits: number; misses: number };
+        this.stats = statsData as { hits: number; misses: number };
       }
     } catch (error) {
       console.warn('[DocCache] Failed to load stats:', error);
@@ -514,10 +525,9 @@ export class DocCache {
    */
   private async saveStats(): Promise<void> {
     try {
-      await this.db!.put('metadata', {
-        key: 'stats',
-        value: this.stats,
-      });
+      // Out-of-line key store: the key must be passed to put() explicitly
+      // (putting a {key, value} object without a key always failed)
+      await this.db!.put('metadata', this.stats, 'stats');
     } catch (error) {
       console.warn('[DocCache] Failed to save stats:', error);
     }

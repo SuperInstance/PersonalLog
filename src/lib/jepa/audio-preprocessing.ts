@@ -202,11 +202,10 @@ export function removeSilenceFromBuffer(
   const data = audioBuffer.getChannelData(0)
   const length = data.length
 
-  // Find non-silent regions
+  // Find non-silent regions (speech = amplitude strictly above threshold)
   const regions: Array<{ start: number; end: number }> = []
   let inSpeech = false
   let speechStart = 0
-  let silenceStart = 0
 
   for (let i = 0; i < length; i++) {
     const amplitude = Math.abs(data[i])
@@ -215,37 +214,38 @@ export function removeSilenceFromBuffer(
       // Start of speech
       inSpeech = true
       speechStart = i
-    } else if (inSpeech && amplitude < threshold) {
-      // Start of silence
+    } else if (inSpeech && amplitude <= threshold) {
+      // End of speech (close the region; silence may or may not be cut,
+      // depending on its length, in the merge pass below)
       inSpeech = false
-      silenceStart = i
-    } else if (!inSpeech && amplitude > threshold) {
-      // End of silence - check if it's long enough to remove
-      const silenceDuration = i - silenceStart
-      if (silenceDuration >= minSilenceSamples) {
-        // Keep the speech region
-        regions.push({ start: speechStart, end: silenceStart })
-      }
-      inSpeech = true
-      speechStart = i
+      regions.push({ start: speechStart, end: i })
     }
   }
 
-  // Add final speech region if audio ends with speech
+  // Close the final region if the audio ends mid-speech
   if (inSpeech) {
     regions.push({ start: speechStart, end: length })
-  } else if (regions.length > 0) {
-    // Check if final silence should be kept
-    const lastRegion = regions[regions.length - 1]
-    if (silenceStart - lastRegion.end < minSilenceSamples) {
-      regions[regions.length - 1] = { start: lastRegion.start, end: length }
-    }
   }
 
   // If no speech detected, return original
   if (regions.length === 0) {
     return audioBuffer
   }
+
+  // Merge regions separated by silences shorter than minSilenceSamples
+  // (natural pauses are kept); longer silences are cut. Leading and trailing
+  // silence are always trimmed — that is the function's purpose.
+  const merged: Array<{ start: number; end: number }> = []
+  for (const region of regions) {
+    const prev = merged[merged.length - 1]
+    if (prev && region.start - prev.end < minSilenceSamples) {
+      merged[merged.length - 1] = { start: prev.start, end: region.end }
+    } else {
+      merged.push(region)
+    }
+  }
+  regions.length = 0
+  regions.push(...merged)
 
   // Combine regions
   const totalLength = regions.reduce((sum, region) => sum + (region.end - region.start), 0)

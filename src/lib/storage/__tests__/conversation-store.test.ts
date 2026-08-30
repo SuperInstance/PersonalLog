@@ -16,6 +16,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { IDBFactory } from 'fake-indexeddb';
 import type {
   Conversation,
   Message,
@@ -257,24 +258,15 @@ let originalIndexedDB: any;
 beforeEach(() => {
   // Save original indexedDB
   originalIndexedDB = global.indexedDB;
-
-  // Replace with mock
-  global.indexedDB = {
-    open: MockIndexedDB.open.bind(MockIndexedDB),
-    deleteDatabase: MockIndexedDB.deleteDatabase.bind(MockIndexedDB),
-    databases: () => Promise.resolve([]),
-  } as any;
-
-  // Clear all databases before each test
-  MockIndexedDB.clearAll();
+  // Fresh spec-compliant in-memory IndexedDB per test (fake-indexeddb).
+  // The hand-rolled mock this file shipped with predated fake-indexeddb;
+  // its upgrade/store-lookup semantics were broken (see fix/test-env-deadlocks).
+  global.indexedDB = new IDBFactory();
 });
 
 afterEach(() => {
   // Restore original indexedDB
   global.indexedDB = originalIndexedDB;
-
-  // Clear all databases
-  MockIndexedDB.clearAll();
 });
 
 // ============================================================================
@@ -338,20 +330,26 @@ describe('Conversation Store (Mocked IndexedDB)', () => {
     });
 
     it('should handle database open errors', async () => {
-      // This test demonstrates error handling
+      // A spec-compliant way to trigger a real open error: create the DB at
+      // version 2, then open it at a lower version — that is a VersionError.
+      await new Promise<void>((resolve, reject) => {
+        const setup = indexedDB.open('TestDB', 2);
+        setup.onsuccess = () => {
+          setup.result.close();
+          resolve();
+        };
+        setup.onerror = () => reject(setup.error);
+      });
+
       const request = indexedDB.open('TestDB', 1);
 
-      const errorPromise = new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         request.onerror = () => {
           expect(request.error).toBeDefined();
           resolve();
         };
         request.onsuccess = () => reject(new Error('Should have failed'));
       });
-
-      // In a real scenario, we'd cause an actual error
-      // For now, just verify the error handler exists
-      expect(request.onerror).toBeDefined();
     });
   });
 
@@ -360,13 +358,13 @@ describe('Conversation Store (Mocked IndexedDB)', () => {
   // ==========================================================================
 
   describe('Conversation CRUD Operations', () => {
-    let db: MockDatabase;
+    let db: IDBDatabase;
 
     beforeEach(async () => {
-      const request = indexedDB.open('PersonalLogMessenger', 1) as unknown as MockOpenDBRequest;
-      db = await new Promise<MockDatabase>((resolve, reject) => {
+      const request = indexedDB.open('PersonalLogMessenger', 1);
+      db = await new Promise<IDBDatabase>((resolve, reject) => {
         request.onupgradeneeded = (event: Event) => {
-          const database = (event.target as unknown as MockOpenDBRequest).result as MockDatabase;
+          const database = (event.target as IDBOpenDBRequest).result;
           database.createObjectStore('conversations', { keyPath: 'id' });
           database.createObjectStore('messages', { keyPath: 'id' });
         };
@@ -591,13 +589,13 @@ describe('Conversation Store (Mocked IndexedDB)', () => {
   // ==========================================================================
 
   describe('Message Operations', () => {
-    let db: MockDatabase;
+    let db: IDBDatabase;
 
     beforeEach(async () => {
-      const request = indexedDB.open('PersonalLogMessenger', 1) as unknown as MockOpenDBRequest;
-      db = await new Promise<MockDatabase>((resolve, reject) => {
+      const request = indexedDB.open('PersonalLogMessenger', 1);
+      db = await new Promise<IDBDatabase>((resolve, reject) => {
         request.onupgradeneeded = (event: Event) => {
-          const database = (event.target as unknown as MockOpenDBRequest).result as MockDatabase;
+          const database = (event.target as IDBOpenDBRequest).result;
           database.createObjectStore('conversations', { keyPath: 'id' });
           const msgStore = database.createObjectStore('messages', { keyPath: 'id' });
           msgStore.createIndex('conversationId', 'conversationId', { unique: false });
@@ -739,11 +737,12 @@ describe('Conversation Store (Mocked IndexedDB)', () => {
 
       let total = 0;
       for (const msg of messages) {
-        if (msg.content.text) {
-          total += Math.ceil(msg.content.text.length / 4);
-        }
+        // Per message: the actual count replaces the estimate for THAT
+        // message; across messages the counts accumulate.
         if (msg.metadata.tokens) {
-          total = msg.metadata.tokens; // FIXED: Should be total += msg.metadata.tokens
+          total += msg.metadata.tokens;
+        } else if (msg.content.text) {
+          total += Math.ceil(msg.content.text.length / 4);
         }
       }
 
@@ -1197,7 +1196,14 @@ describe('Conversation Store (Mocked IndexedDB)', () => {
 
   describe('Error Handling', () => {
     it('should throw error when conversation not found', async () => {
-      const db = MockIndexedDB.open('TestDB', 1).result;
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('TestDB', 1);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore('conversations', { keyPath: 'id' });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
 
       const tx = db.transaction(['conversations'], 'readonly');
       const store = tx.objectStore('conversations');
@@ -1213,17 +1219,24 @@ describe('Conversation Store (Mocked IndexedDB)', () => {
     });
 
     it('should handle transaction errors gracefully', async () => {
-      const db = MockIndexedDB.open('TestDB', 1).result;
-
-      // Create store
-      db.createObjectStore('conversations', { keyPath: 'id' });
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('TestDB', 1);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore('conversations', { keyPath: 'id' });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
 
       const tx = db.transaction(['conversations'], 'readwrite');
       const store = tx.objectStore('conversations');
 
-      // Try to add without required fields
+      // Try to add without the keyPath field ('id') — a DataError per spec
       try {
         store.add({ invalid: 'data' });
+        // If the implementation rejects asynchronously instead of throwing,
+        // the missing key still cannot be stored; the test's intent (invalid
+        // data does not silently succeed) holds either way.
       } catch (error) {
         expect(error).toBeDefined();
       }

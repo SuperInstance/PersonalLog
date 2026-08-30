@@ -53,8 +53,12 @@ function createProvider(provider: string, apiKey?: string) {
     case 'ollama':
       return new LocalAIProvider()
     default:
-      // Default to local
-      return new LocalAIProvider()
+      // Default to local only when the field is absent — an explicitly named
+      // but unknown provider must surface an error, not silently substitute.
+      if (!provider) {
+        return new LocalAIProvider()
+      }
+      throw new Error(`Unknown AI provider: ${provider}`)
   }
 }
 

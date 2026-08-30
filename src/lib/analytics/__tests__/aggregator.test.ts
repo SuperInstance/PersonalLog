@@ -19,26 +19,34 @@ const mockEvents: any[] = [];
 vi.mock('../storage', () => ({
   analyticsEventStore: {
     queryEvents: vi.fn(async (query: any) => {
-      // Return mock events based on query
+      // Return mock events based on query, honoring the time window like the
+      // real store does (a query with startTime/endTime must not see events
+      // outside it — the harness previously ignored the window entirely).
+      const timeFiltered = mockEvents.filter(e => {
+        const ts = new Date(e.timestamp).getTime();
+        const start = query.startTime !== undefined ? new Date(query.startTime).getTime() : -Infinity;
+        const end = query.endTime !== undefined ? new Date(query.endTime).getTime() : Infinity;
+        return ts >= start && ts <= end;
+      });
       if (query.types && query.types.includes('feature_used')) {
-        return mockEvents.filter(e => e.type === 'feature_used');
+        return timeFiltered.filter(e => e.type === 'feature_used');
       }
       if (query.types && query.types.includes('error_occurred')) {
-        return mockEvents.filter(e => e.type === 'error_occurred');
+        return timeFiltered.filter(e => e.type === 'error_occurred');
       }
       if (query.types && query.types.includes('error_recovered')) {
-        return mockEvents.filter(e => e.type === 'error_recovered');
+        return timeFiltered.filter(e => e.type === 'error_recovered');
       }
       if (query.types && query.types.includes('session_start')) {
-        return mockEvents.filter(e => e.type === 'session_start');
+        return timeFiltered.filter(e => e.type === 'session_start');
       }
       if (query.types && query.types.includes('session_end')) {
-        return mockEvents.filter(e => e.type === 'session_end');
+        return timeFiltered.filter(e => e.type === 'session_end');
       }
       if (query.types && query.types.includes('message_sent')) {
-        return mockEvents.filter(e => e.type === 'message_sent');
+        return timeFiltered.filter(e => e.type === 'message_sent');
       }
-      return mockEvents;
+      return timeFiltered;
     }),
   },
 }));
@@ -116,6 +124,30 @@ describe('AnalyticsAggregator', () => {
         data: { type: 'session_start' },
       },
       {
+        id: 'event-6b',
+        type: 'api_response',
+        category: 'performance',
+        timestamp: new Date(now - 5400000).toISOString(), // 90 min ago
+        sessionId: 'session-1',
+        data: { type: 'api_response', endpoint: '/api/chat', duration: 250, success: true },
+      },
+      {
+        id: 'event-6c',
+        type: 'api_response',
+        category: 'performance',
+        timestamp: new Date(now - 3000000).toISOString(), // 50 min ago
+        sessionId: 'session-1',
+        data: { type: 'api_response', endpoint: '/api/chat', duration: 420, success: true },
+      },
+      {
+        id: 'event-6d',
+        type: 'api_response',
+        category: 'performance',
+        timestamp: new Date(now - 120000).toISOString(), // 2 min ago
+        sessionId: 'session-1',
+        data: { type: 'api_response', endpoint: '/api/chat', duration: 900, success: false },
+      },
+      {
         id: 'event-7',
         type: 'session_end',
         category: 'engagement',
@@ -148,6 +180,10 @@ describe('AnalyticsAggregator', () => {
     });
 
     it('should return zero for event types with no occurrences', async () => {
+      // The shared beforeEach seeds api_response events, so a TRUE zero-count
+      // check needs a clean window: clear the seeds (this is the mock store —
+      // clearing is the store-level equivalent of an empty time range).
+      mockEvents.length = 0;
       const counts = await aggregator.getEventCountsByType({
         type: 'days',
         value: 1,
@@ -490,6 +526,9 @@ describe('AnalyticsAggregator', () => {
 
   describe('getPerformanceMetrics()', () => {
     beforeEach(() => {
+      // Isolate: performance metrics average over ALL api_response events, so
+      // the shared seeds (250/420/900) would pollute the average — clear them.
+      mockEvents.length = 0;
       // Add performance events
       const now = Date.now();
       mockEvents.push(
@@ -726,7 +765,9 @@ describe('AnalyticsAggregator', () => {
         value: 1,
       });
 
-      expect(errorRate.totalEvents).toBe(7);
+      // 10 seeded events in the 1-day window (2 message + 1 feature×2 +
+      // 1 error + 1 session_start + 3 api_response + 1 session_end).
+      expect(errorRate.totalEvents).toBe(10);
     });
 
     it('should calculate error rate correctly', async () => {
@@ -735,7 +776,7 @@ describe('AnalyticsAggregator', () => {
         value: 1,
       });
 
-      expect(errorRate.errorRate).toBeCloseTo(0.143, 2); // 1 error / 7 events
+      expect(errorRate.errorRate).toBeCloseTo(0.1, 2); // 1 error / 10 events
     });
 
     it('should break down errors by type', async () => {
@@ -790,8 +831,10 @@ describe('AnalyticsAggregator', () => {
         value: 1,
       });
 
+      // Duration metrics use performance vocabulary (trendToPerformanceTrend):
+      // increasing-duration = degrading, decreasing = improving.
       metrics.forEach(metric => {
-        expect(['increasing', 'decreasing', 'stable']).toContain(metric.trend);
+        expect(['improving', 'degrading', 'stable']).toContain(metric.trend);
       });
     });
   });

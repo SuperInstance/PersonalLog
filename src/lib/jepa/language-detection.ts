@@ -175,7 +175,8 @@ const LANGUAGE_KEYWORD_PATTERNS: Array<{
       'el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se',
       'no', 'haber', 'con', 'su', 'por', 'para', 'como', 'estar', 'tener', 'le',
       'lo', 'todo', 'pero', 'más', 'hacer', 'o', 'poder', 'decir', 'este', 'ir',
-      'otro', 'ese', 'si', 'me', 'ya', 'ver', 'porque', 'dar', 'cuando', 'muy'
+      'otro', 'ese', 'si', 'me', 'ya', 'ver', 'porque', 'dar', 'cuando', 'muy',
+      'hola', 'soy', 'yo', 'qué', 'cómo', 'gracias', 'bien', 'está'
     ],
     confidence: 0.8,
   },
@@ -185,7 +186,8 @@ const LANGUAGE_KEYWORD_PATTERNS: Array<{
       'le', 'de', 'et', 'à', 'un', 'il', 'avoir', 'ne', 'je', 'son',
       'que', 'se', 'qui', 'dans', 'ce', 'pour', 'pas', 'plus', 'pouvoir', 'par',
       'sur', 'être', 'avec', 'tout', 'faire', 'son', 'dire', 'elle', 'nous', 'comme',
-      'mais', 'vous', 'ce', 'si', 'leur', 'y', 'voir', 'bien', 'où', 'tu'
+      'mais', 'vous', 'ce', 'si', 'leur', 'y', 'voir', 'bien', 'où', 'tu',
+      'bonjour', 'suis', 'oui', 'non', 'est', 'c\u2019est'
     ],
     confidence: 0.8,
   },
@@ -195,7 +197,8 @@ const LANGUAGE_KEYWORD_PATTERNS: Array<{
       'der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich',
       'des', 'auf', 'für', 'ist', 'im', 'dem', 'nicht', 'ein', 'eine', 'als',
       'auch', 'es', 'an', 'werden', 'aus', 'er', 'hat', 'dass', 'sie', 'nach',
-      'wird', 'von', 'um', 'bei', 'noch', 'über', 'so', 'zum', 'war', 'haben'
+      'wird', 'von', 'um', 'bei', 'noch', 'über', 'so', 'zum', 'war', 'haben',
+      'ich', 'bin', 'hallo', 'wir', 'sind', 'nicht'
     ],
     confidence: 0.8,
   },
@@ -343,7 +346,16 @@ export async function detectLanguageFromTranscript(text: string): Promise<Langua
   // Clean and normalize text
   const cleanText = text.trim().toLowerCase()
 
-  if (cleanText.length < DETECTION_CONFIG.MIN_TEXT_LENGTH) {
+  // CJK/Arabic/Cyrillic characters convey roughly twice the information per
+  // character as Latin letters — a 10-char Chinese sentence is a full
+  // sentence. Weight them so short non-Latin text isn't rejected as "too
+  // short" and silently defaulted to English.
+  const effectiveLength = [...cleanText].reduce(
+    (len, ch) => len + (ch.charCodeAt(0) < 128 ? 1 : 2),
+    0,
+  )
+
+  if (effectiveLength < DETECTION_CONFIG.MIN_TEXT_LENGTH) {
     // Text too short for reliable detection
     return {
       language: 'en',
@@ -351,6 +363,11 @@ export async function detectLanguageFromTranscript(text: string): Promise<Langua
       alternatives: [],
     }
   }
+
+  // A result of {en, 0.3, []} is the "no evidence" fallback, not real
+  // evidence for English — it must never outweigh an actual signal.
+  const isFallback = (r: LanguageDetectionResult) =>
+    r.language === 'en' && r.confidence <= DETECTION_CONFIG.MIN_CONFIDENCE && r.alternatives.length === 0
 
   // Try character set detection first (most reliable)
   const charsetResult = detectByCharset(cleanText)
@@ -360,20 +377,17 @@ export async function detectLanguageFromTranscript(text: string): Promise<Langua
 
   // Try trigram detection for Latin script languages
   const trigramResult = detectByTrigrams(cleanText)
-  if (trigramResult.confidence > 0.5) {
-    // Combine trigram and keyword results
-    const keywordResult = detectByKeywords(cleanText)
-    return combineDetectionResults(trigramResult, keywordResult)
-  }
-
   // Try keyword detection
   const keywordResult = detectByKeywords(cleanText)
-  if (keywordResult.confidence > 0.6) {
-    return keywordResult
-  }
 
-  // Combine results
-  return combineDetectionResults(charsetResult, keywordResult)
+  const signals = [trigramResult, keywordResult, charsetResult].filter(r => !isFallback(r))
+  if (signals.length === 0) {
+    return { language: 'en', confidence: 0.3, alternatives: [] }
+  }
+  if (signals.length === 1) {
+    return signals[0]
+  }
+  return signals.reduce((acc, r) => combineDetectionResults(acc, r))
 }
 
 /**
@@ -451,14 +465,20 @@ function detectByCharset(text: string): LanguageDetectionResult {
   const scores: Array<{ language: string; confidence: number }> = []
 
   for (const { pattern, languages, confidence, checkExclusively } of CHARSET_PATTERNS) {
-    const matches = (text.match(pattern) || []).length
+    const matches = (text.match(new RegExp(pattern.source, pattern.flags + 'g')) || []).length
 
     if (matches > 0) {
       // For exclusive scripts (Hiragana, Hangul, etc.), presence alone is strong evidence
       // For non-exclusive scripts (Chinese characters shared with Japanese), need more evidence
       let confidenceScore = confidence
 
-      if (checkExclusively) {
+      // Han is only "shared" with Japanese — and Japanese text virtually
+      // always contains kana. Han with zero kana is Chinese; score it
+      // exclusively instead of damping it as a shared script.
+      const effectivelyExclusive = checkExclusively
+        || (languages.includes('zh') && !/[\u3040-\u309f\u30a0-\u30ff]/.test(text))
+
+      if (effectivelyExclusive) {
         // Exclusive script: high confidence based on presence
         confidenceScore = Math.min(1, confidence + (matches / text.length) * 0.15)
       } else {
@@ -502,7 +522,9 @@ function detectByCharset(text: string): LanguageDetectionResult {
  * Detect language by common words
  */
 function detectByKeywords(text: string): LanguageDetectionResult {
-  const words = text.split(/\s+/).filter(w => w.length > 2)
+  // Strip punctuation so "soy," can match keyword "soy"; keep short words
+  // ("y", "de", "el" are highly informative in Spanish/French)
+  const words = text.replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(w => w.length > 0)
   const scores: Array<{ language: string; confidence: number }> = []
 
   for (const { language, commonWords, confidence } of LANGUAGE_KEYWORD_PATTERNS) {

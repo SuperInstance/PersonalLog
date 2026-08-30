@@ -16,13 +16,17 @@ import type {
   PluginError,
   PluginSourceType,
 } from './types';
+import { PLUGIN_DB_NAME, PLUGIN_DB_VERSION, upgradePluginDatabaseSchema } from './storage';
 
 // ============================================================================
 // DATABASE SCHEMA
 // ============================================================================
 
-const PLUGIN_DB_NAME = 'PersonalLogPlugins';
-const PLUGIN_DB_VERSION = 1;
+// The shared schema owner for 'PersonalLogPlugins' lives in ./storage.ts
+// (PLUGIN_DB_NAME / PLUGIN_DB_VERSION are imported from there). This module
+// previously declared its own version (1), conflicting with storage.ts's
+// version (2) on the same database - real IndexedDB throws VersionError when
+// a connection requests a lower version than the existing database.
 
 const STORES = {
   MANIFESTS: 'manifests',
@@ -65,32 +69,11 @@ export class PluginRegistry {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-
-        // Create manifests store
-        if (!db.objectStoreNames.contains(STORES.MANIFESTS)) {
-          const manifestStore = db.createObjectStore(STORES.MANIFESTS, {
-            keyPath: 'id',
-          });
-          manifestStore.createIndex('name', 'name', { unique: false });
-          manifestStore.createIndex('author', 'author.name', { unique: false });
-          manifestStore.createIndex('version', 'version', { unique: false });
-        }
-
-        // Create states store
-        if (!db.objectStoreNames.contains(STORES.STATES)) {
-          const stateStore = db.createObjectStore(STORES.STATES, {
-            keyPath: 'id',
-          });
-          stateStore.createIndex('state', 'state', { unique: false });
-          stateStore.createIndex('enabled', 'enabled', { unique: false });
-        }
-
-        // Create settings store
-        if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
-          db.createObjectStore(STORES.SETTINGS, {
-            keyPath: 'pluginId',
-          });
-        }
+        // Full shared schema (see upgradePluginDatabaseSchema in ./storage):
+        // every opener must create the complete set of stores, otherwise the
+        // connection that runs the upgrade first leaves the other modules'
+        // stores missing.
+        upgradePluginDatabaseSchema(db);
       };
     });
   }

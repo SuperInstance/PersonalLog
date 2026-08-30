@@ -613,7 +613,11 @@ describe('Agent Performance Tracking', () => {
         conversationId: 'conv-1',
       });
 
-      const rankings = await getTopAgentsForTask(TaskType.ANALYZE);
+      // One execution is below the default minSampleSize of 5 - opt into
+      // ranking on small samples explicitly
+      const rankings = await getTopAgentsForTask(TaskType.ANALYZE, {
+        minSampleSize: 1,
+      });
       expect(rankings.length).toBeGreaterThan(0);
     });
 

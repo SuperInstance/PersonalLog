@@ -562,9 +562,10 @@ export class PermissionManager {
 
     // Wait for user resolution (this will be resolved by UI)
     return new Promise((resolve) => {
+      // Return the check promise so resolvePermissionRequest can await the
+      // full resolution instead of leaving a floating store read behind.
       this.pendingResolvers.set(requestId, () => {
-        // After resolution, check again
-        this.checkPermission(pluginId, permission).then(resolve);
+        return this.checkPermission(pluginId, permission).then(resolve);
       });
     });
   }
@@ -597,7 +598,10 @@ export class PermissionManager {
     // Remove from queue
     this.requestQueue.delete(requestId);
 
-    // Resolve pending promise
+    // Resolve pending promise (awaited: the resolver re-checks the
+    // permission against the store, and that read must complete before
+    // callers continue - previously it floated and could race database
+    // teardown, reopening the store after close())
     const resolver = this.pendingResolvers.get(requestId);
     if (resolver) {
       const resolution: PermissionResolution = {
@@ -608,7 +612,7 @@ export class PermissionManager {
         timestamp: Date.now(),
         remember,
       };
-      resolver(resolution);
+      await resolver(resolution);
       this.pendingResolvers.delete(requestId);
     }
   }

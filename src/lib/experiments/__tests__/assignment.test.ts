@@ -116,14 +116,19 @@ describe('AssignmentEngine', () => {
       });
 
       // Save some test data
+      // Persisted format is { assignments: {...}, banditStates: {...} } (see
+      // saveToStorage) - the fixture previously wrote the assignments map at
+      // the top level, so nothing was ever imported
       localStorage.setItem('test-assignments-assignments', JSON.stringify({
-        'exp-1:user-123': {
-          experimentId: 'exp-1',
-          userId: 'user-123',
-          variantId: 'control',
-          assignedAt: Date.now(),
-          sessionId: '',
-          exposed: false,
+        assignments: {
+          'exp-1:user-123': {
+            experimentId: 'exp-1',
+            userId: 'user-123',
+            variantId: 'control',
+            assignedAt: Date.now(),
+            sessionId: '',
+            exposed: false,
+          },
         },
       }));
 
@@ -195,7 +200,7 @@ describe('AssignmentEngine', () => {
       const stored = localStorage.getItem('test-assignments-assignments');
 
       expect(stored).toBeDefined();
-      expect(JSON.parse(stored || '{}')).toHaveProperty('exp-1:user-123');
+      expect(JSON.parse(stored || '{}').assignments).toHaveProperty('exp-1:user-123');
 
       localStorage.clear();
     });
@@ -500,7 +505,7 @@ describe('AssignmentEngine', () => {
 
       const stored = localStorage.getItem('test-assignments-assignments');
       const parsed = JSON.parse(stored || '{}');
-      const assignment = parsed['exp-1:user-123'];
+      const assignment = parsed.assignments['exp-1:user-123'];
 
       expect(assignment.exposed).toBe(true);
 
@@ -625,9 +630,11 @@ describe('AssignmentEngine', () => {
 
   describe('Statistical Sampling', () => {
     it('should sample from Beta distribution', () => {
-      // This is tested indirectly through bandit selection
-      engine.updateBanditState('exp-1', 'control', 5);
-      engine.updateBanditState('exp-1', 'control', 3);
+      // This is tested indirectly through bandit selection.
+      // updateBanditState takes a per-pull binary reward, so 5 successes
+      // and 3 failures are recorded as 5 x reward=1 then 3 x reward=0
+      for (let i = 0; i < 5; i++) engine.updateBanditState('exp-1', 'control', 1);
+      for (let i = 0; i < 3; i++) engine.updateBanditState('exp-1', 'control', 0);
 
       const state = engine.getBanditState('exp-1');
       const posterior = state?.posteriors['control'];

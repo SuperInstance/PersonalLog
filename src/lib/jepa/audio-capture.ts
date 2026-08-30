@@ -80,27 +80,31 @@ export class AudioCapture {
       })
 
       this.mediaStream = stream
+
+      // Create the AudioContext up front so unsupported/broken environments
+      // fail HERE, not on the first startRecording() call
+      await this.initAudioContext()
+
       this.stateManager.toReady()
 
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-          this.stateManager.toError(
-            'Microphone permission denied',
-            'PERMISSION_DENIED'
-          )
-        } else if (error.name === 'NotFoundError') {
-          this.stateManager.toError(
-            'No microphone found',
-            'DEVICE_NOT_FOUND'
-          )
-        } else {
-          this.stateManager.toError(
-            `Failed to initialize audio: ${error.message}`,
-            'INITIALIZATION_FAILED'
-          )
-        }
+      let message: string
+      let code: AudioErrorCode
+
+      if (error instanceof Error && (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError')) {
+        message = 'Permission denied: microphone access was not granted'
+        code = 'PERMISSION_DENIED'
+      } else if (error instanceof Error && error.name === 'NotFoundError') {
+        message = 'No device found: no microphone is available'
+        code = 'DEVICE_NOT_FOUND'
+      } else {
+        message = `Failed to initialize audio: ${error instanceof Error ? error.message : 'Unknown error'}`
+        code = 'INITIALIZATION_FAILED'
       }
+
+      // Notify error subscribers before transitioning (toError throws)
+      this.notifyErrorListeners(new AudioCaptureError(message, code))
+      this.stateManager.toError(message, code)
     }
   }
 
@@ -175,9 +179,11 @@ export class AudioCapture {
   /**
    * Pause recording
    */
-  pauseRecording(): void {
+  async pauseRecording(): Promise<void> {
     if (!this.stateManager.isRecording()) {
-      return
+      // Pausing while not recording is a caller bug - surface it instead
+      // of silently doing nothing
+      throw new AudioCaptureError('Cannot pause: not currently recording', 'INVALID_STATE')
     }
 
     this.stateManager.toPaused()
@@ -193,7 +199,7 @@ export class AudioCapture {
    */
   async resumeRecording(): Promise<void> {
     if (this.stateManager.getCurrentState().state !== 'paused') {
-      return
+      throw new AudioCaptureError('Cannot resume: not currently paused', 'INVALID_STATE')
     }
 
     // Resume audio context
@@ -452,7 +458,9 @@ export class AudioCapture {
         .filter(device => device.kind === 'audioinput')
         .map(device => ({
           deviceId: device.deviceId,
-          label: device.label || `Microphone ${device.deviceId.slice(0, 5)}`,
+          // An empty label means permission hasn't been granted - pass it
+          // through untouched instead of masking it with a fake name
+          label: device.label ?? '',
           groupId: device.groupId,
         }))
     } catch (error) {
@@ -486,6 +494,16 @@ export class AudioCapture {
    */
   onStateChange(callback: RecordingStateCallback): () => void {
     return this.stateManager.onStateChange(callback)
+  }
+
+  private notifyErrorListeners(error: Error): void {
+    this.onErrorCallbacks.forEach(callback => {
+      try {
+        callback(error)
+      } catch (callbackError) {
+        console.error('Error in audio error callback:', callbackError)
+      }
+    })
   }
 
   private notifyDataListeners(window: AudioWindow): void {

@@ -402,8 +402,53 @@ class GeneticAlgorithm {
 // CONFIGURATION TUNER
 // ============================================================================
 
+/**
+ * Default parameters every ConfigTuner starts with — seeding them in the
+ * constructor (not just the module singleton) so fresh instances are useful.
+ */
+const DEFAULT_TUNED_PARAMETERS: TunableParameter[] = [
+  {
+    name: 'cacheMaxSize',
+    original: 1000,
+    current: 1000,
+    min: 100,
+    max: 10000,
+    optimize: 'maximize',
+    targets: ['cache-size'],
+  },
+  {
+    name: 'apiTimeout',
+    original: 10000,
+    current: 10000,
+    min: 5000,
+    max: 30000,
+    optimize: 'minimize',
+    targets: ['response-latency'],
+  },
+  {
+    name: 'memoryCacheLimit',
+    original: 50,
+    current: 50,
+    min: 10,
+    max: 200,
+    optimize: 'minimize',
+    targets: ['memory-usage'],
+  },
+  {
+    name: 'messageBatchSize',
+    original: 50,
+    current: 50,
+    min: 10,
+    max: 100,
+    optimize: 'maximize',
+    targets: ['response-latency'],
+  },
+];
+
 export class ConfigTuner {
-  private parameters: Map<string, TunableParameter> = new Map();
+  private parameters: Map<string, TunableParameter> = new Map(
+    DEFAULT_TUNED_PARAMETERS.map(p => [p.name, { ...p }])
+  );
   private tuningHistory: TuningResult[] = [];
 
   /**
@@ -602,43 +647,4 @@ export class ConfigTuner {
  */
 export const configTuner = new ConfigTuner();
 
-// Initialize with default parameters
-configTuner.registerParameter({
-  name: 'cacheMaxSize',
-  original: 1000,
-  current: 1000,
-  min: 100,
-  max: 10000,
-  optimize: 'maximize',
-  targets: ['cache-size'],
-});
-
-configTuner.registerParameter({
-  name: 'apiTimeout',
-  original: 10000,
-  current: 10000,
-  min: 5000,
-  max: 30000,
-  optimize: 'minimize',
-  targets: ['response-latency'],
-});
-
-configTuner.registerParameter({
-  name: 'memoryCacheLimit',
-  original: 50,
-  current: 50,
-  min: 10,
-  max: 200,
-  optimize: 'minimize',
-  targets: ['memory-usage'],
-});
-
-configTuner.registerParameter({
-  name: 'messageBatchSize',
-  original: 50,
-  current: 50,
-  min: 10,
-  max: 100,
-  optimize: 'maximize',
-  targets: ['response-latency'],
-});
+// Default parameters are seeded in the ConfigTuner constructor

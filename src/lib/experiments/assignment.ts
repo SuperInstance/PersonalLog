@@ -166,10 +166,12 @@ export class AssignmentEngine {
     // Normalize hash to 0-1 range
     const normalized = (hash % 10000) / 10000;
 
-    // Select variant based on weights
+    // Select variant based on weights (normalized to sum to 1 - raw
+    // weights like 7/3 previously made the first variant always win)
+    const totalWeight = variants.reduce((sum, v) => sum + v.weight, 0);
     let cumulative = 0;
     for (const variant of variants) {
-      cumulative += variant.weight;
+      cumulative += variant.weight / totalWeight;
       if (normalized <= cumulative) {
         return variant.id;
       }
@@ -184,8 +186,10 @@ export class AssignmentEngine {
    */
   private selectVariantBandit(experimentId: string, variants: Variant[]): string {
     const banditState = this.banditStates.get(experimentId);
-    if (!banditState || !this.config.banditByDefault) {
-      // Fall back to uniform random if no bandit state
+    if (!banditState) {
+      // Fall back to uniform random if no bandit state (the caller only
+      // routes here when a bandit state exists; banditByDefault gates state
+      // creation, not selection once state exists)
       return variants[Math.floor(Math.random() * variants.length)].id;
     }
 
@@ -196,7 +200,14 @@ export class AssignmentEngine {
     for (const variant of variants) {
       const posterior = banditState.posteriors[variant.id];
       if (!posterior) {
-        // No data yet, use optimistic prior
+        // No data yet: sample from a uniform Beta(1,1) prior. Previously
+        // these variants were skipped entirely, making them unselectable
+        // and starving exploration.
+        const sample = this.sampleBeta(1, 1);
+        if (sample > bestSample) {
+          bestSample = sample;
+          bestVariant = variant.id;
+        }
         continue;
       }
 

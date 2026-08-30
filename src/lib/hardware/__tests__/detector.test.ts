@@ -39,12 +39,17 @@ describe('HardwareDetector', () => {
     });
 
     it('should detect display information', async () => {
+      // jsdom reports a 0x0 screen — stub realistic display dimensions
+      Object.defineProperty(window.screen, 'width', { value: 1920, configurable: true });
+      Object.defineProperty(window.screen, 'height', { value: 1080, configurable: true });
+      Object.defineProperty(window.screen, 'colorDepth', { value: 24, configurable: true });
+
       const result = await detector.getHardwareInfo();
 
       expect(result.profile?.display.width).toBeGreaterThan(0);
       expect(result.profile?.display.height).toBeGreaterThan(0);
       expect(result.profile?.display.pixelRatio).toBeGreaterThan(0);
-      expect(result.profile?.display.colorDepth).toBe(8 | 16 | 24 | 32 | 48);
+      expect([8, 16, 24, 32, 48]).toContain(result.profile?.display.colorDepth);
     });
   });
 

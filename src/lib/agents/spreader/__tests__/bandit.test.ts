@@ -154,6 +154,10 @@ describe('Bandit Rewards', () => {
 
     it('should preserve quality for lossless strategies', () => {
       const outcome = createMockOutcome('hybrid_lossless', 1000, 900, 800)
+      // Lossless compaction drops only redundant content: every important
+      // message survives (the removed message is the duplicate).
+      outcome.preservedImportantCount = 3
+      outcome.totalImportantCount = 3
 
       const reward = calculateReward(outcome)
 
@@ -377,7 +381,7 @@ describe('Epsilon-Greedy Algorithm', () => {
 
     // Epsilon should have decayed
     const finalSelection = selectArm(updated)
-    expect(finalSelection.reason).toContain('0.19')  // 0.5 * 0.9^10
+    expect(finalSelection.reason).toContain('0.174')  // 0.5 * 0.9^10
   })
 })
 
@@ -461,10 +465,12 @@ describe('Thompson Sampling Algorithm', () => {
   it('should favor successful arms over time', () => {
     const state = createBanditState('thompson_sampling')
 
-    // Give high rewards to hybrid_lossy
+    // Give high rewards to hybrid_lossy (on-target compression that
+    // preserves every important message)
     let updated = state
     for (let i = 0; i < 10; i++) {
       const outcome = createMockOutcome('hybrid_lossy', 1000, 600, 800)
+      outcome.preservedImportantCount = 3
       const reward = calculateReward(outcome)
       updated = updateArm(updated, 'hybrid_lossy', reward)
     }
@@ -476,9 +482,10 @@ describe('Thompson Sampling Algorithm', () => {
       updated = updateArm(updated, 'recent_only', reward)
     }
 
-    // Count next 20 selections
+    // Count next 100 selections (20 draws cannot separate two arms when
+    // six unexplored arms soak up most early samples)
     const selections: Record<string, number> = {}
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 100; i++) {
       const selection = selectArm(updated)
       selections[selection.strategy] = (selections[selection.strategy] || 0) + 1
     }
@@ -793,11 +800,13 @@ describe('Utility Functions', () => {
   })
 
   it('should calculate improvement over baseline', () => {
-    const strategyHistory = createInitialRewardHistory('hybrid_lossy')
+    const strategyHistory = createInitialRewardHistory('hybrid_lossless')
 
-    // Add good rewards
+    // Add good rewards (compaction that hits the target and loses nothing
+    // important)
     for (let i = 0; i < 10; i++) {
-      const outcome = createMockOutcome('hybrid_lossy', 1000, 600, 800)
+      const outcome = createMockOutcome('hybrid_lossless', 1000, 800, 800)
+      outcome.preservedImportantCount = 3
       const reward = calculateReward(outcome)
       strategyHistory.rewards.push(reward)
       strategyHistory.totalPulls++

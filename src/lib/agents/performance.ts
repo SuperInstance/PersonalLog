@@ -127,7 +127,13 @@ export class PerformanceTracker {
       metadata?: Record<string, unknown>;
     }
   ): Promise<string> {
-    if (!this.enabled) {
+    // Read the CURRENT privacy settings instead of the constructor-cached
+    // flag - the cache is populated by a fire-and-forget async init, so it
+    // races with tests/users toggling settings and records (or drops)
+    // executions against stale state
+    const privacy = await getPrivacySettings();
+    this.enabled = privacy.enabled;
+    if (!privacy.enabled) {
       // Silently skip if tracking is disabled
       return '';
     }

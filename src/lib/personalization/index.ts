@@ -325,12 +325,17 @@ class PersonalizationAPI {
   }
 
   /**
-   * Get all preferences
+   * Get all user-influenced preferences (learned or explicitly set).
+   * Defaults-only preferences are excluded - after resetPreferences() this
+   * returns an empty record.
    * Convenience method for tests
    */
-  getPreferences(userId: string = 'default') {
+  getPreferences(userId: string = 'default'): Record<PreferenceKey, Preference> {
     const model = this.getModel(userId)
-    return model.getPreferences()
+    const all = model.getPreferences().getAll()
+    return Object.fromEntries(
+      Object.entries(all).filter(([, pref]) => pref.source !== 'default')
+    ) as Record<PreferenceKey, Preference>
   }
 
   /**
@@ -341,9 +346,15 @@ class PersonalizationAPI {
     const model = this.getModel(userId)
     const stats = this.getStats(userId)
 
-    // Export model data
+    // Export model data; fall back to the in-memory model when nothing has
+    // been persisted yet - exporting the active user's state must not throw
     const { exportUserModel } = await import('./storage')
-    const modelData = await exportUserModel(userId)
+    let modelData: string
+    try {
+      modelData = await exportUserModel(userId)
+    } catch {
+      modelData = JSON.stringify(model.toUserModel(), null, 2)
+    }
 
     return {
       model: modelData,

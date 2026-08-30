@@ -337,9 +337,12 @@ export async function trainModel(
 
   console.log(`[ModelTraining] Train samples: ${train.length}, Test samples: ${test.length}`);
 
-  // Train model
+  // Train model — feed both sides of each transition so the model can
+  // actually learn inputState → targetState pairs (input-only feeding
+  // interleaved gaps and left prediction targets unresolvable).
   for (const sample of train) {
     model.addState(sample.inputState);
+    model.addState(sample.targetState);
   }
 
   // Wait for initialization
@@ -368,6 +371,13 @@ export async function trainModel(
       encodedStates: new Map(), // Would need to export from model
     },
   };
+
+  // A freshly trained model becomes the active model — otherwise nothing
+  // is ever active until a separate manual activation call.
+  for (const v of modelVersions.values()) {
+    v.active = false;
+  }
+  version.active = true;
 
   // Store version
   modelVersions.set(version.id, version);

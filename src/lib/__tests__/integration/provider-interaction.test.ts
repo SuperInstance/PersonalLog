@@ -151,8 +151,21 @@ describe('Provider Interactions', () => {
 
       const manager = getExperimentsManager();
 
-      // Should not throw
-      const assignment = manager.assignVariant('test_experiment', 'test-user-123');
+      // No default experiments ship with the manager, so register one for
+      // this test (control/treatment, full traffic allocation)
+      const expId = manager.createExperiment({
+        name: 'Test Experiment',
+        description: 'Fixture for variant assignment',
+        variants: [
+          { id: 'control', name: 'Control', weight: 50, isControl: true },
+          { id: 'treatment', name: 'Treatment', weight: 50 },
+        ],
+        metrics: [{ name: 'conversion', type: 'binary', primary: true }],
+        trafficAllocation: 1,
+      } as never).id;
+      manager.startExperiment(expId);
+
+      const assignment = manager.assignVariant(expId, 'test-user-123');
 
       expect(assignment).toBeDefined();
       expect(['control', 'treatment'].includes(assignment?.id || '')).toBe(true);

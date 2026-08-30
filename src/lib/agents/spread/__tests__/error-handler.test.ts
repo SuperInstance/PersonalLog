@@ -166,10 +166,11 @@ describe('Retry Logic', () => {
     });
 
     it('should set canRetry to false when max retries reached', () => {
-      const state = createRetryState('task-1', {
+      const policy = {
         ...DEFAULT_RETRY_POLICY,
         maxRetries: 2
-      });
+      };
+      const state = createRetryState('task-1', policy);
       const errorInfo: ErrorInfo = {
         taskId: 'task-1',
         category: ErrorCategory.TRANSIENT,
@@ -180,8 +181,13 @@ describe('Retry Logic', () => {
         retryable: true
       };
 
-      const updated = updateRetryState(state, errorInfo, DEFAULT_RETRY_POLICY);
+      // First failure: attempt 1, still retriable
+      const first = updateRetryState(state, errorInfo, policy);
+      expect(first.attempt).toBe(1);
+      expect(first.canRetry).toBe(true);
 
+      // Second failure: attempt 2 reaches the cap
+      const updated = updateRetryState(first, errorInfo, policy);
       expect(updated.attempt).toBe(2);
       expect(updated.canRetry).toBe(false);
     });

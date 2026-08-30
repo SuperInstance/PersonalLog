@@ -23,8 +23,12 @@ import { StorageError, NotFoundError, ValidationError } from '@/lib/errors';
 // DATABASE SCHEMA
 // ============================================================================
 
-const PLUGIN_DB_NAME = 'PersonalLogPlugins';
-const PLUGIN_DB_VERSION = 2; // Updated version for new stores
+// Shared plugin database identity. registry.ts and loader.ts must open the
+// SAME database at the SAME version - previously registry.ts opened version 1
+// while storage.ts opened version 2, which throws VersionError in a real
+// IndexedDB as soon as the lower-version opener runs second.
+export const PLUGIN_DB_NAME = 'PersonalLogPlugins';
+export const PLUGIN_DB_VERSION = 3; // v3: adds plugin-code store
 
 const STORES = {
   MANIFESTS: 'manifests',
@@ -34,6 +38,7 @@ const STORES = {
   FILES: 'plugin-files',
   VERSIONS: 'plugin-versions',
   INSTALLATION_LOGS: 'installation-logs',
+  PLUGIN_CODE: 'plugin-code',
 } as const;
 
 // ============================================================================
@@ -177,9 +182,98 @@ export interface PluginStorageOptions {
 // PLUGIN STORAGE CLASS
 // ============================================================================
 
+/**
+ * Create the complete plugin database schema (idempotent).
+ *
+ * SINGLE SOURCE OF TRUTH for the 'PersonalLogPlugins' schema. Both
+ * PluginStore (storage.ts) and PluginRegistry (registry.ts) open this
+ * database and MUST perform the full upgrade: previously each module
+ * created only its own subset of stores, so whichever connection ran the
+ * versionchange upgrade first left the other module's stores missing
+ * (e.g. 'permissions'), which breaks with NotFoundError in any real
+ * IndexedDB as soon as both are used in one session.
+ *
+ * Must only be called inside a versionchange (onupgradeneeded) handler.
+ */
+export function upgradePluginDatabaseSchema(db: IDBDatabase): void {
+  // Create manifests store
+  if (!db.objectStoreNames.contains(STORES.MANIFESTS)) {
+    const manifestStore = db.createObjectStore(STORES.MANIFESTS, {
+      keyPath: 'id',
+    });
+    manifestStore.createIndex('name', 'name', { unique: false });
+    manifestStore.createIndex('version', 'version', { unique: false });
+    manifestStore.createIndex('author', 'author.name', { unique: false });
+  }
+
+  // Create states store
+  if (!db.objectStoreNames.contains(STORES.STATES)) {
+    const stateStore = db.createObjectStore(STORES.STATES, {
+      keyPath: 'id',
+    });
+    stateStore.createIndex('state', 'state', { unique: false });
+    stateStore.createIndex('enabled', 'enabled', { unique: false });
+  }
+
+  // Create settings store
+  if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
+    db.createObjectStore(STORES.SETTINGS, {
+      keyPath: 'pluginId',
+    });
+  }
+
+  // Create permissions store
+  if (!db.objectStoreNames.contains(STORES.PERMISSIONS)) {
+    db.createObjectStore(STORES.PERMISSIONS, {
+      keyPath: 'pluginId',
+    });
+  }
+
+  // Create plugin files store
+  if (!db.objectStoreNames.contains(STORES.FILES)) {
+    const filesStore = db.createObjectStore(STORES.FILES, {
+      keyPath: 'id',
+      autoIncrement: true,
+    });
+    filesStore.createIndex('pluginId', 'pluginId', { unique: false });
+    filesStore.createIndex('path', ['pluginId', 'path'], { unique: true });
+  }
+
+  // Create versions store
+  if (!db.objectStoreNames.contains(STORES.VERSIONS)) {
+    const versionsStore = db.createObjectStore(STORES.VERSIONS, {
+      keyPath: 'id',
+      autoIncrement: true,
+    });
+    versionsStore.createIndex('pluginId', 'pluginId', { unique: false });
+    versionsStore.createIndex('version', ['pluginId', 'version'], { unique: true });
+  }
+
+  // Create installation logs store
+  if (!db.objectStoreNames.contains(STORES.INSTALLATION_LOGS)) {
+    const logsStore = db.createObjectStore(STORES.INSTALLATION_LOGS, {
+      keyPath: 'id',
+      autoIncrement: true,
+    });
+    logsStore.createIndex('pluginId', 'pluginId', { unique: false });
+    logsStore.createIndex('timestamp', 'timestamp', { unique: false });
+  }
+
+  // Plugin code store (used by loader.ts; must be created here - creating it
+  // lazily in a normal transaction is illegal, createObjectStore is
+  // versionchange-only)
+  if (!db.objectStoreNames.contains(STORES.PLUGIN_CODE)) {
+    db.createObjectStore(STORES.PLUGIN_CODE, {
+      keyPath: 'pluginId',
+    });
+  }
+}
+
 export class PluginStore {
   private db: IDBDatabase | null = null;
   private initPromise: Promise<void> | null = null;
+  /** Set by close(); operations must reject until initialize() is called again. */
+  private closed = false;
   private options: PluginStorageOptions;
 
   constructor(options: PluginStorageOptions = {}) {
@@ -200,6 +294,9 @@ export class PluginStore {
    * Initialize plugin storage database
    */
   async initialize(): Promise<void> {
+    // Explicit (re)initialization clears the sticky closed flag.
+    this.closed = false;
+
     if (this.initPromise) {
       return this.initPromise;
     }
@@ -227,69 +324,7 @@ export class PluginStore {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-
-        // Create manifests store
-        if (!db.objectStoreNames.contains(STORES.MANIFESTS)) {
-          const manifestStore = db.createObjectStore(STORES.MANIFESTS, {
-            keyPath: 'id',
-          });
-          manifestStore.createIndex('name', 'name', { unique: false });
-          manifestStore.createIndex('version', 'version', { unique: false });
-          manifestStore.createIndex('author', 'author.name', { unique: false });
-        }
-
-        // Create states store
-        if (!db.objectStoreNames.contains(STORES.STATES)) {
-          const stateStore = db.createObjectStore(STORES.STATES, {
-            keyPath: 'id',
-          });
-          stateStore.createIndex('state', 'state', { unique: false });
-          stateStore.createIndex('enabled', 'enabled', { unique: false });
-        }
-
-        // Create settings store
-        if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
-          const settingsStore = db.createObjectStore(STORES.SETTINGS, {
-            keyPath: 'pluginId',
-          });
-        }
-
-        // Create permissions store
-        if (!db.objectStoreNames.contains(STORES.PERMISSIONS)) {
-          const permissionsStore = db.createObjectStore(STORES.PERMISSIONS, {
-            keyPath: 'pluginId',
-          });
-        }
-
-        // Create plugin files store
-        if (!db.objectStoreNames.contains(STORES.FILES)) {
-          const filesStore = db.createObjectStore(STORES.FILES, {
-            keyPath: 'id',
-            autoIncrement: true,
-          });
-          filesStore.createIndex('pluginId', 'pluginId', { unique: false });
-          filesStore.createIndex('path', ['pluginId', 'path'], { unique: true });
-        }
-
-        // Create versions store
-        if (!db.objectStoreNames.contains(STORES.VERSIONS)) {
-          const versionsStore = db.createObjectStore(STORES.VERSIONS, {
-            keyPath: 'id',
-            autoIncrement: true,
-          });
-          versionsStore.createIndex('pluginId', 'pluginId', { unique: false });
-          versionsStore.createIndex('version', ['pluginId', 'version'], { unique: true });
-        }
-
-        // Create installation logs store
-        if (!db.objectStoreNames.contains(STORES.INSTALLATION_LOGS)) {
-          const logsStore = db.createObjectStore(STORES.INSTALLATION_LOGS, {
-            keyPath: 'id',
-            autoIncrement: true,
-          });
-          logsStore.createIndex('pluginId', 'pluginId', { unique: false });
-          logsStore.createIndex('timestamp', 'timestamp', { unique: false });
-        }
+        upgradePluginDatabaseSchema(db);
       };
     });
   }
@@ -298,6 +333,11 @@ export class PluginStore {
    * Close storage database
    */
   async close(): Promise<void> {
+    // Make close() sticky: subsequent operations reject until initialize()
+    // is called explicitly. Previously ensureInitialized() silently
+    // re-opened the database, hiding use-after-close bugs from callers.
+    this.closed = true;
+
     if (this.db) {
       this.db.close();
       this.db = null;
@@ -309,9 +349,24 @@ export class PluginStore {
    * Ensure database is initialized
    */
   private async ensureInitialized(): Promise<void> {
+    if (this.closed) {
+      throw new StorageError('Plugin storage has been closed. Call initialize() to reopen it.', {
+        context: { dbName: PLUGIN_DB_NAME },
+      });
+    }
+
     if (!this.db) {
       await this.initialize();
     }
+  }
+
+  /**
+   * Clear the sticky closed flag. Used when the shared singleton is
+   * re-acquired (getPluginStore) so lazy initialization can reopen the
+   * database after a previous close().
+   */
+  clearClosed(): void {
+    this.closed = false;
   }
 
   // ========================================================================
@@ -1357,6 +1412,11 @@ let pluginStoreInstance: PluginStore | null = null;
 export function getPluginStore(options?: PluginStorageOptions): PluginStore {
   if (!pluginStoreInstance) {
     pluginStoreInstance = new PluginStore(options);
+  } else {
+    // Re-acquiring the shared instance signals intent to use it: clear any
+    // sticky closed state from a previous close() so lazy re-initialization
+    // works (e.g. revokeAllPermissions after a shutdown).
+    pluginStoreInstance.clearClosed();
   }
   return pluginStoreInstance;
 }

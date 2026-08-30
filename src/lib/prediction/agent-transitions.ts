@@ -564,10 +564,11 @@ export class AgentTransitionTracker {
     // Task type keyword patterns
     const patterns = {
       [TaskType.CODING]: [
+        // NOTE: 'bug'/'debug' deliberately NOT here — they are debugging
+        // signals; counting them for CODING made "fix this bug in my code"
+        // classify as coding (2:1) instead of debugging.
         'code',
         'function',
-        'bug',
-        'debug',
         'implement',
         'refactor',
         'api',
@@ -600,6 +601,8 @@ export class AgentTransitionTracker {
         'error',
         'issue',
         'fix',
+        'bug',
+        'debug',
         'broken',
         'not working',
         'failure',

@@ -177,6 +177,14 @@ export class EventCollector {
     // Add to buffer
     this.eventBuffer.push(event)
 
+    // If no batch timer is running (collector not initialized), flush
+    // immediately - otherwise these events would sit in the buffer forever
+    // with nothing to drain it.
+    if (this.batchTimer === null) {
+      await this.flush()
+      return
+    }
+
     // Check if we should flush
     if (this.eventBuffer.length >= this.config.batchSize) {
       await this.flush()

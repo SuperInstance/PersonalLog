@@ -321,10 +321,11 @@ describe('ErrorHandler', () => {
 
     it('should generate go offline action for offline errors', () => {
       const error = new NetworkError('Offline mode');
-      const actions = handler.getRecoveryActions(error);
 
-      // Simulate offline condition
+      // Simulate offline condition BEFORE computing actions (they are
+      // resolved eagerly from current online state)
       Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+      const actions = handler.getRecoveryActions(error);
 
       const offlineAction = actions.find(a => a.label === 'Go Offline');
       expect(offlineAction).toBeDefined();

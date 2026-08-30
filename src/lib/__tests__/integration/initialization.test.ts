@@ -17,6 +17,21 @@ import { clearHardwareCache } from '../../hardware';
 import { getBenchmarkSuite } from '../../benchmark';
 import type { IntegrationConfig } from '../../integration/types';
 
+// vi.mock is hoisted file-wide, so the failure factories that used to live
+// inside individual test bodies clobbered hardware detection for EVERY test
+// in this file. Gate the mock with hoisted per-test state instead.
+const hardwareMock = vi.hoisted(() => ({ fail: false, error: '' }));
+vi.mock('../../hardware', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../hardware')>();
+  return {
+    ...actual,
+    getHardwareInfo: (...args: Parameters<typeof actual.getHardwareInfo>) =>
+      hardwareMock.fail
+        ? Promise.resolve({ success: false, error: hardwareMock.error } as never)
+        : actual.getHardwareInfo(...args),
+  };
+});
+
 describe('Integration Manager - Initialization Flow', () => {
   beforeEach(() => {
     // Reset state before each test
@@ -189,19 +204,19 @@ describe('Integration Manager - Initialization Flow', () => {
 
   describe('Error Handling', () => {
     it('should handle hardware detection failure gracefully', async () => {
-      // Mock hardware detection to fail
-      vi.mock('../../hardware', () => ({
-        getHardwareInfo: async () => ({
-          success: false,
-          error: 'Hardware detection failed',
-        }),
-      }));
+      // Mock hardware detection to fail (gated mock, see hoisted block above)
+      hardwareMock.fail = true;
+      hardwareMock.error = 'Hardware detection failed';
+      try {
 
       const manager = getIntegrationManager({ autoInitialize: false });
       const result = await manager.initialize();
 
       // Should still complete but with hardware marked as failed
       expect(result.state.systems.hardware.stage).toBe('failed');
+      } finally {
+        hardwareMock.fail = false;
+      }
     });
 
     it('should handle timeout during initialization', async () => {
@@ -329,13 +344,10 @@ describe('Integration Manager - Initialization Flow', () => {
     });
 
     it('should emit initialization_failed event on failure', async () => {
-      // Mock to cause failure
-      vi.mock('../../hardware', () => ({
-        getHardwareInfo: async () => ({
-          success: false,
-          error: 'Critical failure',
-        }),
-      }));
+      // Mock to cause failure (gated, see hoisted block)
+      hardwareMock.fail = true;
+      hardwareMock.error = 'Critical failure';
+      try {
 
       const manager = getIntegrationManager({ autoInitialize: false });
 
@@ -347,6 +359,9 @@ describe('Integration Manager - Initialization Flow', () => {
       // Should emit failed if initialization doesn't complete successfully
       if (manager.getState().stage === 'failed') {
         expect(failedSpy).toHaveBeenCalled();
+      }
+      } finally {
+        hardwareMock.fail = false;
       }
     });
 

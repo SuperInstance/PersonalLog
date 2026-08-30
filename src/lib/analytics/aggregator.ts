@@ -16,6 +16,8 @@ import {
   EngagementSummary,
   TimeRange,
   AggregationBucket,
+  ALL_EVENT_TYPES,
+  ALL_EVENT_CATEGORIES,
 } from './types'
 
 // ============================================================================
@@ -158,7 +160,12 @@ export class AnalyticsAggregator {
       endTime: end,
     })
 
+    // Zero-fill every known type so consumers see explicit 0 counts
+    // instead of undefined for types with no occurrences
     const counts: Record<string, number> = {}
+    for (const type of ALL_EVENT_TYPES) {
+      counts[type] = 0
+    }
 
     for (const event of events) {
       counts[event.type] = (counts[event.type] || 0) + 1
@@ -180,6 +187,9 @@ export class AnalyticsAggregator {
     })
 
     const counts: Record<string, number> = {}
+    for (const category of ALL_EVENT_CATEGORIES) {
+      counts[category] = 0
+    }
 
     for (const event of events) {
       counts[event.category] = (counts[event.category] || 0) + 1

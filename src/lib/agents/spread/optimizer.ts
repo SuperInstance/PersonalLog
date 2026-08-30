@@ -117,18 +117,11 @@ export class ContextOptimizer {
   ): Promise<CompressionResult> {
     const currentTokens = estimateTotalTokens(messages)
 
-    // If already under target, no compression needed
-    if (currentTokens <= targetTokens) {
-      return {
-        originalMessages: messages,
-        compressedMessages: messages,
-        originalTokens: currentTokens,
-        compressedTokens: currentTokens,
-        compressionRatio: 0,
-        strategy: 'none',
-        removedCount: 0
-      }
-    }
+    // No under-target short-circuit: an explicitly requested strategy is
+    // always attempted (the UI and bandit integration pass explicit
+    // strategies; silently returning 'none' made "compress with lossless"
+    // a no-op even when duplicates existed). Only the default auto mode
+    // ('hybrid') reports 'none' when it ends up changing nothing.
 
     // Calculate importance scores
     const importanceScores = messages.map((msg, i) =>
@@ -164,7 +157,10 @@ export class ContextOptimizer {
     }
 
     const compressedTokens = estimateTotalTokens(compressed)
-    const compressionRatio = (currentTokens - compressedTokens) / currentTokens
+    const compressionRatio = currentTokens > 0
+      ? (currentTokens - compressedTokens) / currentTokens
+      : 0
+    const removedCount = messages.length - compressed.length
 
     return {
       originalMessages: messages,
@@ -172,8 +168,8 @@ export class ContextOptimizer {
       originalTokens: currentTokens,
       compressedTokens,
       compressionRatio,
-      strategy,
-      removedCount: messages.length - compressed.length
+      strategy: removedCount === 0 && strategy === 'hybrid' ? 'none' : strategy,
+      removedCount
     }
   }
 

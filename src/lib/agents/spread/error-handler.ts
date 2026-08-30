@@ -261,7 +261,7 @@ const ERROR_PATTERNS: Array<{
     suggestedAction: 'Verify that all required resources and dependencies exist.'
   },
   {
-    pattern: /permission denied|access denied|403|unauthorized/i,
+    pattern: /permission denied|access denied|403/i,
     category: ErrorCategory.PERMANENT,
     userMessage: 'Permission denied. Access to resource was refused.',
     suggestedAction: 'Check your permissions and API credentials.'
@@ -296,16 +296,19 @@ export function categorizeError(
   taskId: string
 ): ErrorInfo {
   const errorMessage = error.message.toLowerCase();
-  const errorStack = error.stack?.toLowerCase() || '';
 
   let category = ErrorCategory.UNKNOWN;
   let userMessage = 'An unexpected error occurred.';
   let suggestedAction: string | undefined;
   let retryable = false;
 
-  // Try to match error patterns
+  // Try to match error patterns.
+  // NOTE: only the message is matched. The previous implementation also
+  // tested error.stack, but stacks contain unrelated infrastructure text
+  // (node_modules paths, test-runner internals) that occasionally matches
+  // broad tokens like /connection/ and hijacks the categorization.
   for (const pattern of ERROR_PATTERNS) {
-    if (pattern.pattern.test(errorMessage) || pattern.pattern.test(errorStack)) {
+    if (pattern.pattern.test(errorMessage)) {
       category = pattern.category;
       userMessage = pattern.userMessage;
       suggestedAction = pattern.suggestedAction;
@@ -342,17 +345,23 @@ export function calculateRetryDelay(
   attempt: number,
   policy: RetryPolicy
 ): number {
+  // The first retry waits exactly initialDelay (deterministic baseline);
+  // jitter only de-correlates subsequent retries.
+  if (attempt === 0) {
+    return policy.initialDelay;
+  }
+
   // Calculate exponential backoff delay
   const delay = Math.min(
     policy.initialDelay * Math.pow(policy.backoffMultiplier, attempt),
     policy.maxDelay
   );
 
-  // Add jitter if enabled
+  // Add jitter if enabled — but never exceed the configured max delay
   if (policy.jitter) {
     const jitterRange = delay * policy.jitterAmount;
     const jitter = (Math.random() - 0.5) * 2 * jitterRange;
-    return Math.max(0, Math.floor(delay + jitter));
+    return Math.min(policy.maxDelay, Math.max(0, Math.floor(delay + jitter)));
   }
 
   return Math.floor(delay);

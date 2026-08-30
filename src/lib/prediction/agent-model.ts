@@ -214,7 +214,7 @@ export class AgentPredictionModel {
   private classifier: SimpleClassifier | null = null;
   private featureExtractor: FeatureExtractor | null = null;
   private readonly DB_NAME = 'AgentPredictionModelDB';
-  private readonly DB_VERSION = 1;
+  private readonly DB_VERSION = 2;
   private isInitialized = false;
 
   /**
@@ -227,15 +227,26 @@ export class AgentPredictionModel {
 
     // Open database
     this.db = await openDB<AgentModelDB>(this.DB_NAME, this.DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains('modelMetadata')) {
-          db.createObjectStore('modelMetadata');
+      upgrade(db, oldVersion) {
+        // v1 created modelWeights/predictions without keyPaths, so every
+        // put() without an explicit key threw DataError and get(id) could
+        // never match — weights and predictions were never persisted. v2
+        // recreates them with proper keyPaths. Nothing to migrate: v1 writes
+        // always failed.
+        if (oldVersion < 2 && db.objectStoreNames.contains('modelWeights')) {
+          db.deleteObjectStore('modelWeights');
         }
         if (!db.objectStoreNames.contains('modelWeights')) {
-          db.createObjectStore('modelWeights');
+          db.createObjectStore('modelWeights', { keyPath: 'agentId' });
+        }
+        if (oldVersion < 2 && db.objectStoreNames.contains('predictions')) {
+          db.deleteObjectStore('predictions');
         }
         if (!db.objectStoreNames.contains('predictions')) {
-          db.createObjectStore('predictions');
+          db.createObjectStore('predictions', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('modelMetadata')) {
+          db.createObjectStore('modelMetadata');
         }
         if (!db.objectStoreNames.contains('metrics')) {
           db.createObjectStore('metrics');
@@ -437,9 +448,12 @@ export class AgentPredictionModel {
       const predicted = sorted[0]?.[0] || '';
       row.set(predicted, (row.get(predicted) || 0) + 1);
 
-      // Precision/recall tracking
-      if (!precisionSum.has(transition.toAgentId)) {
-        precisionSum.set(transition.toAgentId, { tp: 0, fp: 0 });
+      // Precision is per predicted label, recall is per true label. A
+      // misprediction can name a label that never appears as a true label,
+      // so the precision accumulator must be seeded for the predicted side
+      // too (previously precisionSum.get(predicted) was undefined there).
+      if (predicted && !precisionSum.has(predicted)) {
+        precisionSum.set(predicted, { tp: 0, fp: 0 });
       }
       if (!recallSum.has(transition.toAgentId)) {
         recallSum.set(transition.toAgentId, { tp: 0, fn: 0 });
@@ -448,8 +462,10 @@ export class AgentPredictionModel {
       if (predicted === transition.toAgentId) {
         precisionSum.get(predicted)!.tp++;
         recallSum.get(transition.toAgentId)!.tp++;
-      } else {
+      } else if (predicted) {
         precisionSum.get(predicted)!.fp++;
+        recallSum.get(transition.toAgentId)!.fn++;
+      } else {
         recallSum.get(transition.toAgentId)!.fn++;
       }
     }

@@ -4,6 +4,7 @@
  * Comprehensive tests for emotion visualization components
  */
 
+import { vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -99,7 +100,7 @@ describe('EmotionVisualization', () => {
   });
 
   it('calls onExport callback', () => {
-    const onExport = jest.fn();
+    const onExport = vi.fn();
     render(
       <EmotionVisualization recordings={mockRecordings} onExport={onExport} />
     );
@@ -172,7 +173,7 @@ describe('EmotionTimelineEnhanced', () => {
   });
 
   it('calls onSeek when clicked', () => {
-    const onSeek = jest.fn();
+    const onSeek = vi.fn();
     render(<EmotionTimelineEnhanced emotions={mockEmotions} onSeek={onSeek} />);
 
     const svg = screen.getByRole('img');
@@ -210,7 +211,7 @@ describe('EmotionTimelineEnhanced', () => {
   });
 
   it('disables seeking when disabled prop is true', () => {
-    const onSeek = jest.fn();
+    const onSeek = vi.fn();
     render(
       <EmotionTimelineEnhanced emotions={mockEmotions} onSeek={onSeek} disabled={true} />
     );
@@ -248,7 +249,7 @@ describe('EmotionTimelineEnhanced', () => {
       <EmotionTimelineEnhanced emotions={mockEmotions} height={400} />
     );
 
-    const svg = container.querySelector('svg');
+    const svg = container.querySelector('svg[role="img"]');
     expect(svg).toHaveAttribute('height', '400');
   });
 
@@ -302,7 +303,8 @@ describe('LiveEmotionIndicator', () => {
       <LiveEmotionIndicator emotion={mockLiveEmotion} isRecording={true} showDetails={true} />
     );
 
-    expect(screen.getByText(/90%/i)).toBeInTheDocument();
+    // Percentage is rendered in both the label and the progress bar caption
+    expect(screen.getAllByText(/90%/i).length).toBeGreaterThan(0);
   });
 
   it('respects size prop', () => {
@@ -419,8 +421,8 @@ describe('Emotion Visualization Integration', () => {
       <EmotionTimelineEnhanced emotions={[]} />
     );
 
-    expect(vizContainer.querySelector(/no emotion data available/i)).toBeInTheDocument();
-    expect(timelineContainer.querySelector(/no emotion data available/i)).toBeInTheDocument();
+    expect(vizContainer.textContent?.toLowerCase()).toContain('no emotion data available');
+    expect(timelineContainer.textContent?.toLowerCase()).toContain('no emotion data available');
   });
 
   it('is accessible via keyboard', () => {

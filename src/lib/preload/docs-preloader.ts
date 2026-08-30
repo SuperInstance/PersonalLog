@@ -221,7 +221,10 @@ export class DocsPreloader {
       // Calculate statistics
       const result: PreloadResult = {
         agentType,
-        totalDocs: docsToLoad.length,
+        // Report the full requested doc set, not just the docs this call
+        // loaded - a concurrent duplicate call loads 0 docs itself but
+        // still requested (and ends up with) the same total
+        totalDocs: docIds.length,
         fromCache: statuses.filter((s) => s.fromCache).length,
         fetched: statuses.filter((s) => s.loaded && !s.fromCache).length,
         failed: statuses.filter((s) => !s.loaded).length,

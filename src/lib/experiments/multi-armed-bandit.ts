@@ -146,10 +146,18 @@ export class MultiArmedBandit {
    * Update bandit with reward signal
    */
   updateReward(variantId: string, reward: number): void {
-    const arm = this.arms.get(variantId);
+    let arm = this.arms.get(variantId);
     if (!arm) {
-      console.warn(`[Bandit] Unknown variant: ${variantId}`);
-      return;
+      // Rewards may arrive before the first selectVariant() call initializes
+      // arms - create the arm so the data isn't silently dropped
+      arm = {
+        variantId,
+        pulls: 0,
+        reward: 0,
+        averageReward: 0,
+        lastUpdated: Date.now(),
+      };
+      this.arms.set(variantId, arm);
     }
 
     // Update statistics
@@ -200,8 +208,12 @@ export class MultiArmedBandit {
     const rewards = Array.from(this.arms.values()).map(a => a.averageReward);
     const maxReward = Math.max(...rewards);
     const minReward = Math.min(...rewards);
+    const spread = maxReward - minReward;
 
-    return (maxReward - minReward) < threshold;
+    // Converged when further exploration won't change the decision: either
+    // all arms are equivalent (tiny spread) or one arm clearly dominates
+    // (spread near the maximum possible distance of 1 for 0-1 rewards)
+    return spread < threshold || spread > 1 - threshold;
   }
 
   /**
@@ -406,9 +418,12 @@ export class MultiArmedBandit {
     const scores: number[] = [];
     variants.forEach(v => {
       const arm = this.arms.get(v.id)!;
-      // Use average reward with exploration bonus for new arms
+      // Use average reward with exploration bonus for new arms. The bonus
+      // must be finite and comparable in scale to avgReward*100 - the old
+      // bonus of 1000 overflowed Math.exp() to Infinity, making softmax
+      // probabilities NaN and pinning selection to the first variant
       const score = arm.pulls < this.config.minPullsPerVariant!
-        ? 1000 // Large bonus for new arms
+        ? 100 // Optimistic bonus for new arms (matches max scaled reward)
         : arm.averageReward * 100;
 
       scores.push(score);

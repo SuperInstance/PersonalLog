@@ -95,12 +95,16 @@ export class IntegrationManager {
   /**
    * Initialize all systems in the correct order
    */
-  async initialize(): Promise<InitializationResult> {
-    // Return existing promise if already initializing
-    if (this.initializationPromise) {
-      return this.initializationPromise;
+  initialize(): Promise<InitializationResult> {
+    // Return the exact same promise to concurrent callers (an `async`
+    // method would hand each caller a fresh wrapper promise)
+    if (!this.initializationPromise) {
+      this.initializationPromise = this.initializeInternal();
     }
+    return this.initializationPromise;
+  }
 
+  private async initializeInternal(): Promise<InitializationResult> {
     const startTime = performance.now();
     this.state.startedAt = startTime;
     this.state.stage = 'initializing';
@@ -144,7 +148,9 @@ export class IntegrationManager {
         });
       }
 
-      return result;
+      // The result was built while stage was still 'initializing'; return a
+      // fresh snapshot so callers see the final stage ('ready'/'failed').
+      return { ...result, state: this.getState() };
     } catch (error) {
       this.state.stage = 'failed';
       this.state.completedAt = performance.now();
@@ -372,12 +378,21 @@ export class IntegrationManager {
         const initTime = performance.now() - systemStart;
         this.state.progress.completed++;
 
-        this.updateSystemStatus(name, {
-          stage: 'ready',
-          completedAt: performance.now(),
-          initTime,
-          active: true,
-        });
+        // A subsystem may deliberately mark itself 'disabled' (e.g.
+        // benchmarks when not configured) - don't overwrite that with 'ready'
+        if (this.state.systems[name].stage !== 'disabled') {
+          this.updateSystemStatus(name, {
+            stage: 'ready',
+            completedAt: performance.now(),
+            initTime,
+            active: true,
+          });
+        } else {
+          this.updateSystemStatus(name, {
+            completedAt: performance.now(),
+            initTime,
+          });
+        }
 
         this.log(`[Integration] ${name} initialized in ${initTime.toFixed(2)}ms`);
       } catch (error) {
@@ -400,6 +415,9 @@ export class IntegrationManager {
 
       // Update progress percentage
       this.state.progress.percentage = (this.state.progress.completed / this.state.progress.total) * 100;
+      // Emit post-completion progress so listeners see the final
+      // percentage (the pre-system emit always lags one system behind)
+      this.updateProgress(name);
     }
 
     // Build capabilities

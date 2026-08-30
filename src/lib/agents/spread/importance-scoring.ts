@@ -55,7 +55,7 @@ export const DEFAULT_WEIGHTS: ImportanceWeights = {
   hasDecisions: 0.20,
   hasCode: 0.10,
   isUserMessage: 0.10,
-  hasPreservable: 0.05
+  hasPreservable: 0.20
 }
 
 // ============================================================================
@@ -64,7 +64,10 @@ export const DEFAULT_WEIGHTS: ImportanceWeights = {
 
 const QUESTION_KEYWORDS = [
   '?', 'how', 'what', 'why', 'when', 'where', 'which', 'who',
-  'can', 'could', 'would', 'should', 'is', 'are', 'do', 'does'
+  'whom', 'whose'
+  // NOTE: generic auxiliaries ('is', 'are', 'do', 'does', 'can', ...)
+  // deliberately excluded — substring/word matches on them fire on almost
+  // every sentence ("This is a statement" was scored as a question).
 ]
 
 const DECISION_KEYWORDS = [
@@ -170,9 +173,12 @@ export function calculateInformationDensity(message: Message): number {
 
   if (words.length <= 1) return 1
 
-  // Unique words ratio
+  // Unique words ratio, damped for short texts: unique/total saturates at
+  // 1.0 for any 3-word message, so trivial filler scored maximum density
+  // and no message could fall below a drop threshold. Damping by
+  // min(1, words/10) lets density reach 1.0 only for substantive text.
   const uniqueWords = new Set(words)
-  const density = uniqueWords.size / words.length
+  const density = (uniqueWords.size / words.length) * Math.min(1, words.length / 10)
 
   // Boost density for longer messages with high uniqueness
   if (words.length > 20 && density > 0.7) {
@@ -192,7 +198,14 @@ export function calculateInformationDensity(message: Message): number {
 export function hasKeywords(message: Message, keywords: string[]): boolean {
   const text = message.content.text?.toLowerCase() || ''
 
-  return keywords.some(keyword => text.includes(keyword))
+  return keywords.some(keyword => {
+    // Alphabetic keywords must match whole words ('is' inside 'This' or
+    // 'is' as a verb must not match); punctuation falls back to substring.
+    if (/^[a-z]+$/.test(keyword)) {
+      return new RegExp(`\\b${keyword}\\b`).test(text)
+    }
+    return text.includes(keyword)
+  })
 }
 
 /**
@@ -207,9 +220,14 @@ export function containsCode(message: Message): boolean {
   // Check for code blocks
   if (text.includes('```')) return true
 
-  // Check for code indicators
+  // Check for code indicators — word-boundary match: plain substring
+  // matched 'import' inside 'importance', 'let' inside 'letter', etc.
   const lowerText = text.toLowerCase()
-  return CODE_INDICATORS.some(indicator => lowerText.includes(indicator))
+  return CODE_INDICATORS.some(indicator =>
+    /^[a-z]+$/.test(indicator)
+      ? new RegExp(`\\b${indicator}\\b`).test(lowerText)
+      : lowerText.includes(indicator)
+  )
 }
 
 /**

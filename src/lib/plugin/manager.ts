@@ -316,8 +316,9 @@ private activePlugins: Map<PluginId, any> = new Map(); // Plugin instances
       sandbox.terminate();
     }
 
-    // Revoke all permissions
-    this.permissionManager.revokeAllPermissions(pluginId);
+    // Revoke all permissions (awaited: this was previously a floating
+    // promise that could silently fail or race database teardown)
+    await this.permissionManager.revokeAllPermissions(pluginId);
 
     // Unload plugin
     await this.loader.unloadPlugin(pluginId);

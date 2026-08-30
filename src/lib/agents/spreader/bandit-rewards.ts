@@ -203,50 +203,17 @@ function calculateQualityPreservation(outcome: StrategyOutcome): number {
     return 1.0
   }
 
-  // Calculate preservation ratio
-  const preservationRatio =
-    totalImportantCount > 0
-      ? preservedImportantCount / totalImportantCount
-      : 1.0
-
-  // Calculate message retention ratio
-  const messageRetention = outcome.compressedMessages.length / outcome.originalMessages.length
-
-  // Different strategies have different quality expectations
-  let strategyMultiplier = 1.0
-
-  switch (strategy) {
-    case 'hybrid_lossless':
-      // Should preserve almost everything
-      strategyMultiplier = 1.0
-      break
-
-    case 'recent_only':
-    case 'importance_based':
-      // Some loss is expected
-      strategyMultiplier = 0.9
-      break
-
-    case 'summarization':
-    case 'semantic_clustering':
-      // More loss acceptable
-      strategyMultiplier = 0.8
-      break
-
-    case 'hybrid_lossy':
-    case 'aggressive':
-      // Significant loss expected
-      strategyMultiplier = 0.7
-      break
-
-    default:
-      strategyMultiplier = 1.0
-  }
-
-  // Combine metrics
-  const score = (preservationRatio * 0.6 + messageRetention * 0.4) * strategyMultiplier
-
-  return Math.max(0, Math.min(1, score))
+  // Quality = fraction of IMPORTANT content preserved. Two earlier terms
+  // were removed as double-counting/miscalibration:
+  //  - bulk message/token retention is already scored by tokenEfficiency
+  //    (compression ratio); crediting it here rewarded strategies that
+  //    barely compacted at all, and
+  //  - the per-strategy expectation multiplier discounted measured quality
+  //    for lossy strategies on top of their actual losses, nearly
+  //    erasing the reward gap between on-target and failed compaction.
+  return totalImportantCount > 0
+    ? preservedImportantCount / totalImportantCount
+    : 1.0
 }
 
 /**

@@ -160,10 +160,12 @@ export async function createShareLink(
   const shareId = createShareId()
   const now = Date.now()
 
-  // Default permissions based on visibility
+  // Default permissions based on visibility. Private links are
+  // owner-restricted VIEW links - edit rights are never granted by default
+  // (they are granted explicitly via updateShareLink permissions).
   const defaultPermissions: SharedPermissions = {
     canView: true,
-    canEdit: visibility === 'private',
+    canEdit: false,
     canComment: visibility !== 'public',
     canShare: false,
     canDownload: visibility !== 'public',
@@ -463,14 +465,46 @@ export async function accessShare(
       }
     }
 
-    // Use Web Crypto API to hash password
     const encoder = new TextEncoder()
     const data = encoder.encode(password)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
-    if (passwordHash !== share.password) {
+    // Re-derive the PBKDF2 hash with the stored salt and compare -
+    // createShareLink stores 'salt:pbkdf2Hash', so a plain SHA-256 of
+    // the password could never match
+    const [storedSaltHex, storedHash] = share.password.split(':')
+    if (!storedSaltHex || !storedHash) {
+      return {
+        share,
+        hasAccess: false,
+        reason: 'Invalid password',
+      }
+    }
+
+    const salt = new Uint8Array(
+      (storedSaltHex.match(/.{2}/g) || []).map(h => parseInt(h, 16))
+    )
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      data,
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    )
+    const derived = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt,
+        iterations: 100000,
+        hash: 'SHA-256',
+      },
+      keyMaterial,
+      256
+    )
+    const derivedHash = Array.from(new Uint8Array(derived))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+
+    if (derivedHash !== storedHash) {
       return {
         share,
         hasAccess: false,

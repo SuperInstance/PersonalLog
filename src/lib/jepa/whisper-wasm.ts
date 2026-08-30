@@ -268,6 +268,12 @@ export class WhisperSTT {
       console.log('[WhisperSTT] Loaded successfully')
     } catch (error) {
       console.error('[WhisperSTT] Load failed:', error)
+      // Preserve typed STTErrors (e.g. 'browser-not-supported' from
+      // loadWasmModule) — re-wrapping them as 'initialization-failed' masked
+      // the actionable type/details callers switch on.
+      if (error instanceof STTError) {
+        throw error
+      }
       throw new STTError(
         'initialization-failed',
         `Failed to load Whisper: ${(error as Error).message}`,

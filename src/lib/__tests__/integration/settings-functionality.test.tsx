@@ -182,14 +182,14 @@ describe('Settings Functionality', () => {
 
       render(<SettingsPage />);
 
-      // Delete the key
+      // Delete the key (the settings UI labels this control "Remove …")
       await waitFor(async () => {
-        const deleteButton = screen.queryByLabelText(/delete/i);
+        const deleteButton = screen.queryByLabelText(/remove/i);
         if (deleteButton) {
           await fireEvent.click(deleteButton);
 
           // Should confirm
-          const confirmButton = screen.queryByText(/delete/i);
+          const confirmButton = screen.queryByText(/remove/i);
           if (confirmButton) {
             await fireEvent.click(confirmButton);
           }

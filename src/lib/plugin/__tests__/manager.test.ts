@@ -10,9 +10,17 @@
  * - Event management
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PluginManager } from '../manager';
-import { PluginId, PluginManifest, PluginState, Permission } from '../types';
+import { getPluginRegistry } from '../registry';
+import {
+  PluginId,
+  PluginManifest,
+  PluginState,
+  Permission,
+  PluginRuntimeState,
+  PluginSourceType,
+} from '../types';
 import { PluginType } from '../types';
 
 // ============================================================================
@@ -32,9 +40,33 @@ async function cleanDatabase(): Promise<void> {
   }
 }
 
+/**
+ * Seed the REAL registry singleton (the same instance PluginManager uses)
+ * with a manifest and a runtime state.
+ *
+ * The previous vi.doMock('../registry', ...) calls in this file never took
+ * effect: manager.ts is imported at module load, so its getPluginRegistry()
+ * binding was already resolved and doMock only influences future dynamic
+ * imports. With fake-indexeddb the tests now exercise the real registry.
+ */
+async function seedPlugin(
+  manifest: PluginManifest,
+  stateOverrides: Partial<PluginRuntimeState> = {}
+): Promise<PluginRuntimeState> {
+  const registry = getPluginRegistry();
+  await registry.registerManifest(manifest);
+  await registry.createRuntimeState(manifest.id, PluginSourceType.FILE);
+  if (Object.keys(stateOverrides).length > 0) {
+    await registry.updateRuntimeState(manifest.id, stateOverrides);
+  }
+  return (await registry.getRuntimeState(manifest.id))!;
+}
+
 function createTestManifest(overrides?: Partial<PluginManifest>): PluginManifest {
   return {
-    id: `test-plugin-${Date.now()}` as any,
+    // validateManifest() requires vendor-name.plugin-name (dot-separated);
+    // the old 'test-plugin-<timestamp>' ids failed validation.
+    id: `testvendor.plugin${Date.now()}` as any,
     name: 'Test Plugin',
     description: 'A test plugin',
     version: '1.0.0',
@@ -65,6 +97,26 @@ describe('PluginManager', () => {
   beforeEach(async () => {
     await cleanDatabase();
     manager = new PluginManager();
+  });
+
+  afterEach(async () => {
+    // Close every database connection this test opened. IndexedDB blocks
+    // deleteDatabase() while any connection is open, so without this the
+    // next test's cleanDatabase() beforeEach hangs forever (hook timeout)
+    // and the dangling connections keep the worker alive after the file.
+    try {
+      await manager.shutdown(); // closes the registry connection
+    } catch {
+      // manager may not have been initialized in this test - nothing to close
+    }
+    try {
+      // uninstall() -> revokeAllPermissions() lazily opens the shared
+      // PluginStore singleton via dynamic import; close it too.
+      const { getPluginStore } = await import('../storage');
+      await getPluginStore().close();
+    } catch {
+      // PluginStore was never used in this test
+    }
   });
 
   // ========================================================================
@@ -206,7 +258,9 @@ describe('PluginManager', () => {
     it('should throw error when activating already active plugin', async () => {
       const manifest = createTestManifest();
 
-      // Simulate plugin already active by adding to activePlugins
+      // Register the manifest so activate() gets past the manifest lookup,
+      // then simulate an already-active plugin.
+      await seedPlugin(manifest);
       (manager as any).activePlugins.set(manifest.id, {});
 
       await expect(manager.activate(manifest.id)).rejects.toThrow('Plugin already active');
@@ -215,12 +269,8 @@ describe('PluginManager', () => {
     it('should throw error when plugin state not found', async () => {
       const manifest = createTestManifest();
 
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          getManifest: vi.fn(() => Promise.resolve(manifest)),
-          getRuntimeState: vi.fn(() => Promise.resolve(null)),
-        }),
-      }));
+      // Register the manifest only (no runtime state).
+      await getPluginRegistry().registerManifest(manifest);
 
       await expect(manager.activate(manifest.id)).rejects.toThrow('Plugin state not found');
     });
@@ -238,17 +288,14 @@ describe('PluginManager', () => {
         terminate: vi.fn(),
       };
 
+      // Seed a real runtime state so deactivate()'s state update succeeds.
+      await seedPlugin(manifest, { state: 'active' as PluginState, enabled: true });
+
       // Add plugin to active plugins
       (manager as any).activePlugins.set(manifest.id, {
         sandbox: mockSandbox,
         context: {},
       });
-
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          updateRuntimeState: vi.fn(),
-        }),
-      }));
 
       await manager.deactivate(manifest.id);
 
@@ -270,16 +317,12 @@ describe('PluginManager', () => {
         terminate: vi.fn(),
       };
 
+      await seedPlugin(manifest, { state: 'active' as PluginState, enabled: true });
+
       (manager as any).activePlugins.set(manifest.id, {
         sandbox: mockSandbox,
         context: mockContext,
       });
-
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          updateRuntimeState: vi.fn(),
-        }),
-      }));
 
       await manager.deactivate(manifest.id);
 
@@ -299,40 +342,13 @@ describe('PluginManager', () => {
         terminate: vi.fn(),
       };
 
+      // Seed manifest + state so the real registry/loader paths work.
+      await seedPlugin(manifest, { state: 'active' as PluginState, enabled: true });
+
       // Add plugin to active plugins
       (manager as any).activePlugins.set(manifest.id, {
         sandbox: mockSandbox,
       });
-
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          getManifest: vi.fn(() => Promise.resolve(manifest)),
-        }),
-      }));
-
-      vi.doMock('../loader', () => ({
-        getPluginLoader: () => ({
-          getPluginCode: vi.fn(() => Promise.resolve('code')),
-          unloadPlugin: vi.fn(),
-        }),
-      }));
-
-      vi.doMock('../sandbox', () => ({
-        getSandboxManager: () => ({
-          createSandbox: () => ({
-            initialize: vi.fn(),
-            execute: vi.fn(),
-            terminate: vi.fn(),
-          }),
-          removeSandbox: vi.fn(),
-        }),
-      }));
-
-      vi.doMock('../permissions', () => ({
-        getPermissionManager: () => ({
-          revokeAllPermissions: vi.fn(),
-        }),
-      }));
 
       await manager.uninstall(manifest.id);
 
@@ -353,40 +369,14 @@ describe('PluginManager', () => {
 
     it('should call onUninstall hook if exists', async () => {
       const manifest = createTestManifest();
-      const mockContext = {};
 
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          getManifest: vi.fn(() => Promise.resolve(manifest)),
-        }),
-      }));
-
-      vi.doMock('../loader', () => ({
-        getPluginLoader: () => ({
-          getPluginCode: vi.fn(() => Promise.resolve('code')),
-          unloadPlugin: vi.fn(),
-        }),
-      }));
-
-      vi.doMock('../sandbox', () => ({
-        getSandboxManager: () => ({
-          createSandbox: () => ({
-            initialize: vi.fn(),
-            execute: vi.fn(),
-            terminate: vi.fn(),
-          }),
-          removeSandbox: vi.fn(),
-        }),
-      }));
-
-      vi.doMock('../permissions', () => ({
-        getPermissionManager: () => ({
-          revokeAllPermissions: vi.fn(),
-        }),
-      }));
+      // Seed a real plugin so uninstall() finds the manifest. No plugin code
+      // is stored, so the cleanup sandbox is skipped and the hook is not
+      // executed - storing code and asserting the hook requires the full
+      // install flow, covered by 'should install plugin from manifest'.
+      await seedPlugin(manifest);
 
       await manager.uninstall(manifest.id);
-      // Hook execution is verified through sandbox.execute call
     });
   });
 
@@ -560,39 +550,36 @@ describe('PluginManager', () => {
   describe('Plugin Queries', () => {
     it('should get all installed plugins', async () => {
       const manifests = [
-        createTestManifest({ id: 'plugin1' as any }),
-        createTestManifest({ id: 'plugin2' as any }),
+        createTestManifest({ id: 'vendorA.plugin1' as any }),
+        createTestManifest({ id: 'vendorB.plugin2' as any }),
       ];
 
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          getAllManifests: vi.fn(() => Promise.resolve(manifests)),
-        }),
-      }));
+      // Register both manifests in the real registry.
+      const registry = getPluginRegistry();
+      for (const m of manifests) {
+        await registry.registerManifest(m);
+      }
 
       await manager.initialize();
       const installed = await manager.getInstalledPlugins();
 
       expect(installed).toHaveLength(2);
-      expect(installed[0].id).toBe('plugin1');
-      expect(installed[1].id).toBe('plugin2');
+      expect(installed.map((m) => m.id)).toContain('vendorA.plugin1');
+      expect(installed.map((m) => m.id)).toContain('vendorB.plugin2');
     });
 
     it('should get active plugins', async () => {
-      const manifest1 = createTestManifest({ id: 'plugin1' as any });
-      const manifest2 = createTestManifest({ id: 'plugin2' as any });
+      const manifest1 = createTestManifest({ id: 'vendorA.plugin1' as any });
+      const manifest2 = createTestManifest({ id: 'vendorB.plugin2' as any });
+
+      // Register both manifests so getActivePlugins() can resolve them.
+      const registry = getPluginRegistry();
+      await registry.registerManifest(manifest1);
+      await registry.registerManifest(manifest2);
 
       // Add to active plugins
-      (manager as any).activePlugins.set('plugin1' as any, {});
-      (manager as any).activePlugins.set('plugin2' as any, {});
-
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          getManifest: vi.fn((id) => Promise.resolve(
-            id === 'plugin1' ? manifest1 : manifest2
-          )),
-        }),
-      }));
+      (manager as any).activePlugins.set(manifest1.id, {});
+      (manager as any).activePlugins.set(manifest2.id, {});
 
       const active = await manager.getActivePlugins();
 
@@ -601,36 +588,19 @@ describe('PluginManager', () => {
 
     it('should get plugin state', async () => {
       const manifest = createTestManifest();
-      const state = {
-        id: manifest.id,
+
+      // Seed a real runtime state with the values under test.
+      const seeded = await seedPlugin(manifest, {
         state: 'active' as PluginState,
         enabled: true,
-        settings: {},
-        grantedPermissions: [],
-        stats: {
-          activationCount: 1,
-          executionCount: 0,
-          errorCount: 0,
-          cpuTime: 0,
-          peakMemoryMB: 0,
-          networkRequests: 0,
-          storageUsedMB: 0,
-          avgExecutionTime: 0,
-        },
-        errors: [],
-        installedAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          getRuntimeState: vi.fn(() => Promise.resolve(state)),
-        }),
-      }));
+      });
 
       const result = await manager.getPluginState(manifest.id);
 
-      expect(result).toEqual(state);
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(seeded.id);
+      expect(result?.state).toBe('active');
+      expect(result?.enabled).toBe(true);
     });
 
     it('should check if plugin is active', () => {
@@ -645,27 +615,20 @@ describe('PluginManager', () => {
 
     it('should get plugin errors', async () => {
       const manifest = createTestManifest();
-      const errors = [
-        {
-          id: 'error-1',
-          timestamp: Date.now(),
-          type: 'runtime' as const,
-          code: 'TEST_ERROR',
-          message: 'Test error',
-        },
-      ];
 
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          getRuntimeState: vi.fn(() => Promise.resolve({
-            errors,
-          })),
-        }),
-      }));
+      // Seed the plugin and record a real error through the registry.
+      await seedPlugin(manifest);
+      await getPluginRegistry().addPluginError(manifest.id, {
+        type: 'runtime',
+        code: 'TEST_ERROR',
+        message: 'Test error',
+      });
 
       const result = await manager.getPluginErrors(manifest.id);
 
-      expect(result).toEqual(errors);
+      expect(result).toHaveLength(1);
+      expect(result[0].code).toBe('TEST_ERROR');
+      expect(result[0].message).toBe('Test error');
     });
   });
 
@@ -751,30 +714,25 @@ describe('PluginManager', () => {
     it('should install plugin from manifest', async () => {
       const manifest = createTestManifest();
 
-      vi.doMock('../loader', () => ({
-        getPluginLoader: () => ({
-          loadPlugin: vi.fn(() => Promise.resolve({ success: true })),
-        }),
-      }));
-
-      const result = await manager.installFromManifest(manifest, 'code');
+      // Real loader flow: validate manifest + code, register manifest,
+      // create runtime state, store code.
+      const result = await manager.installFromManifest(
+        manifest,
+        'console.log("test plugin");'
+      );
 
       expect(result.success).toBe(true);
     });
 
     it('should return error when installation fails', async () => {
-      const manifest = createTestManifest();
+      // Invalid version format makes the real loader's manifest validation
+      // fail (previously an inert vi.doMock made this pass by accident).
+      const manifest = createTestManifest({ version: 'not-semver' });
 
-      vi.doMock('../loader', () => ({
-        getPluginLoader: () => ({
-          loadPlugin: vi.fn(() => Promise.resolve({
-            success: false,
-            error: 'Installation failed',
-          })),
-        }),
-      }));
-
-      const result = await manager.installFromManifest(manifest, 'code');
+      const result = await manager.installFromManifest(
+        manifest,
+        'console.log("test plugin");'
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
@@ -843,31 +801,12 @@ describe('PluginManager', () => {
     it('should disable plugin', async () => {
       const manifest = createTestManifest();
 
-      vi.doMock('../registry', () => ({
-        getPluginRegistry: () => ({
-          getRuntimeState: vi.fn(() => Promise.resolve({
-            id: manifest.id,
-            state: 'active' as PluginState,
-            enabled: true,
-            settings: {},
-            grantedPermissions: [],
-            stats: {
-              activationCount: 1,
-              executionCount: 0,
-              errorCount: 0,
-              cpuTime: 0,
-              peakMemoryMB: 0,
-              networkRequests: 0,
-              storageUsedMB: 0,
-              avgExecutionTime: 0,
-            },
-            errors: [],
-            installedAt: Date.now(),
-            updatedAt: Date.now(),
-          })),
-          updateRuntimeState: vi.fn(),
-        }),
-      }));
+      // Seed a real enabled+active state so disable() follows the
+      // deactivate path.
+      await seedPlugin(manifest, {
+        state: 'active' as PluginState,
+        enabled: true,
+      });
 
       const mockSandbox = {
         execute: vi.fn(),
@@ -882,6 +821,10 @@ describe('PluginManager', () => {
       await manager.disable(manifest.id);
 
       expect(mockSandbox.terminate).toHaveBeenCalled();
+      expect((manager as any).activePlugins.has(manifest.id)).toBe(false);
+
+      const state = await manager.getPluginState(manifest.id);
+      expect(state?.enabled).toBe(false);
     });
   });
 });

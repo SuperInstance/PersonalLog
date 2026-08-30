@@ -81,7 +81,12 @@ export function BackupPreview({ backup, onClose, onRestore, onDownload }: Backup
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Backup preview: ${backup.name}`}
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+      >
         {/* Header */}
         <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -93,6 +98,11 @@ export function BackupPreview({ backup, onClose, onRestore, onDownload }: Backup
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                   {backup.name}
                 </h2>
+                {backup.description && (
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                    {backup.description}
+                  </p>
+                )}
                 <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400 mt-1">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />

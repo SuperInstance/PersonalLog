@@ -41,6 +41,11 @@ describe('DocsPreloader', () => {
 
     await cache.initialize();
 
+    // DocsPreloader uses the global DocCache singleton, which shares the
+    // same IndexedDB database as this instance - clear it so each test
+    // starts with an empty cache (state leaked between tests otherwise)
+    await cache.clear();
+
     // Setup fetch mock
     mockFetch.mockImplementation((url: string) => {
       const path = url.includes('path=')
