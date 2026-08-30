@@ -2,6 +2,12 @@
 
 A local-first personal journal, mood tracker, and messenger-style log.
 
+<p align="center">
+  <img src="assets/images/hero.jpg" width="680" alt="A journal left open under the one warm lamp in a midnight-dark study — the log that never leaves the room">
+</p>
+
+*The whole system is that desk: everything you write stays within the lamplight.*
+
 **Current status:** beta / pre-production. The repo has real, working foundations, but large parts of the UI are scaffolded or mocked-up and the JavaScript unit-test suite is not yet reliable. See [Current status](#current-status) below for an honest breakdown.
 
 ## What it actually is
@@ -13,6 +19,19 @@ PersonalLog is three things in one repo:
 3. **Next.js 15 web app** — a messenger-style UI for conversations, knowledge base, settings, plugins, JEPA emotion visualization, and more.
 
 Data stays in the browser (IndexedDB) by default; the Python package is a separate local library, not a hosted backend.
+
+### How the pieces connect
+
+```mermaid
+flowchart LR
+    UI[Next.js web app<br/>messenger-style UI] -->|entries & moods| DB[(Browser IndexedDB)]
+    UI -->|similarity queries| WASM[Rust/WASM vector math]
+    WASM --> KB[Knowledge base search]
+    PY[Python personal_log<br/>journal / analytics / export] -.->|standalone local library| FS[(JSON / CSV / Markdown)]
+    AI[AI chat adapters<br/>OpenAI / Anthropic / Ollama] -.->|bring-your-own endpoint| UI
+```
+
+*No arrows leave the machine: the browser is the backend, the desk is the desk.*
 
 ## Verified working today ✅
 
