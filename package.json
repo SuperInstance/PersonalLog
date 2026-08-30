@@ -70,7 +70,7 @@
     "@types/semver": "7.7.1",
     "@vitejs/plugin-react": "^6.0.1",
     "@vitest/ui": "^4.0.16",
-    "axe-core": "^4.8.0",
+    "axe-core": "^4.13.0",
     "axe-playwright": "^2.2.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
