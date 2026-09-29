@@ -114,6 +114,18 @@ export function RecoveryWizard({ backups, onComplete, onCancel, isOpen }: Recove
     }
   }, [isOpen]);
 
+  // Move initial focus into the dialog so keyboard and screen reader users
+  // land inside the modal when it opens. Hooks must run unconditionally
+  // (before the `if (!isOpen) return null` early return below) — the isOpen
+  // guard inside the effect handles the closed case.
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      dialogRef.current?.focus();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // Handle backup selection
@@ -260,16 +272,6 @@ export function RecoveryWizard({ backups, onComplete, onCancel, isOpen }: Recove
       onCancel();
     }
   };
-
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  // Move initial focus into the dialog so keyboard and screen reader users
-  // land inside the modal when it opens.
-  useEffect(() => {
-    if (isOpen) {
-      dialogRef.current?.focus();
-    }
-  }, [isOpen]);
 
   // Get current step number
   const getStepNumber = (): number => {

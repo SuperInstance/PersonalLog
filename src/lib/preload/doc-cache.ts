@@ -46,9 +46,11 @@ interface DocCacheDB extends DBSchema {
   };
   metadata: {
     key: string;
+    // Out-of-line keyed store: value IS the stats object (get/put pass the
+    // key 'stats' explicitly), not a wrapped {key, value} pair.
     value: {
-      key: string;
-      value: unknown;
+      hits: number;
+      misses: number;
     };
   };
 }

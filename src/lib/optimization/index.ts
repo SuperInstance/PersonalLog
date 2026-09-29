@@ -37,7 +37,11 @@
 // CORE ENGINE
 // ============================================================================
 
-import { createOptimizationEngine, allRules } from './engine';
+import { createOptimizationEngine } from './engine';
+// allRules lives in the rules module (engine never exported it) — the barrel
+// below re-exports the full rules surface from './rules'; this local import
+// serves createEngineWithDefaults().
+import { allRules } from './rules';
 
 export {
   OptimizationEngine,
