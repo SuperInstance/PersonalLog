@@ -156,7 +156,7 @@ export {
 
 import { ModelFactory } from './models'
 import { PreferenceLearner, PreferenceAggregator, PatternDetector } from './learner'
-import type { UserAction, PreferenceKey, PreferenceValue } from './types'
+import type { UserAction, PreferenceKey, PreferenceValue, Preference } from './types'
 
 /**
  * Convenience API for quick personalization access

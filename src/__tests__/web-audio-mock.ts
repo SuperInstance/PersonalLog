@@ -28,7 +28,7 @@ class MockAudioBuffer implements AudioBuffer {
   readonly numberOfChannels: number
   readonly length: number
   readonly sampleRate: number
-  private readonly channels: Float32Array[]
+  private readonly channels: Float32Array<ArrayBuffer>[]
 
   constructor(init: AudioBufferInit) {
     this.numberOfChannels = init.numberOfChannels
@@ -44,7 +44,7 @@ class MockAudioBuffer implements AudioBuffer {
     return this.length / this.sampleRate
   }
 
-  getChannelData(channel: number): Float32Array {
+  getChannelData(channel: number): Float32Array<ArrayBuffer> {
     if (channel < 0 || channel >= this.numberOfChannels) {
       throw new DOMException(
         `IndexSizeError: channel index ${channel} out of range`,
@@ -76,7 +76,11 @@ function createBuffer(
   return new MockAudioBuffer({ numberOfChannels, length, sampleRate })
 }
 
-class MockAudioContext implements AudioContext {
+// The full AudioContext interface is far larger than the surface the product
+// uses (buffer factories only). We deliberately implement just that surface and
+// fail loudly on anything else; the window assignment below is the boundary
+// cast that vouches for the mock at runtime.
+class MockAudioContext {
   readonly sampleRate: number
   readonly state: AudioContextState = 'running'
   readonly currentTime = 0
@@ -99,7 +103,7 @@ class MockAudioContext implements AudioContext {
   }
 }
 
-class MockOfflineAudioContext implements OfflineAudioContext {
+class MockOfflineAudioContext {
   readonly numberOfChannels: number
   readonly length: number
   readonly sampleRate: number

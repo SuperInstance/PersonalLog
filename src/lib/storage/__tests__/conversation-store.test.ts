@@ -11,8 +11,9 @@
  *
  * @coverage Target: 85%+
  *
- * Note: These tests use mock IndexedDB since fake-indexeddb is not installed.
- * For production testing, consider adding fake-indexeddb as a devDependency.
+ * Note: Tests run against fake-indexeddb (spec-compliant in-memory IndexedDB),
+ * which replaced this file's original hand-rolled mock. It is now a
+ * devDependency.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
